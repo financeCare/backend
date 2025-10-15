@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.5.6'
 	id 'io.spring.dependency-management' version '1.1.7'
+    id "org.sonarqube" version "6.3.1.5724"
 }
 
 group = 'com.example'
@@ -33,6 +34,7 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     implementation 'io.minio:minio:8.6.0'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'net.sourceforge.tess4j:tess4j:5.11.0'
 }
 
 tasks.named('test') {
