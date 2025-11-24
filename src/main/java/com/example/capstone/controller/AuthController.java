@@ -1,12 +1,11 @@
 package com.example.capstone.controller;
 
-import com.example.capstone.dto.LoginRequest;
-import com.example.capstone.dto.LoginResponse;
-import com.example.capstone.dto.RegisterRequest;
+import com.example.capstone.dto.login.LoginRequest;
+import com.example.capstone.dto.login.LoginResponse;
+import com.example.capstone.dto.login.RegisterRequest;
 import com.example.capstone.service.UserService;
-import com.example.capstone.util.JwtUtil;
+import com.example.capstone.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,8 +30,6 @@ public class AuthController {
         try {
             UsernamePasswordAuthenticationToken authToken =
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
-
-
             authenticationManager.authenticate(authToken);
 
             String token = jwtUtil.generateToken(request.getEmail());

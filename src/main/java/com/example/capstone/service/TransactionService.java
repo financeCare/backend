@@ -1,0 +1,87 @@
+package com.example.capstone.service;
+
+import com.example.capstone.dto.CategoryDTO;
+import com.example.capstone.dto.TransactionRequest;
+import com.example.capstone.dto.TransactionResponse;
+import com.example.capstone.entity.Category;
+import com.example.capstone.entity.Transaction;
+import com.example.capstone.exception.BusinessException;
+import com.example.capstone.repository.CategoryRepository;
+import com.example.capstone.repository.TransactionRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class TransactionService {
+
+    private final TransactionRepository transactionRepository;
+    private final UserService userService;
+    private final CategoryRepository categoryRepository;
+
+
+    public TransactionResponse mapToResponse(Transaction t) {
+        CategoryDTO categoryDTO = new CategoryDTO(
+                t.getCategory().getCategoryName(),
+                t.getCategory().getType()
+        );
+
+        return new TransactionResponse(
+                t.getTransactionId(),
+                t.getAmount(),
+                t.getTransactionDate(),
+                t.getDescription(),
+                categoryDTO
+        );
+    }
+
+    public List<TransactionResponse> getTransactionsByUserId(String token) {
+        UUID userId = userService.extractUserIdFromToken(token);
+        List<Transaction> transactions = transactionRepository.findByUserId(userId);
+        return transactions.stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    public Transaction createTransaction(String token, TransactionRequest transactionRequest) {
+        UUID userId = userService.extractUserIdFromToken(token);
+        Transaction transaction = new Transaction();
+        transaction.setUserId(userId);
+        transaction.setAmount(transactionRequest.getAmount());
+        Category category = categoryRepository
+                .findByCategoryIdAndUserId(transactionRequest.getCategoryId(), userId)
+                .orElseThrow(() -> new BusinessException("Category not found or not owned by this user",
+                        HttpStatus.NOT_FOUND));
+        transaction.setCategory(category);
+        transaction.setTransactionDate(transactionRequest.getTransactionDate());
+        transaction.setDescription(transactionRequest.getDescription());
+        transaction.setBudgetId(transactionRequest.getBudgetId());
+        return transactionRepository.save(transaction);
+    }
+
+    public Transaction updateTransaction(String token, UUID transactionId, TransactionRequest transactionRequest) {
+        UUID userId = userService.extractUserIdFromToken(token);
+        Transaction existingTransaction = transactionRepository
+                .findByTransactionIdAndUserId(transactionId, userId)
+                .orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
+        existingTransaction.setAmount(transactionRequest.getAmount());
+        existingTransaction.setCategory(categoryRepository.findByCategoryIdAndUserId(transactionRequest.getCategoryId(), userId)
+                .orElseThrow(() -> new BusinessException("Category not found or not owned by this user", HttpStatus.NOT_FOUND)));
+        existingTransaction.setTransactionDate(transactionRequest.getTransactionDate());
+        existingTransaction.setDescription(transactionRequest.getDescription());
+        existingTransaction.setBudgetId(transactionRequest.getBudgetId());
+        return transactionRepository.save(existingTransaction);
+    }
+
+    public void deleteTransaction(String token,UUID transactionId) {
+        UUID userId = userService.extractUserIdFromToken(token);
+        Transaction existingTransaction = transactionRepository
+                .findByTransactionIdAndUserId(transactionId, userId)
+                .orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
+        transactionRepository.delete(existingTransaction);
+    }
+}
