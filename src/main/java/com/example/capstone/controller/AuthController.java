@@ -3,6 +3,7 @@ package com.example.capstone.controller;
 import com.example.capstone.dto.login.LoginRequest;
 import com.example.capstone.dto.login.LoginResponse;
 import com.example.capstone.dto.login.RegisterRequest;
+import com.example.capstone.dto.verifyOTPDTO;
 import com.example.capstone.service.UserService;
 import com.example.capstone.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,30 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final UserService userService;
 
+    @PostMapping("/send-otp/{email}")
+    public ResponseEntity<?> sendOtp(@PathVariable String email) {
+        try {
+            userService.sendOtp(email);
+            return ResponseEntity.ok("OTP sent successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(@RequestBody verifyOTPDTO request) {
+        try {
+            boolean isValid = userService.verifyOtp(request.getEmail(), request.getOtp());
+            if (isValid) {
+                return ResponseEntity.ok("OTP verified successfully");
+            } else {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid or expired OTP");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("OTP verification failed");
+        }
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
@@ -40,7 +65,6 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Login failed");
         }
-
     }
 
     @PostMapping("/register")

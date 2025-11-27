@@ -3,8 +3,10 @@ package com.example.capstone.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.awt.print.Book;
 import java.util.Date;
 import java.util.UUID;
 
@@ -13,6 +15,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @AllArgsConstructor
+@NoArgsConstructor
 public class User {
     @Id
     @GeneratedValue
@@ -24,13 +27,15 @@ public class User {
     @Column(name = "dob")
     private Date dob;
     private String email;
+    @Column(name = "email_confirm")
+    private Boolean emailConfirm;
 
-    public User(String username, String passwordHash, Date dob, String email) {
+    public User(String username, String passwordHash, Date dob, String email, Boolean emailConfirm) {
         this.username = username;
         this.passwordHash = passwordHash;
         this.dob = dob;
         this.email = email;
+        this.emailConfirm = emailConfirm;
     }
 
-    public User() {}
 }
