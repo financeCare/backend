@@ -46,6 +46,9 @@ dependencies {
     implementation 'org.springframework.data:spring-data-redis'
 
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    implementation("com.google.api-client:google-api-client:2.8.1")
+    implementation("com.google.http-client:google-http-client-jackson2:2.0.2")
 }
 
 tasks.named('test') {

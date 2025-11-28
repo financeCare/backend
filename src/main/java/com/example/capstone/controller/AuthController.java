@@ -1,9 +1,13 @@
 package com.example.capstone.controller;
 
+import com.example.capstone.dto.login.IdTokenRequest;
 import com.example.capstone.dto.login.LoginRequest;
 import com.example.capstone.dto.login.LoginResponse;
 import com.example.capstone.dto.login.RegisterRequest;
 import com.example.capstone.dto.verifyOTPDTO;
+import com.example.capstone.entity.User;
+import com.example.capstone.repository.UserRepository;
+import com.example.capstone.security.RefreshTokenService;
 import com.example.capstone.service.UserService;
 import com.example.capstone.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +27,8 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final UserService userService;
-
+    private final RefreshTokenService refreshTokenService;
+    private final UserRepository userRepository;
     @PostMapping("/send-otp/{email}")
     public ResponseEntity<?> sendOtp(@PathVariable String email) {
         try {
@@ -55,15 +60,44 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
             authenticationManager.authenticate(authToken);
 
-            String token = jwtUtil.generateToken(request.getEmail());
-
-            return ResponseEntity.ok(new LoginResponse(token));
+            String token = jwtUtil.generateAccessToken(request.getEmail());
+            String refreshToken = jwtUtil.generateRefreshToken(request.getEmail());
+            User user = userRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            user.setRefreshToken(refreshToken);
+            userRepository.save(user);
+            return ResponseEntity.ok(new LoginResponse(token,refreshToken));
         }catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid password or email");
         } catch (UsernameNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Login failed");
+        }
+    }
+
+    @PostMapping("/login/line")
+    public ResponseEntity<?> loginWithLine(@RequestBody IdTokenRequest request) {
+        LoginResponse token = userService.loginWithLine(request);
+        return ResponseEntity.ok(new LoginResponse(token.getAccessToken(),token.getRefreshToken()));
+    }
+
+    @PostMapping("/login/google")
+    public ResponseEntity<?> loginWithGoogle(@RequestBody IdTokenRequest request) {
+        LoginResponse token = userService.loginWithGoogle(request);
+        return ResponseEntity.ok(new LoginResponse(token.getAccessToken(),token.getRefreshToken()));
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(@RequestHeader("Authorization") String authorizationHeader) {
+        try {
+            String tokenStr = authorizationHeader.replace("Bearer ", "");
+            System.out.println("a1");
+            String token = refreshTokenService.renewAccessToken(tokenStr);
+            System.out.println("a2");
+            return ResponseEntity.ok(new LoginResponse(token, tokenStr));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());
         }
     }
 

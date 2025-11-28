@@ -1,18 +1,22 @@
 package com.example.capstone.service;
 
+import com.example.capstone.dto.BudgetDTO;
 import com.example.capstone.dto.DebtDTO;
+import com.example.capstone.dto.DebtGraphDTO;
+import com.example.capstone.entity.Category;
 import com.example.capstone.entity.Debt;
 import com.example.capstone.entity.DebtType;
 import com.example.capstone.entity.RepaymentType;
 import com.example.capstone.exception.BusinessException;
+import com.example.capstone.repository.CategoryRepository;
 import com.example.capstone.repository.DebtRepository;
 import com.example.capstone.repository.DebtTypeRepository;
-import com.example.capstone.repository.RepaymentHistoryRepository;
 import com.example.capstone.repository.RepaymentTypeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,14 +27,43 @@ public class DebtService {
     private final DebtRepository debtRepository;
     private final RepaymentTypeRepository repaymentTypeRepository;
     private final UserService userService;
+    private final BudgetService budgetService;
+    private final CategoryRepository categoryRepository;
 
-    public List<Debt> getOwnDebts(String token) {
-        UUID userId = userService.extractUserIdFromToken(token);
+    public List<Debt> getOwnDebt(String token) {
+        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
         return debtRepository.findAllByUserId(userId);
     }
 
+    public OverviewGraphDTO getOverviewGraph(String token) {
+        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        List<Debt> debts = debtRepository.findAllByUserId(userId);
+        List<Category> categories = categoryRepository.findByUserId(userId);
+        List<BudgetDTO> budgetDTOs = budgetService.getAmountFromBudget(token);
+        List<BudgetDTO> expense = budgetDTOs
+                .stream()
+                .filter(b -> categories
+                        .stream()
+                        .anyMatch(c -> c.getType().equals("Expense"))
+                )
+                .toList();
+        double income = budgetDTOs
+                .stream()
+                .filter(b -> categories
+                        .stream()
+                        .anyMatch(c -> c.getType().equals("Income"))
+                )
+                .mapToDouble(BudgetDTO::getAmount)
+                .sum();
+        List<DebtGraphDTO> debtGraphDTOs = new ArrayList<>();
+        for (Debt debt : debts) {
+            debtGraphDTOs.add(new DebtGraphDTO(debt.getDebtName(), debt.getPrincipalAmount()));
+        }
+        return new OverviewGraphDTO(income, debtGraphDTOs, expense);
+    }
+
     public Debt addDebt(String token, DebtDTO debtDTO) {
-        UUID userId = userService.extractUserIdFromToken(token);
+        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
         if (debtDTO.getInterestRate() > 100 || debtDTO.getInterestRate() < 0) {
             throw new BusinessException("invalid interest rate number", HttpStatus.FORBIDDEN);
         }
@@ -52,7 +85,7 @@ public class DebtService {
     }
 
     public Debt updateDebt(String token, Integer debtId, DebtDTO debtDTO) {
-        UUID userId = userService.extractUserIdFromToken(token);
+        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
         Debt existingDebt = debtRepository.findByDebtIdAndUserId(debtId,userId)
                 .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", HttpStatus.NOT_FOUND));
 
@@ -79,11 +112,12 @@ public class DebtService {
     }
 
     public Debt deleteDebt(String token, Integer debtId) {
-        UUID userId = userService.extractUserIdFromToken(token);
+        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
          Debt debt = debtRepository.findByDebtIdAndUserId(debtId, userId)
                 .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", HttpStatus.NOT_FOUND));
          debtRepository.delete(debt);
          return debt;
     }
+
 
 }

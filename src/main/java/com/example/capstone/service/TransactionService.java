@@ -6,6 +6,7 @@ import com.example.capstone.dto.TransactionResponse;
 import com.example.capstone.entity.Category;
 import com.example.capstone.entity.Transaction;
 import com.example.capstone.exception.BusinessException;
+import com.example.capstone.repository.BudgetRepository;
 import com.example.capstone.repository.CategoryRepository;
 import com.example.capstone.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final UserService userService;
     private final CategoryRepository categoryRepository;
+    private final BudgetRepository budgetRepository;
 
 
     public TransactionResponse mapToResponse(Transaction t) {
@@ -40,7 +42,7 @@ public class TransactionService {
     }
 
     public List<TransactionResponse> getTransactionsByUserId(String token) {
-        UUID userId = userService.extractUserIdFromToken(token);
+        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
         List<Transaction> transactions = transactionRepository.findByUserId(userId);
         return transactions.stream()
                 .map(this::mapToResponse)
@@ -48,7 +50,7 @@ public class TransactionService {
     }
 
     public Transaction createTransaction(String token, TransactionRequest transactionRequest) {
-        UUID userId = userService.extractUserIdFromToken(token);
+        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
         Transaction transaction = new Transaction();
         transaction.setUserId(userId);
         transaction.setAmount(transactionRequest.getAmount());
@@ -64,7 +66,7 @@ public class TransactionService {
     }
 
     public Transaction updateTransaction(String token, UUID transactionId, TransactionRequest transactionRequest) {
-        UUID userId = userService.extractUserIdFromToken(token);
+        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
         Transaction existingTransaction = transactionRepository
                 .findByTransactionIdAndUserId(transactionId, userId)
                 .orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
@@ -78,10 +80,15 @@ public class TransactionService {
     }
 
     public void deleteTransaction(String token,UUID transactionId) {
-        UUID userId = userService.extractUserIdFromToken(token);
+        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
         Transaction existingTransaction = transactionRepository
                 .findByTransactionIdAndUserId(transactionId, userId)
                 .orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
+        budgetRepository.findByUserIdAndBudgetId(userId, existingTransaction.getBudgetId()).ifPresent(budget -> {
+            double newAmount = budget.getAmount() - existingTransaction.getAmount();
+            budget.setAmount(newAmount);
+            budgetRepository.save(budget);
+        });
         transactionRepository.delete(existingTransaction);
     }
 }

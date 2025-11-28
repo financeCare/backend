@@ -19,8 +19,15 @@ public class DebtController {
     @GetMapping()
     public ResponseEntity<List<Debt>> getOwnDebt(@RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.replace("Bearer ", "");
-        List<Debt> debt = debtService.getOwnDebts(token);
+        List<Debt> debt = debtService.getOwnDebt(token);
         return ResponseEntity.ok(debt);
+    }
+
+    @GetMapping("/overview-graph")
+    public ResponseEntity<?> getOwnDebtGraph(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        var debtGraph = debtService.getOverviewGraph(token);
+        return ResponseEntity.ok(debtGraph);
     }
 
     @PostMapping

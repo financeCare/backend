@@ -1,16 +1,26 @@
 package com.example.capstone.service;
 
+import com.example.capstone.config.LineConfig;
+import com.example.capstone.dto.login.IdTokenRequest;
+import com.example.capstone.dto.login.LoginResponse;
 import com.example.capstone.dto.login.RegisterRequest;
 import com.example.capstone.entity.User;
 import com.example.capstone.exception.BusinessException;
 import com.example.capstone.exception.EmailAlreadyExistsException;
 import com.example.capstone.repository.UserRepository;
 import com.example.capstone.security.JwtUtil;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.gson.GsonFactory;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.*;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,14 +28,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.Random;
-import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Value;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -37,17 +46,41 @@ public class UserService implements UserDetailsService {
     private final StringRedisTemplate redisTemplate;
     private final JavaMailSender mailSender;
     private final TemplateService templateService;
+    private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
     @Value("${app.mail.enabled}")
     private boolean mailEnabled;
+    private final LineConfig lineConfig;
+    private final RestTemplate restTemplate = new RestTemplate();
 
-    public void registerUser(RegisterRequest request) throws MessagingException, IOException {
+    private Map<String, Object> getLineUserInfo(String idToken) {
+        String url = "https://api.line.me/oauth2/v2.1/verify";
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("id_token", idToken);
+        params.add("client_id", lineConfig.getChannelId());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        HttpEntity<MultiValueMap<String, String>> request =
+                new HttpEntity<>(params, headers);
+        ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
+                url,
+                HttpMethod.POST,
+                request,
+                new ParameterizedTypeReference<Map<String, Object>>() {
+                }
+        );
+        Map<String, Object> body = response.getBody();
+        if (body == null) {
+            throw new RuntimeException("LINE verify: empty response");
+        }
+        return body;
+    }
+
+    public void registerUser(RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new EmailAlreadyExistsException("Email already exists: " + request.getEmail());
         }
-
         String encodedPassword = passwordEncoder.encode(request.getPassword());
-
         sendOtp(request.getEmail());
         userRepository.save(
                 new User(
@@ -55,31 +88,104 @@ public class UserService implements UserDetailsService {
                         encodedPassword,
                         request.getDob(),
                         request.getEmail(),
-                        false
+                        false, null
                 )
         );
     }
 
+    public LoginResponse loginWithLine(IdTokenRequest idTokenRequest) {
+        Map<String, Object> userDetail = getLineUserInfo(idTokenRequest.getIdToken());
+        String email = userDetail.get("email").toString();
+        String name = userDetail.get("name").toString();
+        String accessToken = jwtUtil.generateAccessToken(email);
+        String refreshToken = jwtUtil.generateRefreshToken(email);
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        User user;
+        if (userOpt.isEmpty()) {
+            user = new User(
+                    name,
+                    null,
+                    null,
+                    email,
+                    true,
+                    refreshToken
+            );
+        } else {
+            user = userOpt.get();
+            user.setRefreshToken(refreshToken);
+        }
+        userRepository.save(user);
+        return new LoginResponse(accessToken, refreshToken);
+    }
+
+    public LoginResponse loginWithGoogle(IdTokenRequest idTokenString) {
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                    GoogleNetHttpTransport.newTrustedTransport(),
+                    JSON_FACTORY
+            ).build();
+
+            GoogleIdToken idToken = verifier.verify(idTokenString.getIdToken());
+            if (idToken == null) {
+                throw new BusinessException("Invalid ID token", HttpStatus.UNAUTHORIZED);
+            }
+
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            String fullName = (String) payload.get("name");
+
+            // Find user
+            Optional<User> userOpt = userRepository.findByEmail(email);
+
+            // Generate new tokens
+            String accessToken = jwtUtil.generateAccessToken(email);
+            String refreshToken = jwtUtil.generateRefreshToken(email);
+
+            User user;
+            if (userOpt.isEmpty()) {
+                // New user
+                user = new User(
+                        fullName,
+                        null,
+                        null,
+                        email,
+                        true,
+                        refreshToken
+                );
+            } else {
+                user = userOpt.get();
+                user.setRefreshToken(refreshToken);
+            }
+            userRepository.save(user);
+            return new LoginResponse(accessToken, refreshToken);
+        } catch (Exception e) {
+            throw new BusinessException("Google login failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
                         new UsernameNotFoundException("User with email " + email + " not found")
                 );
-
+        String password = Optional.ofNullable(user.getPasswordHash()).orElse("{noop}dummy");
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
-                user.getPasswordHash(),
+                password,
                 Collections.emptyList()
         );
     }
 
-    public UUID extractUserIdFromToken(String token){
+    public UUID extractUserIdFromTokenAndCheckEmailConfirm(String token) {
         String email = jwtUtil.extractEmail(token);
-        return userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
                         new UsernameNotFoundException("User with email " + email + " not found")
-                ).getUserId();
+                );
+        if (user.getEmailConfirm() == false) {
+            throw new BusinessException("Email not verified", HttpStatus.FORBIDDEN);
+        }
+        return user.getUserId();
     }
 
     private String generateOTP() {
@@ -129,5 +235,6 @@ public class UserService implements UserDetailsService {
         userRepository.save(user);
         return true;
     }
+
 
 }

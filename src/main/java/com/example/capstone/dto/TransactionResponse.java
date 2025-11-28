@@ -14,6 +14,5 @@ public class TransactionResponse {
     private Double amount;
     private Date transactionDate;
     private String description;
-
     private CategoryDTO categoryDTO;
 }

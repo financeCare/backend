@@ -1,10 +1,12 @@
 package com.example.capstone.controller;
 
+import com.example.capstone.dto.BudgetDTO;
 import com.example.capstone.entity.Budget;
 import com.example.capstone.service.BudgetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -19,7 +21,9 @@ public class BudgetController {
         return budgetService.updateBudget(token,UUID.fromString(budgetId),Double.parseDouble(amount));
     }
 
-    //Todo
-    //get budget but current money in every type.
-
+    @GetMapping
+    public List<BudgetDTO> getAmountFromBudget(@RequestHeader("Authorization") String authorizationHeader){
+        String token = authorizationHeader.replace("Bearer ", "");
+        return budgetService.getAmountFromBudget(token);
+    }
 }

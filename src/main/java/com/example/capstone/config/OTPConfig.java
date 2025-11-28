@@ -1,11 +1,11 @@
-package com.example.capstone.OTP;
+package com.example.capstone.config;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DebugConfig {
+public class OTPConfig {
 
     @Value("${spring.mail.host}")
     private String host;

@@ -29,13 +29,16 @@ public class User {
     private String email;
     @Column(name = "email_confirm")
     private Boolean emailConfirm;
+    @Column(name = "refresh_token")
+    private String refreshToken;
 
-    public User(String username, String passwordHash, Date dob, String email, Boolean emailConfirm) {
+    public User(String username, String passwordHash, Date dob, String email, Boolean emailConfirm, String refreshToken) {
         this.username = username;
         this.passwordHash = passwordHash;
         this.dob = dob;
         this.email = email;
         this.emailConfirm = emailConfirm;
+        this.refreshToken = refreshToken;
     }
 
 }
