@@ -92,9 +92,7 @@ public class AuthController {
     public ResponseEntity<?> refreshToken(@RequestHeader("Authorization") String authorizationHeader) {
         try {
             String tokenStr = authorizationHeader.replace("Bearer ", "");
-            System.out.println("a1");
             String token = refreshTokenService.renewAccessToken(tokenStr);
-            System.out.println("a2");
             return ResponseEntity.ok(new LoginResponse(token, tokenStr));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());

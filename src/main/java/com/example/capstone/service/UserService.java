@@ -187,7 +187,6 @@ public class UserService implements UserDetailsService {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-        System.out.println(claims.get("type"));
         if (user.getEmailConfirm() == false) {
             throw new BusinessException("Email not verified", HttpStatus.FORBIDDEN);
         }if ("refresh".equals(claims.get("type"))) {
