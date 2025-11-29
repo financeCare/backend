@@ -27,14 +27,14 @@ public class BudgetService {
     }
 
     public Budget updateBudget(String token,UUID id, double amount) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         Budget existingBudget = budgetRepository.findByUserIdAndBudgetId(userId,id).orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
         existingBudget.setAmount(amount);
         return budgetRepository.save(existingBudget);
     }
 
     public List<BudgetDTO> getAmountFromBudget(String token) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         List<Budget> budgets = budgetRepository.findByUserId(userId);
         List<BudgetDTO> budgetDTOs = new ArrayList<>();
         for(Budget budget : budgets) {

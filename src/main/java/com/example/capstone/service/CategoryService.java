@@ -21,12 +21,12 @@ public class CategoryService {
     private final double defaultBudgets = 1000;
 
     public List<Category> getCategoriesByUserId(String token) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         return categoryRepository.findByUserId(userId);
     }
 
     public Category createCategory(String token, CategoryDTO categoryDTO) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         Budget budget = new Budget();
         Category category = new Category();
         budget.setUserId(userId);
@@ -40,7 +40,7 @@ public class CategoryService {
     }
 
     public Category updateCategory(String token,Integer categoryId, CategoryDTO categoryDTO) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         Category category = categoryRepository.findByCategoryIdAndUserId(categoryId, userId)
                 .orElseThrow(() -> new RuntimeException("Category not found or not owned by this user"));
         category.setCategoryName(categoryDTO.getCategoryName());
@@ -49,7 +49,7 @@ public class CategoryService {
     }
 
     public void deleteCategory(String token,Integer categoryId) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         Category category = categoryRepository.findByCategoryIdAndUserId(categoryId, userId)
                 .orElseThrow(() -> new RuntimeException("Category not found or not owned by this user"));
         categoryRepository.delete(category);

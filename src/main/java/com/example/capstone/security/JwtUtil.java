@@ -16,13 +16,14 @@ public class JwtUtil {
     private final long expirationMs = 36000; // 36 seconds
     private final long refreshExpirationMs =  2592000000L; // 1 month
 
-    private Key getSigningKey() {
+    public Key getSigningKey() {
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
     }
 
     public String generateAccessToken(String email) {
         return Jwts.builder()
                 .setSubject(email)
+                .claim("type", "access")
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
@@ -32,6 +33,7 @@ public class JwtUtil {
     public String generateRefreshToken(String email) {
         return Jwts.builder()
                 .setSubject(email)
+                .claim("type", "refresh")
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + refreshExpirationMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)

@@ -14,7 +14,8 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
-import jakarta.mail.MessagingException;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,7 +33,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 
@@ -46,12 +46,12 @@ public class UserService implements UserDetailsService {
     private final StringRedisTemplate redisTemplate;
     private final JavaMailSender mailSender;
     private final TemplateService templateService;
-    private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
     @Value("${app.mail.enabled}")
     private boolean mailEnabled;
     private final LineConfig lineConfig;
     private final RestTemplate restTemplate = new RestTemplate();
+    private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
     private Map<String, Object> getLineUserInfo(String idToken) {
         String url = "https://api.line.me/oauth2/v2.1/verify";
@@ -176,14 +176,22 @@ public class UserService implements UserDetailsService {
         );
     }
 
-    public UUID extractUserIdFromTokenAndCheckEmailConfirm(String token) {
+    public UUID extractUserIdFromToken(String token) {
         String email = jwtUtil.extractEmail(token);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
                         new UsernameNotFoundException("User with email " + email + " not found")
                 );
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(jwtUtil.getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        System.out.println(claims.get("type"));
         if (user.getEmailConfirm() == false) {
             throw new BusinessException("Email not verified", HttpStatus.FORBIDDEN);
+        }if ("refresh".equals(claims.get("type"))) {
+            throw new RuntimeException("Refresh token cannot be used to access resources");
         }
         return user.getUserId();
     }

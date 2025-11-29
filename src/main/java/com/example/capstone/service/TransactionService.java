@@ -42,7 +42,7 @@ public class TransactionService {
     }
 
     public List<TransactionResponse> getTransactionsByUserId(String token) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         List<Transaction> transactions = transactionRepository.findByUserId(userId);
         return transactions.stream()
                 .map(this::mapToResponse)
@@ -50,7 +50,7 @@ public class TransactionService {
     }
 
     public Transaction createTransaction(String token, TransactionRequest transactionRequest) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         Transaction transaction = new Transaction();
         transaction.setUserId(userId);
         transaction.setAmount(transactionRequest.getAmount());
@@ -66,7 +66,7 @@ public class TransactionService {
     }
 
     public Transaction updateTransaction(String token, UUID transactionId, TransactionRequest transactionRequest) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         Transaction existingTransaction = transactionRepository
                 .findByTransactionIdAndUserId(transactionId, userId)
                 .orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
@@ -80,7 +80,7 @@ public class TransactionService {
     }
 
     public void deleteTransaction(String token,UUID transactionId) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         Transaction existingTransaction = transactionRepository
                 .findByTransactionIdAndUserId(transactionId, userId)
                 .orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));

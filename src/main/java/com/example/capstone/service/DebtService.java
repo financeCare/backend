@@ -31,12 +31,12 @@ public class DebtService {
     private final CategoryRepository categoryRepository;
 
     public List<Debt> getOwnDebt(String token) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         return debtRepository.findAllByUserId(userId);
     }
 
     public OverviewGraphDTO getOverviewGraph(String token) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         List<Debt> debts = debtRepository.findAllByUserId(userId);
         List<Category> categories = categoryRepository.findByUserId(userId);
         List<BudgetDTO> budgetDTOs = budgetService.getAmountFromBudget(token);
@@ -63,7 +63,7 @@ public class DebtService {
     }
 
     public Debt addDebt(String token, DebtDTO debtDTO) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         if (debtDTO.getInterestRate() > 100 || debtDTO.getInterestRate() < 0) {
             throw new BusinessException("invalid interest rate number", HttpStatus.FORBIDDEN);
         }
@@ -85,7 +85,7 @@ public class DebtService {
     }
 
     public Debt updateDebt(String token, Integer debtId, DebtDTO debtDTO) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         Debt existingDebt = debtRepository.findByDebtIdAndUserId(debtId,userId)
                 .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", HttpStatus.NOT_FOUND));
 
@@ -112,7 +112,7 @@ public class DebtService {
     }
 
     public Debt deleteDebt(String token, Integer debtId) {
-        UUID userId = userService.extractUserIdFromTokenAndCheckEmailConfirm(token);
+        UUID userId = userService.extractUserIdFromToken(token);
          Debt debt = debtRepository.findByDebtIdAndUserId(debtId, userId)
                 .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", HttpStatus.NOT_FOUND));
          debtRepository.delete(debt);
