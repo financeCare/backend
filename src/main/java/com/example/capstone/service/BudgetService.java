@@ -2,6 +2,7 @@ package com.example.capstone.service;
 
 import com.example.capstone.dto.BudgetDTO;
 import com.example.capstone.entity.Budget;
+import com.example.capstone.entity.Category;
 import com.example.capstone.exception.BusinessException;
 import com.example.capstone.repository.BudgetRepository;
 import com.example.capstone.repository.CategoryRepository;
@@ -35,14 +36,23 @@ public class BudgetService {
 
     public List<BudgetDTO> getAmountFromBudget(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
+        System.out.println(userId);
         List<Budget> budgets = budgetRepository.findByUserId(userId);
+        List<Category> categories = categoryRepository.findByUserId(userId);
         List<BudgetDTO> budgetDTOs = new ArrayList<>();
         for(Budget budget : budgets) {
             BudgetDTO budgetDTO = new BudgetDTO();
-            categoryRepository.findById(budget.getCategoryId()).ifPresent(category -> {
-                budgetDTO.setBudgetName(category.getCategoryName());
-            });
+            List<Category> category = categories.stream().filter(c -> c.getCategoryId().equals(budget.getCategoryId())).toList();
+            if ((long) category.size() > 0) {
+                Category category1 = category.stream().findFirst().get();
+                budgetDTO.setBudgetName(category1.getCategoryName());
+            } else {
+                System.out.println("Category not found for budget id: " + budget.getBudgetId());
+                System.out.println("Category id in budget: " + budget);
+                budgetDTO.setBudgetName("Unknown Category");
+            }
             budgetDTO.setAmount(budget.getAmount());
+            budgetDTO.setLimitBudget(budget.getLimitBudget());
             if (budgetDTOs.stream().noneMatch(b -> b.getBudgetName().equals(budgetDTO.getBudgetName()))) {
                 budgetDTOs.add(budgetDTO);
             }else{

@@ -3,6 +3,7 @@ package com.example.capstone.service;
 import com.example.capstone.dto.CategoryDTO;
 import com.example.capstone.entity.Budget;
 import com.example.capstone.entity.Category;
+import com.example.capstone.repository.BudgetRepository;
 import com.example.capstone.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final BudgetService budgetService;
+    private final BudgetRepository budgetRepository;
     private final UserService userService;
 
     private final double defaultBudgets = 1000;
@@ -36,6 +38,7 @@ public class CategoryService {
         category.setUserId(userId);
         category.setCategoryName(categoryDTO.getCategoryName());
         category.setType(categoryDTO.getType());
+        category.setBudgetId(budget.getBudgetId());
         return categoryRepository.save(category);
     }
 
@@ -52,6 +55,8 @@ public class CategoryService {
         UUID userId = userService.extractUserIdFromToken(token);
         Category category = categoryRepository.findByCategoryIdAndUserId(categoryId, userId)
                 .orElseThrow(() -> new RuntimeException("Category not found or not owned by this user"));
+        Budget budget = budgetRepository.findById(category.getBudgetId()).orElseThrow(() -> new RuntimeException("Budget not found for this category"));
+        budgetRepository.delete(budget);
         categoryRepository.delete(category);
     }
 }

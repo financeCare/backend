@@ -6,4 +6,5 @@ import lombok.Data;
 public class BudgetDTO {
     private String budgetName;
     private Double amount;
+    private Double limitBudget;
 }

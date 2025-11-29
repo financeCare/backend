@@ -3,6 +3,7 @@ package com.example.capstone.service;
 import com.example.capstone.dto.CategoryDTO;
 import com.example.capstone.dto.TransactionRequest;
 import com.example.capstone.dto.TransactionResponse;
+import com.example.capstone.entity.Budget;
 import com.example.capstone.entity.Category;
 import com.example.capstone.entity.Transaction;
 import com.example.capstone.exception.BusinessException;
@@ -50,19 +51,31 @@ public class TransactionService {
     }
 
     public Transaction createTransaction(String token, TransactionRequest transactionRequest) {
+        // 1. ดึง userId จาก token
         UUID userId = userService.extractUserIdFromToken(token);
+
+        // 2. ดึง Category และตรวจสอบเป็นของ user คนนี้
+        Category category = categoryRepository
+                .findByCategoryIdAndUserId(transactionRequest.getCategoryId(), userId)
+                .orElseThrow(() -> new BusinessException(
+                        "Category not found or not owned by this user",
+                        HttpStatus.NOT_FOUND));
+        Budget budget = budgetRepository
+                .findByUserIdAndBudgetId(userId, category.getBudgetId())
+                .orElseThrow(() -> new BusinessException(
+                        "Budget not found or not owned by this user",
+                        HttpStatus.NOT_FOUND));
         Transaction transaction = new Transaction();
         transaction.setUserId(userId);
         transaction.setAmount(transactionRequest.getAmount());
-        Category category = categoryRepository
-                .findByCategoryIdAndUserId(transactionRequest.getCategoryId(), userId)
-                .orElseThrow(() -> new BusinessException("Category not found or not owned by this user",
-                        HttpStatus.NOT_FOUND));
         transaction.setCategory(category);
         transaction.setTransactionDate(transactionRequest.getTransactionDate());
         transaction.setDescription(transactionRequest.getDescription());
-        transaction.setBudgetId(transactionRequest.getBudgetId());
-        return transactionRepository.save(transaction);
+        Transaction savedTransaction = transactionRepository.save(transaction);
+        double newAmount = budget.getAmount() + transactionRequest.getAmount();
+        budget.setAmount(newAmount);
+        budgetRepository.save(budget);
+        return savedTransaction;
     }
 
     public Transaction updateTransaction(String token, UUID transactionId, TransactionRequest transactionRequest) {
@@ -71,11 +84,20 @@ public class TransactionService {
                 .findByTransactionIdAndUserId(transactionId, userId)
                 .orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
         existingTransaction.setAmount(transactionRequest.getAmount());
-        existingTransaction.setCategory(categoryRepository.findByCategoryIdAndUserId(transactionRequest.getCategoryId(), userId)
-                .orElseThrow(() -> new BusinessException("Category not found or not owned by this user", HttpStatus.NOT_FOUND)));
+        Category category = categoryRepository
+                .findByCategoryIdAndUserId(transactionRequest.getCategoryId(), userId)
+                .orElseThrow(() -> new BusinessException("Category not found or not owned by this user",
+                        HttpStatus.NOT_FOUND));
+        existingTransaction.setCategory(category);
+        Budget budget = budgetRepository
+                .findByUserIdAndBudgetId(userId, category.getBudgetId())
+                .orElseThrow(() -> new BusinessException("Budget not found or not owned by this user",
+                        HttpStatus.NOT_FOUND));
+        double newAmount = budget.getAmount() + transactionRequest.getAmount();
+        budget.setAmount(newAmount);
+        budgetRepository.save(budget);
         existingTransaction.setTransactionDate(transactionRequest.getTransactionDate());
         existingTransaction.setDescription(transactionRequest.getDescription());
-        existingTransaction.setBudgetId(transactionRequest.getBudgetId());
         return transactionRepository.save(existingTransaction);
     }
 
@@ -84,11 +106,17 @@ public class TransactionService {
         Transaction existingTransaction = transactionRepository
                 .findByTransactionIdAndUserId(transactionId, userId)
                 .orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
-        budgetRepository.findByUserIdAndBudgetId(userId, existingTransaction.getBudgetId()).ifPresent(budget -> {
-            double newAmount = budget.getAmount() - existingTransaction.getAmount();
-            budget.setAmount(newAmount);
-            budgetRepository.save(budget);
-        });
+        Category category = categoryRepository
+                .findByCategoryIdAndUserId(existingTransaction.getCategory().getCategoryId(), userId)
+                .orElseThrow(() -> new BusinessException("Category not found or not owned by this user",
+                        HttpStatus.NOT_FOUND));
+        Budget budget = budgetRepository
+                .findByUserIdAndBudgetId(userId, category.getBudgetId())
+                .orElseThrow(() -> new BusinessException("Budget not found or not owned by this user",
+                        HttpStatus.NOT_FOUND));
+        double newAmount = budget.getAmount() + existingTransaction.getAmount();
+        budget.setAmount(newAmount);
+        budgetRepository.save(budget);
         transactionRepository.delete(existingTransaction);
     }
 }

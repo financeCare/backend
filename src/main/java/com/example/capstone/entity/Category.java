@@ -27,4 +27,7 @@ public class Category {
 
     @Column(nullable = false, length = 10)
     private String type;
+
+    @Column(name = "budget_id")
+    private UUID budgetId;
 }

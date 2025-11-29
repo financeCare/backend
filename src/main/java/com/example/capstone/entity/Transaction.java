@@ -35,7 +35,4 @@ public class Transaction {
 
     @Column(length = 128)
     private String description;
-
-    @Column(name = "budget_id")
-    private UUID budgetId;
 }

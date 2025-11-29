@@ -30,4 +30,6 @@ public class Budget {
     @Column(name = "amount", nullable = false)
     private Double amount;
 
+    @Column(name = "limit_budget", nullable = false)
+    private Double limitBudget;
 }

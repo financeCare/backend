@@ -75,7 +75,7 @@ public class DebtService {
                 .orElseThrow(() -> new BusinessException("invalid repayment type id", HttpStatus.BAD_REQUEST)));
         debt.setStartDate(debtDTO.getStartDate());
         debt.setEndDate(debtDTO.getEndDate());
-        debt.setActive(debtDTO.getIsActive());
+            debt.setActive(debtDTO.getIsActive());
         debt.setPriority(debtDTO.getPriority());
         debt.setDebtType(debtTypeRepository.findById(debtDTO.getDebtTypeId())
                 .orElseThrow(() -> new BusinessException("invalid debt type id", HttpStatus.BAD_REQUEST)));
