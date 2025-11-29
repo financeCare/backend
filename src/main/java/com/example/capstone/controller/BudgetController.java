@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/budget")
+@RequestMapping("/budget")
 @RequiredArgsConstructor
 public class BudgetController {
     private final BudgetService budgetService;
