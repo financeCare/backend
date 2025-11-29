@@ -13,7 +13,7 @@ import java.util.Date;
 @Component
 public class JwtUtil {
     private final String secret = "uV9yK3j5YhN8Lx2QpW7eZ0rJtB6nMfLgSxAaCdEfGhI=";
-    private final long expirationMs = 36000; // 36 seconds
+    private final long expirationMs = 3600000; // 1 hour
     private final long refreshExpirationMs =  2592000000L; // 1 month
 
     public Key getSigningKey() {
