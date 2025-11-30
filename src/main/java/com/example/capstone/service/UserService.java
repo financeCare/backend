@@ -4,9 +4,13 @@ import com.example.capstone.config.LineConfig;
 import com.example.capstone.dto.login.IdTokenRequest;
 import com.example.capstone.dto.login.LoginResponse;
 import com.example.capstone.dto.login.RegisterRequest;
+import com.example.capstone.entity.Budget;
+import com.example.capstone.entity.Category;
 import com.example.capstone.entity.User;
 import com.example.capstone.exception.BusinessException;
 import com.example.capstone.exception.EmailAlreadyExistsException;
+import com.example.capstone.repository.BudgetRepository;
+import com.example.capstone.repository.CategoryRepository;
 import com.example.capstone.repository.UserRepository;
 import com.example.capstone.security.JwtUtil;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
@@ -36,6 +40,8 @@ import org.springframework.web.client.RestTemplate;
 import java.time.Duration;
 import java.util.*;
 
+import static com.example.capstone.config.GlobalVariables.*;
+
 @Service
 @RequiredArgsConstructor
 public class UserService implements UserDetailsService {
@@ -46,6 +52,8 @@ public class UserService implements UserDetailsService {
     private final StringRedisTemplate redisTemplate;
     private final JavaMailSender mailSender;
     private final TemplateService templateService;
+    private final CategoryRepository categoryRepository;
+    private final BudgetRepository budgetRepository;
 
     @Value("${app.mail.enabled}")
     private boolean mailEnabled;
@@ -91,6 +99,8 @@ public class UserService implements UserDetailsService {
                         false, null
                 )
         );
+            User newUser = userRepository.findByEmail(request.getEmail()).get();
+            createDefaultCategoriesForUser(newUser.getUserId());
     }
 
     public LoginResponse loginWithLine(IdTokenRequest idTokenRequest) {
@@ -115,6 +125,10 @@ public class UserService implements UserDetailsService {
             user.setRefreshToken(refreshToken);
         }
         userRepository.save(user);
+        if (userOpt.isEmpty()) {
+            User newUser = userRepository.findByEmail(email).get();
+            createDefaultCategoriesForUser(newUser.getUserId());
+        }
         return new LoginResponse(accessToken, refreshToken);
     }
 
@@ -157,11 +171,44 @@ public class UserService implements UserDetailsService {
                 user.setRefreshToken(refreshToken);
             }
             userRepository.save(user);
+            if (userOpt.isEmpty()) {
+                User newUser = userRepository.findByEmail(email).get();
+                createDefaultCategoriesForUser(newUser.getUserId());
+            }
             return new LoginResponse(accessToken, refreshToken);
         } catch (Exception e) {
             throw new BusinessException("Google login failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    public void createDefaultCategoriesForUser(UUID userId) {
+                createCategoryForUser(userId, CATEGORY_SALARY, TYPE_INCOME);
+                createCategoryForUser(userId, CATEGORY_FOOD, TYPE_EXPENSE);
+                createCategoryForUser(userId, CATEGORY_TRANSPORT, TYPE_EXPENSE);
+                createCategoryForUser(userId, CATEGORY_HEALTH, TYPE_EXPENSE);
+                createCategoryForUser(userId, CATEGORY_SHOPPING, TYPE_EXPENSE);
+    }
+
+    public void createCategoryForUser(UUID userId, String categoryName, String type) {
+        Budget budget = new Budget();
+        budget.setUserId(userId);
+        budget.setAmount(DEFAULT_BUDGET_AMOUNT);
+        if( type.equals(TYPE_EXPENSE)){
+            budget.setLimitBudget(DEFAULT_LIMIT_BUDGET);
+        } else {
+            budget.setLimitBudget(null);
+        }
+        Budget savedBudget = budgetRepository.save(budget);
+        Category category = Category.builder()
+                .userId(userId)
+                .categoryName(categoryName)
+                .type(type)
+                .budgetId(savedBudget.getBudgetId())
+                .build();
+         categoryRepository.save(category);
+    }
+
+
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)

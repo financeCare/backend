@@ -51,12 +51,9 @@ public class TransactionService {
     }
 
     public Transaction createTransaction(String token, TransactionRequest transactionRequest) {
-        // 1. ดึง userId จาก token
         UUID userId = userService.extractUserIdFromToken(token);
-
-        // 2. ดึง Category และตรวจสอบเป็นของ user คนนี้
         Category category = categoryRepository
-                .findByCategoryIdAndUserId(transactionRequest.getCategoryId(), userId)
+                .findById(transactionRequest.getCategoryId())
                 .orElseThrow(() -> new BusinessException(
                         "Category not found or not owned by this user",
                         HttpStatus.NOT_FOUND));

@@ -20,6 +20,11 @@ public class CategoryController {
         return categoryService.getCategoriesByUserId(token);
     }
 
+    @GetMapping("/{categoryId}")
+    public Category getCategoryById(@RequestHeader("Authorization") String authorizationHeader,@PathVariable Integer categoryId) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        return categoryService.getCategoryById(token,categoryId);
+    }
     @PostMapping
     public Category createCategory(@RequestHeader("Authorization") String authorizationHeader,@RequestBody CategoryDTO category) {
         String token = authorizationHeader.replace("Bearer ", "");

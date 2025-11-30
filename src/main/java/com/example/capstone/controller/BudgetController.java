@@ -21,9 +21,15 @@ public class BudgetController {
         return budgetService.updateBudget(token,UUID.fromString(budgetId),Double.parseDouble(amount));
     }
 
-    @GetMapping
+    @GetMapping("/overview")
     public List<BudgetDTO> getAmountFromBudget(@RequestHeader("Authorization") String authorizationHeader){
         String token = authorizationHeader.replace("Bearer ", "");
         return budgetService.getAmountFromBudget(token);
+    }
+
+    @GetMapping
+    public List<Budget> getBudgets(@RequestHeader("Authorization") String authorizationHeader){
+        String token = authorizationHeader.replace("Bearer ", "");
+        return budgetService.getAllBudgets(token);
     }
 }

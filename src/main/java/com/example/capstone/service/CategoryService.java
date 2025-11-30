@@ -25,6 +25,12 @@ public class CategoryService {
 
     private final double defaultBudgets = 1000;
 
+    public Category getCategoryById(String token,Integer categoryId) {
+        UUID userId = userService.extractUserIdFromToken(token);
+        return categoryRepository.findByCategoryIdAndUserId(categoryId, userId)
+                .orElseThrow(() -> new RuntimeException("Category not found or not owned by this user"));
+    }
+
     public List<Category> getCategoriesByUserId(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
         return categoryRepository.findByUserId(userId);

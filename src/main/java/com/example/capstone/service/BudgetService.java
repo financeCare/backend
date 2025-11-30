@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -40,44 +41,49 @@ public class BudgetService {
         List<Budget> budgets = budgetRepository.findByUserId(userId);
         List<Category> categories = categoryRepository.findByUserId(userId);
         List<BudgetDTO> budgetDTOs = new ArrayList<>();
-        for(Budget budget : budgets) {
+        for (Budget budget : budgets) {
             BudgetDTO budgetDTO = new BudgetDTO();
-            List<Category> category = categories.stream()
-                    .filter(c -> c.getBudgetId() != null && c.getBudgetId().equals(budget.getBudgetId()))
+            List<Category> relatedCategories = categories.stream()
+                    .filter(c -> c.getBudgetId() != null
+                            && c.getBudgetId().equals(budget.getBudgetId())
+                            && !Objects.equals(c.getType(), "Income"))
                     .toList();
-            if ((long) category.size() > 0) {
-                Category category1 = category.stream().findFirst().get();
-                budgetDTO.setBudgetName(category1.getCategoryName());
-            } else {
-                System.out.println("Category not found for budget id: " + budget.getBudgetId());
-                System.out.println("Category id in budget: " + budget);
-                budgetDTO.setBudgetName("Unknown Category");
+            if(relatedCategories.isEmpty()){
+                continue;
             }
+            budgetDTO.setBudgetName(
+                 relatedCategories.get(0).getCategoryName()
+            );
             budgetDTO.setAmount(budget.getAmount());
             budgetDTO.setLimitBudget(budget.getLimitBudget());
-            if (budgetDTOs.stream().noneMatch(b -> b.getBudgetName().equals(budgetDTO.getBudgetName()))) {
+            BudgetDTO existing = budgetDTOs.stream()
+                    .filter(b -> Objects.equals(b.getBudgetName(), budgetDTO.getBudgetName()))
+                    .findFirst()
+                    .orElse(null);
+            if (existing == null) {
                 budgetDTOs.add(budgetDTO);
-            }else{
-                for(BudgetDTO b : budgetDTOs){
-                    if(b.getBudgetName().equals(budgetDTO.getBudgetName())){
-                        b.setAmount(b.getAmount() + budgetDTO.getAmount());
-                    }
-                }
+            } else {
+                existing.setAmount(existing.getAmount() + budgetDTO.getAmount());
             }
         }
         return budgetDTOs;
+    }
+
+    public List<Budget> getAllBudgets(String token) {
+    UUID userId = userService.extractUserIdFromToken(token);
+        return budgetRepository.findByUserId(userId);
     }
 
     public void deleteBudget(UUID id) {
         budgetRepository.deleteById(id);
     }
 
-    @Scheduled(cron = "0 0 0 1 * *")
-    public void clearMonthBudget() {
-        budgetRepository.findAll().forEach(budget -> {
-            budget.setAmount(0.0);
-            budgetRepository.save(budget);
-        });
-    }
+//    @Scheduled(cron = "0 0 0 1 * *")
+//    public void clearMonthBudget() {
+//        budgetRepository.findAll().forEach(budget -> {
+//            budget.setAmount(0.0);
+//            budgetRepository.save(budget);
+//        });
+//    }
 
 }
