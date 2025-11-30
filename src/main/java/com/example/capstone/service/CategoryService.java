@@ -5,6 +5,8 @@ import com.example.capstone.entity.Budget;
 import com.example.capstone.entity.Category;
 import com.example.capstone.repository.BudgetRepository;
 import com.example.capstone.repository.CategoryRepository;
+import com.example.capstone.repository.TransactionRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +21,7 @@ public class CategoryService {
     private final BudgetService budgetService;
     private final BudgetRepository budgetRepository;
     private final UserService userService;
+    private final TransactionRepository transactionRepository;
 
     private final double defaultBudgets = 1000;
 
@@ -32,8 +35,8 @@ public class CategoryService {
         Budget budget = new Budget();
         Category category = new Category();
         budget.setUserId(userId);
-        budget.setCategoryId(category.getCategoryId());
-        budget.setAmount(defaultBudgets);
+        budget.setAmount(0.0);
+        budget.setLimitBudget(defaultBudgets);
         budgetService.createBudget(budget);
         category.setUserId(userId);
         category.setCategoryName(categoryDTO.getCategoryName());
@@ -51,12 +54,14 @@ public class CategoryService {
         return categoryRepository.save(category);
     }
 
+    @Transactional
     public void deleteCategory(String token,Integer categoryId) {
         UUID userId = userService.extractUserIdFromToken(token);
         Category category = categoryRepository.findByCategoryIdAndUserId(categoryId, userId)
                 .orElseThrow(() -> new RuntimeException("Category not found or not owned by this user"));
         Budget budget = budgetRepository.findById(category.getBudgetId()).orElseThrow(() -> new RuntimeException("Budget not found for this category"));
-        budgetRepository.delete(budget);
+        transactionRepository.deleteByCategory_CategoryId(categoryId);
         categoryRepository.delete(category);
+        budgetRepository.delete(budget);
     }
 }

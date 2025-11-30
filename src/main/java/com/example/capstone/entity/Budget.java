@@ -24,9 +24,6 @@ public class Budget {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(name = "category_id", nullable = false)
-    private Integer categoryId;
-
     @Column(name = "amount", nullable = false)
     private Double amount;
 

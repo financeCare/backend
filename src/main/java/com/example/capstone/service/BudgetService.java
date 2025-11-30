@@ -42,7 +42,9 @@ public class BudgetService {
         List<BudgetDTO> budgetDTOs = new ArrayList<>();
         for(Budget budget : budgets) {
             BudgetDTO budgetDTO = new BudgetDTO();
-            List<Category> category = categories.stream().filter(c -> c.getCategoryId().equals(budget.getCategoryId())).toList();
+            List<Category> category = categories.stream()
+                    .filter(c -> c.getBudgetId() != null && c.getBudgetId().equals(budget.getBudgetId()))
+                    .toList();
             if ((long) category.size() > 0) {
                 Category category1 = category.stream().findFirst().get();
                 budgetDTO.setBudgetName(category1.getCategoryName());
