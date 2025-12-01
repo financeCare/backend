@@ -23,6 +23,12 @@ public class DebtController {
         return ResponseEntity.ok(debt);
     }
 
+    @GetMapping("/{debtId}")
+    public ResponseEntity<Debt> getDebtDetail(@RequestHeader("Authorization") String authorizationHeader,@PathVariable int debtId){
+        String token = authorizationHeader.replace("Bearer ", "");
+        return ResponseEntity.ok(debtService.getDebtDetail(token,debtId));
+    }
+
     @GetMapping("/overview-graph")
     public ResponseEntity<?> getOwnDebtGraph(@RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.replace("Bearer ", "");

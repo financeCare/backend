@@ -25,6 +25,7 @@ public class CategoryController {
         String token = authorizationHeader.replace("Bearer ", "");
         return categoryService.getCategoryById(token,categoryId);
     }
+
     @PostMapping
     public Category createCategory(@RequestHeader("Authorization") String authorizationHeader,@RequestBody CategoryDTO category) {
         String token = authorizationHeader.replace("Bearer ", "");

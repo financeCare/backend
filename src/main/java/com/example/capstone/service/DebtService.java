@@ -35,6 +35,13 @@ public class DebtService {
         return debtRepository.findAllByUserId(userId);
     }
 
+    public Debt getDebtDetail(String token,int debtId){
+        UUID userId = userService.extractUserIdFromToken(token);
+        return debtRepository.findByDebtIdAndUserId(debtId,userId).orElseThrow( () ->
+               new BusinessException("Debt not found or not owned by this user", HttpStatus.NOT_FOUND)
+        );
+    }
+
     public OverviewGraphDTO getOverviewGraph(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
         List<Debt> debts = debtRepository.findAllByUserId(userId);
@@ -65,7 +72,7 @@ public class DebtService {
     public Debt addDebt(String token, DebtDTO debtDTO) {
         UUID userId = userService.extractUserIdFromToken(token);
         if (debtDTO.getInterestRate() > 100 || debtDTO.getInterestRate() < 0) {
-            throw new BusinessException("invalid interest rate number", HttpStatus.FORBIDDEN);
+            throw new BusinessException("invalid interest rate number", HttpStatus.BAD_REQUEST);
         }
         Debt debt = new Debt();
         debt.setUserId(userId);
@@ -89,13 +96,13 @@ public class DebtService {
                 .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", HttpStatus.NOT_FOUND));
 
         if (debtDTO.getInterestRate() > 100 || debtDTO.getInterestRate() < 0) {
-            throw new BusinessException("invalid interest rate number", HttpStatus.FORBIDDEN);
+            throw new BusinessException("invalid interest rate number", HttpStatus.BAD_REQUEST);
         }
 
         RepaymentType repaymentType = repaymentTypeRepository.findById(debtDTO.getRepaymentTypeId())
-                .orElseThrow(() -> new BusinessException("invalid repaymentType id", HttpStatus.FORBIDDEN));
+                .orElseThrow(() -> new BusinessException("invalid repaymentType id", HttpStatus.BAD_REQUEST));
         DebtType debtType = debtTypeRepository.findById(debtDTO.getDebtTypeId())
-                .orElseThrow(() -> new BusinessException("invalid debtType id", HttpStatus.FORBIDDEN));
+                .orElseThrow(() -> new BusinessException("invalid debtType id", HttpStatus.BAD_REQUEST));
 
         existingDebt.setPrincipalAmount(debtDTO.getPrincipalAmount());
         existingDebt.setInterestRate(debtDTO.getInterestRate());
