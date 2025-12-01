@@ -89,7 +89,6 @@ public class UserService implements UserDetailsService {
             throw new EmailAlreadyExistsException("Email already exists: " + request.getEmail());
         }
         String encodedPassword = passwordEncoder.encode(request.getPassword());
-        sendOtp(request.getEmail());
         userRepository.save(
                 new User(
                         request.getUsername(),
@@ -261,24 +260,17 @@ public class UserService implements UserDetailsService {
 
     public boolean verifyOtp(String email, String otp) {
         String key = "otp:" + email;
-
         String storedOtp = redisTemplate.opsForValue().get(key);
-
-        if (storedOtp == null) {
+        if (storedOtp == null || !storedOtp.equals(otp)) {
             return false;
         }
-
-        if (!storedOtp.equals(otp)) {
-            return false;
-        }
-
-        redisTemplate.delete(key);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new UsernameNotFoundException("User with email " + email + " not found")
+                            new BusinessException("User with email " + email + " not found",HttpStatus.NOT_FOUND)
                 );
         user.setEmailConfirm(true);
         userRepository.save(user);
+        redisTemplate.delete(key);
         return true;
     }
 
