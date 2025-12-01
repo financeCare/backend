@@ -113,7 +113,6 @@ public class DebtService {
         existingDebt.setPriority(debtDTO.getPriority());
         existingDebt.setDebtType(debtType);
         existingDebt.setDebtName(debtDTO.getDebtName());
-
         return debtRepository.save(existingDebt);
     }
 

@@ -138,26 +138,18 @@ public class UserService implements UserDetailsService {
                     GoogleNetHttpTransport.newTrustedTransport(),
                     JSON_FACTORY
             ).build();
-
             GoogleIdToken idToken = verifier.verify(idTokenString.getIdToken());
             if (idToken == null) {
                 throw new BusinessException("Invalid ID token", HttpStatus.UNAUTHORIZED);
             }
-
             GoogleIdToken.Payload payload = idToken.getPayload();
             String email = payload.getEmail();
             String fullName = (String) payload.get("name");
-
-            // Find user
             Optional<User> userOpt = userRepository.findByEmail(email);
-
-            // Generate new tokens
             String accessToken = jwtUtil.generateAccessToken(email);
             String refreshToken = jwtUtil.generateRefreshToken(email);
-
             User user;
             if (userOpt.isEmpty()) {
-                // New user
                 user = new User(
                         fullName,
                         null,
