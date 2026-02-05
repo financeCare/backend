@@ -29,13 +29,14 @@ public class DebtService {
     private final UserService userService;
     private final BudgetService budgetService;
     private final CategoryRepository categoryRepository;
+    private final NotificationService notificationService;
 
     public List<Debt> getOwnDebt(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
         return debtRepository.findAllByUserId(userId);
     }
 
-    public Debt getDebtDetail(String token,int debtId){
+    public Debt getDebtDetail(String token,UUID debtId){
         UUID userId = userService.extractUserIdFromToken(token);
         return debtRepository.findByDebtIdAndUserId(debtId,userId).orElseThrow( () ->
                new BusinessException("Debt not found or not owned by this user", HttpStatus.NOT_FOUND)
@@ -69,6 +70,7 @@ public class DebtService {
         return new OverviewGraphDTO(income, debtGraphDTOs, expense);
     }
 
+    //TODO : fix bug from new field in entity Debt
     public Debt addDebt(String token, DebtDTO debtDTO) {
         UUID userId = userService.extractUserIdFromToken(token);
         if (debtDTO.getInterestRate() > 100 || debtDTO.getInterestRate() < 0) {
@@ -82,15 +84,19 @@ public class DebtService {
                 .orElseThrow(() -> new BusinessException("invalid repayment type id", HttpStatus.BAD_REQUEST)));
         debt.setStartDate(debtDTO.getStartDate());
         debt.setEndDate(debtDTO.getEndDate());
-            debt.setActive(debtDTO.getIsActive());
+        debt.setActive(debtDTO.isActive());
         debt.setPriority(debtDTO.getPriority());
         debt.setDebtType(debtTypeRepository.findById(debtDTO.getDebtTypeId())
                 .orElseThrow(() -> new BusinessException("invalid debt type id", HttpStatus.BAD_REQUEST)));
         debt.setDebtName(debtDTO.getDebtName());
-        return debtRepository.save(debt);
+        debt.setMinPayment(debtDTO.getMinPayment());
+        debt.setDueDay(debtDTO.getDueDay());
+        debtRepository.save(debt);
+        notificationService.createNotificationRuleForDebt(userId, debt.getDebtName(), debt.getMinPayment(),debt.getDebtId());
+        return debt;
     }
 
-    public Debt updateDebt(String token, Integer debtId, DebtDTO debtDTO) {
+    public Debt updateDebt(String token, UUID debtId, DebtDTO debtDTO) {
         UUID userId = userService.extractUserIdFromToken(token);
         Debt existingDebt = debtRepository.findByDebtIdAndUserId(debtId,userId)
                 .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", HttpStatus.NOT_FOUND));
@@ -109,14 +115,16 @@ public class DebtService {
         existingDebt.setRepaymentType(repaymentType);
         existingDebt.setStartDate(debtDTO.getStartDate());
         existingDebt.setEndDate(debtDTO.getEndDate());
-        existingDebt.setActive(debtDTO.getIsActive());
+        existingDebt.setActive(debtDTO.isActive());
         existingDebt.setPriority(debtDTO.getPriority());
         existingDebt.setDebtType(debtType);
         existingDebt.setDebtName(debtDTO.getDebtName());
+        existingDebt.setMinPayment(debtDTO.getMinPayment());
+        existingDebt.setDueDay(debtDTO.getDueDay());
         return debtRepository.save(existingDebt);
     }
 
-    public Debt deleteDebt(String token, Integer debtId) {
+    public Debt deleteDebt(String token, UUID debtId) {
         UUID userId = userService.extractUserIdFromToken(token);
          Debt debt = debtRepository.findByDebtIdAndUserId(debtId, userId)
                 .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", HttpStatus.NOT_FOUND));

@@ -11,9 +11,13 @@ import com.example.capstone.repository.BudgetRepository;
 import com.example.capstone.repository.CategoryRepository;
 import com.example.capstone.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,6 +52,31 @@ public class TransactionService {
         return transactions.stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+
+    public List<Transaction> filterTransactionByIncome(String token){
+        UUID userId = userService.extractUserIdFromToken(token);
+        List<Category> incomeCategories = categoryRepository.findByUserIdAndType(userId, "Income");
+        List<Transaction> allTransaction = transactionRepository.findAllByUserId(userId);
+        List<Transaction> incomeTransactions = new ArrayList<>();
+        for (Transaction t : allTransaction) {
+            for (Category c : incomeCategories) {
+                if (t.getCategory().getCategoryId().equals(c.getCategoryId())) {
+                    incomeTransactions.add(t);
+                }
+            }
+        }
+        return incomeTransactions;
+    }
+
+    public Page<Transaction> getTransactionByCategory(
+            String token,
+            Integer categoryId,
+            Pageable pageable
+    ) {
+        UUID userId = userService.extractUserIdFromToken(token);
+        return transactionRepository.findByUserIdAndCategoryCategoryId(userId, categoryId, pageable);
     }
 
     public Transaction createTransaction(String token, TransactionRequest transactionRequest) {
@@ -111,7 +140,7 @@ public class TransactionService {
                 .findByUserIdAndBudgetId(userId, category.getBudgetId())
                 .orElseThrow(() -> new BusinessException("Budget not found or not owned by this user",
                         HttpStatus.NOT_FOUND));
-        double newAmount = budget.getAmount() + existingTransaction.getAmount();
+        double newAmount = budget.getAmount() - existingTransaction.getAmount();
         budget.setAmount(newAmount);
         budgetRepository.save(budget);
         transactionRepository.delete(existingTransaction);

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/debts")
@@ -24,9 +25,9 @@ public class DebtController {
     }
 
     @GetMapping("/{debtId}")
-    public ResponseEntity<Debt> getDebtDetail(@RequestHeader("Authorization") String authorizationHeader,@PathVariable int debtId){
+    public ResponseEntity<Debt> getDebtDetail(@RequestHeader("Authorization") String authorizationHeader,@PathVariable String debtId){
         String token = authorizationHeader.replace("Bearer ", "");
-        return ResponseEntity.ok(debtService.getDebtDetail(token,debtId));
+        return ResponseEntity.ok(debtService.getDebtDetail(token, UUID.fromString(debtId)));
     }
 
     @GetMapping("/overview-graph")
@@ -44,16 +45,16 @@ public class DebtController {
     }
 
     @PutMapping("/{debtId}")
-    public ResponseEntity<Debt> updateDebt(@RequestHeader("Authorization") String authorizationHeader ,@PathVariable Integer debtId, @RequestBody DebtDTO debtDTO) {
+    public ResponseEntity<Debt> updateDebt(@RequestHeader("Authorization") String authorizationHeader ,@PathVariable String debtId, @RequestBody DebtDTO debtDTO) {
         String token = authorizationHeader.replace("Bearer ", "");
-        Debt updated = debtService.updateDebt(token,debtId, debtDTO);
+        Debt updated = debtService.updateDebt(token,UUID.fromString(debtId), debtDTO);
         return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{debtId}")
-    public ResponseEntity<Debt> deleteDebt(@RequestHeader("Authorization") String authorizationHeader ,@PathVariable Integer debtId) {
+    public ResponseEntity<Debt> deleteDebt(@RequestHeader("Authorization") String authorizationHeader ,@PathVariable String debtId) {
         String token = authorizationHeader.replace("Bearer ", "");
-        Debt debt = debtService.deleteDebt(token,debtId);
+        Debt debt = debtService.deleteDebt(token,UUID.fromString(debtId));
         return ResponseEntity.ok(debt);
     }
 }

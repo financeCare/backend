@@ -103,6 +103,7 @@ public class UserService implements UserDetailsService {
     }
 
     public LoginResponse loginWithLine(IdTokenRequest idTokenRequest) {
+        System.out.println("start line login function");
         Map<String, Object> userDetail = getLineUserInfo(idTokenRequest.getIdToken());
         String email = userDetail.get("email").toString();
         String name = userDetail.get("name").toString();
@@ -128,11 +129,13 @@ public class UserService implements UserDetailsService {
             User newUser = userRepository.findByEmail(email).get();
             createDefaultCategoriesForUser(newUser.getUserId());
         }
+        System.out.println("end line login function");
         return new LoginResponse(accessToken, refreshToken);
     }
 
     public LoginResponse loginWithGoogle(IdTokenRequest idTokenString) {
         try {
+            System.out.println("start google login function");
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
                     GoogleNetHttpTransport.newTrustedTransport(),
                     JSON_FACTORY
@@ -166,6 +169,7 @@ public class UserService implements UserDetailsService {
                 User newUser = userRepository.findByEmail(email).get();
                 createDefaultCategoriesForUser(newUser.getUserId());
             }
+            System.out.println("end google login function");
             return new LoginResponse(accessToken, refreshToken);
         } catch (Exception e) {
             throw new BusinessException("Google login failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -273,6 +277,5 @@ public class UserService implements UserDetailsService {
         redisTemplate.delete(key);
         return true;
     }
-
 
 }

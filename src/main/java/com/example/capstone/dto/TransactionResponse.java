@@ -3,6 +3,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.UUID;
 
@@ -12,7 +13,7 @@ import java.util.UUID;
 public class TransactionResponse {
     private UUID transactionId;
     private Double amount;
-    private Date transactionDate;
+    private LocalDateTime transactionDate;
     private String description;
     private CategoryDTO categoryDTO;
 }

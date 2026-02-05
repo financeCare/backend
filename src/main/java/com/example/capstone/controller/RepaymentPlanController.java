@@ -1,0 +1,45 @@
+package com.example.capstone.controller;
+
+import com.example.capstone.dto.RepaymentPlanDTO;
+import com.example.capstone.dto.RepaymentStrategyDTO;
+import com.example.capstone.service.RepaymentPlanService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/repayment-plans")
+@RequiredArgsConstructor
+public class RepaymentPlanController {
+
+    private final RepaymentPlanService repaymentPlanService;
+
+@PostMapping("/strategies")
+    public ResponseEntity<?> createRepaymentStrategy(@RequestBody RepaymentStrategyDTO repaymentStrategyDTO) {
+        return ResponseEntity.ok(repaymentPlanService.createRepaymentStrategy(repaymentStrategyDTO));
+    }
+
+    @GetMapping("/strategies")
+    public ResponseEntity<?> getAllRepaymentStrategies() {
+        return ResponseEntity.ok(repaymentPlanService.getAllRepaymentStrategies());
+    }
+
+    @DeleteMapping("/strategies/{id}")
+    public ResponseEntity<?> deleteRepaymentStrategy(@PathVariable("id")  String strategyId) {
+        return ResponseEntity.ok(repaymentPlanService.deleteRepaymentStrategy(UUID.fromString(strategyId)));
+    }
+
+    @PostMapping()
+    public ResponseEntity<?> createRepaymentPlan(@RequestHeader("Authorization") String authorizationHeader, @RequestBody RepaymentPlanDTO repaymentPlanDTO){
+        String token = authorizationHeader.replace("Bearer ", "");
+        return ResponseEntity.ok(repaymentPlanService.changeRepaymentPlan(token, repaymentPlanDTO.getMonthlyBudget(),repaymentPlanDTO.getStrategyId()));
+    }
+
+    @GetMapping("/simulate")
+    public ResponseEntity<?> simulateRepaymentPlan(@RequestHeader("Authorization") String authorizationHeader){
+        String token = authorizationHeader.replace("Bearer ", "");
+        return ResponseEntity.ok(repaymentPlanService.simulate(token));
+    }
+}

@@ -23,7 +23,7 @@ public class BudgetService {
     private final BudgetRepository budgetRepository;
     private final UserService userService;
     private final CategoryRepository categoryRepository;
-
+    private final NotificationService notificationService;
     public void createBudget(Budget budget) {
         budgetRepository.save(budget);
     }
@@ -32,6 +32,8 @@ public class BudgetService {
         UUID userId = userService.extractUserIdFromToken(token);
         Budget existingBudget = budgetRepository.findByUserIdAndBudgetId(userId,id).orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
         existingBudget.setAmount(amount);
+        String categoryName = categoryRepository.findByBudgetIdAndUserId(id,userId).orElseThrow(() -> new BusinessException("Category not found for this budget", HttpStatus.NOT_FOUND)).getCategoryName();
+        notificationService.createNotificationRuleForBudget(userId,categoryName,existingBudget.getLimitBudget(),existingBudget.getAmount());
         return budgetRepository.save(existingBudget);
     }
 

@@ -3,6 +3,7 @@ package com.example.capstone.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.UUID;
 
@@ -30,8 +31,9 @@ public class Transaction {
     @Column(nullable = false)
     private Double amount;
 
+
     @Column(name = "transaction_date", nullable = false)
-    private Date transactionDate;
+    private LocalDateTime transactionDate;
 
     @Column(length = 128)
     private String description;

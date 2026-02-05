@@ -21,7 +21,7 @@ public class RepaymentHistory {
     @Column(name = "paid_date")
     private Date paidDate;
     @Column(name = "debt_id")
-    private int debtId;
+    private UUID debtId;
     @Column(name = "user_id")
     private UUID userId;
     @Column(name = "amount_paid")

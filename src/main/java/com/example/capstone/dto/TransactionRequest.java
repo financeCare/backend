@@ -1,6 +1,7 @@
 package com.example.capstone.dto;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.UUID;
 
@@ -19,7 +20,7 @@ public class TransactionRequest {
 
     @NotNull(message = "Transaction date is required")
     @PastOrPresent(message = "Transaction date cannot be in the future")
-    private Date transactionDate;
+    private LocalDateTime transactionDate;
 
     @Size(max = 128, message = "Description cannot exceed 128 characters")
     private String description;

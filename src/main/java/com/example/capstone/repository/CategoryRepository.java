@@ -10,4 +10,6 @@ import java.util.UUID;
 public interface CategoryRepository extends JpaRepository<Category, Integer> {
     List<Category> findByUserId(UUID userId);
     Optional<Category> findByCategoryIdAndUserId(Integer categoryId, UUID userId);
+    List<Category> findByUserIdAndType(UUID userId, String type);
+    Optional<Category> findByBudgetIdAndUserId(UUID budgetId,UUID userId);
 }
