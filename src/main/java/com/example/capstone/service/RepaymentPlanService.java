@@ -168,11 +168,8 @@ public class RepaymentPlanService {
         if (plan == null) {
             throw new BusinessException("Repayment plan not found for user", HttpStatus.NOT_FOUND);
         }
-        List<Debt> debts = debtRepository.findByIsActiveAndUserId(true,userId)
-                .stream()
-                .map(this::copyDebtForSimulation)
-                .collect(Collectors.toCollection(ArrayList::new));
-
+        List<Debt> debts = debtRepository.findByIsActiveAndUserId(true,userId);
+        System.out.println(debts);
         if (debts.isEmpty()) {
             return new PlanResultDTO(0, 0.0, 0.0, List.of());
         }
