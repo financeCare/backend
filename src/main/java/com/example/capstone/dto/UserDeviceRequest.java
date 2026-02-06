@@ -9,5 +9,5 @@ public class UserDeviceRequest {
     private String deviceKey;
     private String fcmToken;
     private String platform;
-    private UUID deviceName;
+    private String deviceName;
 }

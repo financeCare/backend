@@ -187,6 +187,7 @@ public class NotificationService {
     }
     @Scheduled(cron = "0 * * * * *") // ทุก 1 นาที
     public void runNotificationScheduler() {
+        System.out.println("⏰ Scheduler running at " + LocalDateTime.now());
         List<NotificationRule> rules =
                 notificationRuleRepository.findAllByIsActive(true);
         for (NotificationRule rule : rules) {
