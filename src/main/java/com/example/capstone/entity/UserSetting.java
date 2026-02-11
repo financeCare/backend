@@ -34,7 +34,7 @@ public class UserSetting {
     // Defaults for notification rules
     @Builder.Default
     @Column(name = "default_remind_days_before", nullable = false)
-    private int defaultRemindDaysBefore = 3;
+    private int defaultRemindDaysBefore = 0;
 
     @Builder.Default
     @Column(name = "default_notify_time", nullable = false)

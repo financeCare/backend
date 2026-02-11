@@ -31,7 +31,6 @@ public class Transaction {
     @Column(nullable = false)
     private Double amount;
 
-
     @Column(name = "transaction_date", nullable = false)
     private LocalDateTime transactionDate;
 

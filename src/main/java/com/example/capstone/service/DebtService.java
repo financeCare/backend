@@ -1,8 +1,6 @@
 package com.example.capstone.service;
 
-import com.example.capstone.dto.BudgetDTO;
-import com.example.capstone.dto.DebtDTO;
-import com.example.capstone.dto.DebtGraphDTO;
+import com.example.capstone.dto.*;
 import com.example.capstone.entity.Category;
 import com.example.capstone.entity.Debt;
 import com.example.capstone.entity.DebtType;
@@ -47,8 +45,8 @@ public class DebtService {
         UUID userId = userService.extractUserIdFromToken(token);
         List<Debt> debts = debtRepository.findAllByUserId(userId);
         List<Category> categories = categoryRepository.findByUserId(userId);
-        List<BudgetDTO> budgetDTOs = budgetService.getAmountFromBudget(token);
-        List<BudgetDTO> expense = budgetDTOs
+        List<BudgetOverviewDto> budgetDTOs = budgetService.getAmountFromBudget(token);
+        List<BudgetOverviewDto> expense = budgetDTOs
                 .stream()
                 .filter(b -> categories
                         .stream()
@@ -61,7 +59,7 @@ public class DebtService {
                         .stream()
                         .anyMatch(c -> c.getType().equals("Income"))
                 )
-                .mapToDouble(BudgetDTO::getAmount)
+                .mapToDouble(BudgetOverviewDto::getAmount)
                 .sum();
         List<DebtGraphDTO> debtGraphDTOs = new ArrayList<>();
         for (Debt debt : debts) {
@@ -84,7 +82,7 @@ public class DebtService {
                 .orElseThrow(() -> new BusinessException("invalid repayment type id", HttpStatus.BAD_REQUEST)));
         debt.setStartDate(debtDTO.getStartDate());
         debt.setEndDate(debtDTO.getEndDate());
-        debt.setActive(debtDTO.isActive());
+        debt.setActive(true);
         debt.setPriority(debtDTO.getPriority());
         debt.setDebtType(debtTypeRepository.findById(debtDTO.getDebtTypeId())
                 .orElseThrow(() -> new BusinessException("invalid debt type id", HttpStatus.BAD_REQUEST)));

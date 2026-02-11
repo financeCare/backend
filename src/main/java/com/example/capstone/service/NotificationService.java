@@ -60,26 +60,58 @@ public class NotificationService {
         return dueDate.minusDays(remindDaysBefore);
     }
 
-    public UserDeviceResponse registerDevice  (String token,UserDeviceRequest userDeviceRequest) {
+    @Transactional
+    public UserDeviceResponse registerDevice(String token, UserDeviceRequest req) {
         UUID userId = userService.extractUserIdFromToken(token);
-        LocalDateTime currentTime = LocalDateTime.now();
-        UserDevice existingDevice = userDeviceRepository.findByDeviceKeyAndUserId(userDeviceRequest.getDeviceKey(), userId);
-        if (existingDevice != null) {
-            existingDevice.setLastSeen(currentTime);
-            existingDevice.setFcmToken(userDeviceRequest.getFcmToken());
-            userDeviceRepository.save(existingDevice);
-            return new UserDeviceResponse(existingDevice.getDeviceId(),existingDevice.isActive(),currentTime);
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1) กันชนด้วย unique key (fcm_token)
+        if (req.getFcmToken() != null && !req.getFcmToken().isBlank()) {
+            Optional<UserDevice> byTokenOpt = userDeviceRepository.findByFcmToken(req.getFcmToken());
+            if (byTokenOpt.isPresent()) {
+                UserDevice d = byTokenOpt.get();
+
+                // update ให้เป็นข้อมูลล่าสุด (อาจเป็นคนละ user/deviceKey ก็ได้)
+                d.setUserId(userId);
+                d.setDeviceKey(req.getDeviceKey());
+                d.setPlatform(req.getPlatform());
+                d.setDeviceName(req.getDeviceName());
+                d.setLastSeen(now);
+                d.setActive(true);
+
+                userDeviceRepository.save(d);
+                return new UserDeviceResponse(d.getDeviceId(), d.isActive(), now);
+            }
         }
-        UserDevice userDevice = new UserDevice();
-        userDevice.setUserId(userId);
-        userDevice.setFcmToken(userDeviceRequest.getFcmToken());
-        userDevice.setPlatform(userDeviceRequest.getPlatform());
-        userDevice.setDeviceName(userDevice.getDeviceName());
-        userDevice.setLastSeen(currentTime);
-        userDevice.setDeviceKey(userDeviceRequest.getDeviceKey());
-        userDevice.setActive(true);
-        userDeviceRepository.save(userDevice);
-        return new UserDeviceResponse(userDevice.getDeviceId(),userDevice.isActive(),currentTime);
+
+        // 2) ถ้า token ยังไม่เคยมี → หา device เดิมด้วย deviceKey+userId
+        Optional<UserDevice> byKeyUserOpt =
+                userDeviceRepository.findByDeviceKeyAndUserId(req.getDeviceKey(), userId);
+
+        if (byKeyUserOpt.isPresent()) {
+            UserDevice d = byKeyUserOpt.get();
+            d.setFcmToken(req.getFcmToken()); // token ใหม่ (ถ้ามี)
+            d.setPlatform(req.getPlatform());
+            d.setDeviceName(req.getDeviceName());
+            d.setLastSeen(now);
+            d.setActive(true);
+
+            userDeviceRepository.save(d);
+            return new UserDeviceResponse(d.getDeviceId(), d.isActive(), now);
+        }
+
+        // 3) ไม่เจอทั้งคู่ → create ใหม่
+        UserDevice d = new UserDevice();
+        d.setUserId(userId);
+        d.setFcmToken(req.getFcmToken());
+        d.setPlatform(req.getPlatform());
+        d.setDeviceName(req.getDeviceName()); // ✅ แก้บั๊ก
+        d.setLastSeen(now);
+        d.setDeviceKey(req.getDeviceKey());
+        d.setActive(true);
+
+        userDeviceRepository.save(d);
+        return new UserDeviceResponse(d.getDeviceId(), d.isActive(), now);
     }
 
     public List<DeviceListDto> getMyDevices(String token) {
@@ -108,13 +140,14 @@ public class NotificationService {
 
     //TODO: create notification rule for debt implementation with de
     public void createNotificationRuleForDebt(UUID userId,String debtName,Double minPayment,UUID debtId) {
+        System.out.println("min payment in create notifications function " + minPayment);
         UserSetting userSetting = userSettingRepository.findById(userId).orElseThrow(() -> new BusinessException("User id is not found", HttpStatus.NOT_FOUND));
         NotificationRule notificationRule = new NotificationRule();
         notificationRule.setUserId(userId);
         notificationRule.setRefId(debtId.toString());
         notificationRule.setRefType(RefType.DEBT);
         notificationRule.setTitle("เตือนหนี้ครบกำหนด");
-        notificationRule.setBodyTemplate("หนี้ "+ debtName + " จำนวน " + minPayment+  " บาทครบกำหนดวันนี้");
+        notificationRule.setBodyTemplate("หนี้ "+ debtName + " จำนวนขั้นต่ำ " + minPayment+  " บาทครบกำหนดวันนี้");
         notificationRule.setRemindDaysBefore(userSetting.getDefaultRemindDaysBefore());
         notificationRule.setTimeOfDay(userSetting.getDefaultNotifyTime());
         notificationRule.setTimezone(userSetting.getTimezone());
@@ -248,8 +281,8 @@ public class NotificationService {
         if (!today.equals(notifyDate)) return false;
 
         // เวลาถึงเวลาแจ้งหรือยัง
-        LocalTime notifyTime = (timeOfDay != null) ? timeOfDay : LocalTime.of(9, 0);
-        return !nowTime.isBefore(notifyTime); // now >= notifyTime
+        LocalTime notifyTime = timeOfDay != null ? timeOfDay : LocalTime.of(9, 0);
+        return !nowTime.isBefore(notifyTime) && nowTime.isBefore(notifyTime.plusMinutes(1));
     }
 
     @Transactional
@@ -261,10 +294,11 @@ public class NotificationService {
         LocalDateTime start = today.atStartOfDay();
         LocalDateTime end = today.plusDays(1).atStartOfDay().minusNanos(1);
 
-        boolean alreadySentToday = notificationLogRepository
-                .existsByRuleIdAndStatusAndSentAtBetween(ruleId, NotificationStatus.SENT, start, end);
+        LocalDateTime now = LocalDateTime.now();
+        boolean alreadySent = notificationLogRepository
+                .existsByRuleIdAndStatusAndSentAtAfter(ruleId, NotificationStatus.SENT, now.minusHours(24));
 
-        if (alreadySentToday) {
+        if (alreadySent) {
             return;
         }
 

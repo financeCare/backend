@@ -1,6 +1,6 @@
 package com.example.capstone.service;
 
-import com.example.capstone.dto.BudgetDTO;
+import com.example.capstone.dto.BudgetOverviewDto;
 import com.example.capstone.entity.Budget;
 import com.example.capstone.entity.Category;
 import com.example.capstone.exception.BusinessException;
@@ -8,12 +8,10 @@ import com.example.capstone.repository.BudgetRepository;
 import com.example.capstone.repository.CategoryRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -28,7 +26,7 @@ public class BudgetService {
         budgetRepository.save(budget);
     }
 
-    public Budget updateBudget(String token,UUID id, double amount) {
+    public Budget updateLimitAmountBudget(String token, UUID id, double amount) {
         UUID userId = userService.extractUserIdFromToken(token);
         Budget existingBudget = budgetRepository.findByUserIdAndBudgetId(userId,id).orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
         existingBudget.setAmount(amount);
@@ -37,38 +35,30 @@ public class BudgetService {
         return budgetRepository.save(existingBudget);
     }
 
-    public List<BudgetDTO> getAmountFromBudget(String token) {
+    public List<BudgetOverviewDto> getAmountFromBudget(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
-        System.out.println(userId);
         List<Budget> budgets = budgetRepository.findByUserId(userId);
-        List<Category> categories = categoryRepository.findByUserId(userId);
-        List<BudgetDTO> budgetDTOs = new ArrayList<>();
+        List<BudgetOverviewDto> result = new ArrayList<>();
         for (Budget budget : budgets) {
-            BudgetDTO budgetDTO = new BudgetDTO();
-            List<Category> relatedCategories = categories.stream()
-                    .filter(c -> c.getBudgetId() != null
-                            && c.getBudgetId().equals(budget.getBudgetId())
-                            && !Objects.equals(c.getType(), "Income"))
-                    .toList();
-            if(relatedCategories.isEmpty()){
+            List<Category> relatedCategories =
+                    categoryRepository.findByUserIdAndBudgetIdAndTypeNot(
+                            userId,
+                            budget.getBudgetId(),
+                            "Income"
+                    );
+            if (relatedCategories.isEmpty()) {
                 continue;
             }
-            budgetDTO.setBudgetName(
-                 relatedCategories.get(0).getCategoryName()
-            );
-            budgetDTO.setAmount(budget.getAmount());
-            budgetDTO.setLimitBudget(budget.getLimitBudget());
-            BudgetDTO existing = budgetDTOs.stream()
-                    .filter(b -> Objects.equals(b.getBudgetName(), budgetDTO.getBudgetName()))
-                    .findFirst()
-                    .orElse(null);
-            if (existing == null) {
-                budgetDTOs.add(budgetDTO);
-            } else {
-                existing.setAmount(existing.getAmount() + budgetDTO.getAmount());
-            }
+            Category category = relatedCategories.getFirst();
+            BudgetOverviewDto dto = new BudgetOverviewDto();
+            dto.setBudgetId(budget.getBudgetId().toString());
+            dto.setAmount(budget.getAmount());
+            dto.setLimit(budget.getLimitBudget());
+            dto.setCategoryId(category.getCategoryId());
+            dto.setCategoryName(category.getCategoryName());
+            result.add(dto);
         }
-        return budgetDTOs;
+        return result;
     }
 
     public List<Budget> getAllBudgets(String token) {

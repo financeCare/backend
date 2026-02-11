@@ -22,4 +22,10 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
             LocalDateTime start,
             LocalDateTime end
     );
+
+    boolean existsByRuleIdAndStatusAndSentAtAfter(
+            UUID ruleId,
+            NotificationStatus status,
+            LocalDateTime after
+    );
 }

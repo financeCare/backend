@@ -13,7 +13,7 @@ public interface UserDeviceRepository extends JpaRepository<UserDevice, UUID> {
     List<UserDevice> findAllByUserIdAndIsActiveTrue(UUID userId);
     long deleteByFcmToken(String fcmToken);
     boolean existsByFcmToken(String fcmToken);
-    UserDevice findByDeviceKeyAndUserId(String deviceKey, UUID userId);
+    Optional<UserDevice> findByDeviceKeyAndUserId(String deviceKey, UUID userId);
 
 }
 

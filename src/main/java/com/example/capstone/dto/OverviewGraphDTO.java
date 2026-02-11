@@ -1,7 +1,5 @@
-package com.example.capstone.service;
+package com.example.capstone.dto;
 
-import com.example.capstone.dto.BudgetDTO;
-import com.example.capstone.dto.DebtGraphDTO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -13,6 +11,6 @@ import java.util.List;
 public class OverviewGraphDTO {
     private double income;
     private List<DebtGraphDTO> debtGraphDTO;
-    private List<BudgetDTO> budgetDTO;
+    private List<BudgetOverviewDto> budgetDTO;
 
 }

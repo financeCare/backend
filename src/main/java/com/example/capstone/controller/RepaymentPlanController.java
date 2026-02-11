@@ -3,6 +3,7 @@ package com.example.capstone.controller;
 import com.example.capstone.dto.RepaymentPlanDTO;
 import com.example.capstone.dto.RepaymentStrategyDTO;
 import com.example.capstone.service.RepaymentPlanService;
+import com.example.capstone.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,7 @@ import java.util.UUID;
 public class RepaymentPlanController {
 
     private final RepaymentPlanService repaymentPlanService;
+    private final UserService userService;
 
 @PostMapping("/strategies")
     public ResponseEntity<?> createRepaymentStrategy(@RequestBody RepaymentStrategyDTO repaymentStrategyDTO) {
@@ -34,7 +36,7 @@ public class RepaymentPlanController {
     @PostMapping()
     public ResponseEntity<?> createRepaymentPlan(@RequestHeader("Authorization") String authorizationHeader, @RequestBody RepaymentPlanDTO repaymentPlanDTO){
         String token = authorizationHeader.replace("Bearer ", "");
-        return ResponseEntity.ok(repaymentPlanService.changeRepaymentPlan(token, repaymentPlanDTO.getMonthlyBudget(),repaymentPlanDTO.getStrategyId()));
+        return ResponseEntity.ok(repaymentPlanService.changeRepaymentPlan(userService.extractUserIdFromToken(token), repaymentPlanDTO.getMonthlyBudget(),repaymentPlanDTO.getStrategyId()));
     }
 
     @GetMapping("/simulate")

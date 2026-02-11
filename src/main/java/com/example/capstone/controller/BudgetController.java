@@ -1,6 +1,6 @@
 package com.example.capstone.controller;
 
-import com.example.capstone.dto.BudgetDTO;
+import com.example.capstone.dto.BudgetOverviewDto;
 import com.example.capstone.entity.Budget;
 import com.example.capstone.service.BudgetService;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +18,11 @@ public class BudgetController {
     @PutMapping("/{budgetId}/amount/{amount}")
     public Budget updateBudget(@RequestHeader("Authorization") String authorizationHeader,@PathVariable String budgetId,@PathVariable String amount){
         String token = authorizationHeader.replace("Bearer ", "");
-        return budgetService.updateBudget(token,UUID.fromString(budgetId),Double.parseDouble(amount));
+        return budgetService.updateLimitAmountBudget(token,UUID.fromString(budgetId),Double.parseDouble(amount));
     }
 
     @GetMapping("/overview")
-    public List<BudgetDTO> getAmountFromBudget(@RequestHeader("Authorization") String authorizationHeader){
+    public List<BudgetOverviewDto> getAmountFromBudget(@RequestHeader("Authorization") String authorizationHeader){
         String token = authorizationHeader.replace("Bearer ", "");
         return budgetService.getAmountFromBudget(token);
     }

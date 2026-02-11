@@ -10,16 +10,20 @@ import com.example.capstone.exception.BusinessException;
 import com.example.capstone.repository.BudgetRepository;
 import com.example.capstone.repository.CategoryRepository;
 import com.example.capstone.repository.TransactionRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import static com.example.capstone.config.GlobalVariables.*;
 
 @Service
 @RequiredArgsConstructor
@@ -145,4 +149,56 @@ public class TransactionService {
         budgetRepository.save(budget);
         transactionRepository.delete(existingTransaction);
     }
+
+    public boolean checkThisMonth(String token,Transaction transaction) {
+        UUID userId = userService.extractUserIdFromToken(token);
+        List<Transaction> transactions = transactionRepository.findByUserId(userId);
+        java.time.LocalDate currentDate = java.time.LocalDate.now();
+            java.time.LocalDate transactionDate = transaction.getTransactionDate().toLocalDate();
+            if (transactionDate.getMonth() == currentDate.getMonth() &&
+                    transactionDate.getYear() == currentDate.getYear()) {
+                return true;
+            }
+        return false;
+    }
+
+    @Transactional
+    public void addExtraIncome(String token, double amount) {
+        UUID userId = userService.extractUserIdFromToken(token);
+        List<Category> categories = categoryRepository.findByUserId(userId);
+        for (Category category : categories) {
+            if (category.getCategoryName().equals(CATEGORY_EXTRA_INCOME)) {
+                Budget extraIncomeBudget = budgetRepository
+                        .findByUserIdAndBudgetId(userId, category.getBudgetId())
+                        .orElseThrow(() -> new BusinessException("Budget not found or not owned by this user", HttpStatus.NOT_FOUND));
+                double newAmount = extraIncomeBudget.getAmount() + amount;
+                extraIncomeBudget.setAmount(newAmount);
+                budgetRepository.save(extraIncomeBudget);
+            }
+        }
+        Transaction transaction = new Transaction();
+        transaction.setUserId(userId);
+        transaction.setAmount(amount);
+        transaction.setTransactionDate(java.time.LocalDateTime.now());
+        transaction.setDescription("Extra Income");
+        Category incomeCategory = categoryRepository.findByUserIdAndType(userId, "Income").get(0);
+        transaction.setCategory(incomeCategory);
+        transactionRepository.save(transaction);
+    }
+
+    @Scheduled(cron = "0 0 0 1 * *")
+    public void clearBudgetForExtraIncome() {
+        List<Category> categories = categoryRepository.findAll();
+        for (Category category : categories) {
+            if (!category.getCategoryName().equals(CATEGORY_SALARY) && !category.getCategoryName().equals(CATEGORY_SAVING)) {
+                List<Budget> budgets = budgetRepository.findByUserId(category.getUserId());
+                for (Budget budget : budgets) {
+                    budget.setAmount(0.0);
+                    budgetRepository.save(budget);
+                }
+            }
+        }
+    }
+
+
 }

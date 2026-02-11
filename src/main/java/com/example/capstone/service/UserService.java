@@ -1,17 +1,14 @@
 package com.example.capstone.service;
 
 import com.example.capstone.config.LineConfig;
+import com.example.capstone.dto.UserSettingDto;
 import com.example.capstone.dto.login.IdTokenRequest;
 import com.example.capstone.dto.login.LoginResponse;
 import com.example.capstone.dto.login.RegisterRequest;
-import com.example.capstone.entity.Budget;
-import com.example.capstone.entity.Category;
-import com.example.capstone.entity.User;
+import com.example.capstone.entity.*;
 import com.example.capstone.exception.BusinessException;
 import com.example.capstone.exception.EmailAlreadyExistsException;
-import com.example.capstone.repository.BudgetRepository;
-import com.example.capstone.repository.CategoryRepository;
-import com.example.capstone.repository.UserRepository;
+import com.example.capstone.repository.*;
 import com.example.capstone.security.JwtUtil;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
@@ -54,6 +51,8 @@ public class UserService implements UserDetailsService {
     private final TemplateService templateService;
     private final CategoryRepository categoryRepository;
     private final BudgetRepository budgetRepository;
+    private final UserSettingRepository userSettingRepository;
+    private final RepaymentPlanRepository repaymentPlanRepository;
 
     @Value("${app.mail.enabled}")
     private boolean mailEnabled;
@@ -100,6 +99,7 @@ public class UserService implements UserDetailsService {
         );
             User newUser = userRepository.findByEmail(request.getEmail()).get();
             createDefaultCategoriesForUser(newUser.getUserId());
+        CreateUserSettingIfNotExists(newUser.getUserId());
     }
 
     public LoginResponse loginWithLine(IdTokenRequest idTokenRequest) {
@@ -129,6 +129,7 @@ public class UserService implements UserDetailsService {
             User newUser = userRepository.findByEmail(email).get();
             createDefaultCategoriesForUser(newUser.getUserId());
         }
+        CreateUserSettingIfNotExists(user.getUserId());
         System.out.println("end line login function");
         return new LoginResponse(accessToken, refreshToken);
     }
@@ -170,6 +171,7 @@ public class UserService implements UserDetailsService {
                 createDefaultCategoriesForUser(newUser.getUserId());
             }
             System.out.println("end google login function");
+            CreateUserSettingIfNotExists(user.getUserId());
             return new LoginResponse(accessToken, refreshToken);
         } catch (Exception e) {
             throw new BusinessException("Google login failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -177,11 +179,16 @@ public class UserService implements UserDetailsService {
     }
 
     public void createDefaultCategoriesForUser(UUID userId) {
-                createCategoryForUser(userId, CATEGORY_SALARY, TYPE_INCOME);
-                createCategoryForUser(userId, CATEGORY_FOOD, TYPE_EXPENSE);
-                createCategoryForUser(userId, CATEGORY_TRANSPORT, TYPE_EXPENSE);
-                createCategoryForUser(userId, CATEGORY_HEALTH, TYPE_EXPENSE);
-                createCategoryForUser(userId, CATEGORY_SHOPPING, TYPE_EXPENSE);
+        createCategoryForUser(userId, CATEGORY_SALARY, TYPE_INCOME);
+        createCategoryForUser(userId, CATEGORY_EXTRA_INCOME, TYPE_INCOME);
+        createCategoryForUser(userId, CATEGORY_FOOD, TYPE_EXPENSE);
+        createCategoryForUser(userId, CATEGORY_TRANSPORT, TYPE_EXPENSE);
+        createCategoryForUser(userId, CATEGORY_HEALTH, TYPE_EXPENSE);
+        createCategoryForUser(userId, CATEGORY_SHOPPING, TYPE_EXPENSE);
+        createCategoryForUser(userId, CATEGORY_BILLS, TYPE_EXPENSE);
+        createCategoryForUser(userId, CATEGORY_ENTERTAINMENT, TYPE_EXPENSE);
+        createCategoryForUser(userId, CATEGORY_SAVING, TYPE_EXPENSE);
+        createCategoryForUser(userId, CATEGORY_OTHER , TYPE_EXPENSE);
     }
 
     public void createCategoryForUser(UUID userId, String categoryName, String type) {
@@ -278,4 +285,37 @@ public class UserService implements UserDetailsService {
         return true;
     }
 
+    public void CreateUserSettingIfNotExists(UUID userId) {
+        UserSetting userSettingOpt = userSettingRepository.findByUserId(userId);
+        if (userSettingOpt == null) {
+            UserSetting userSetting = new UserSetting();
+            userSetting.setUserId(userId);
+            userSettingRepository.save(userSetting);
+        }
+    }
+
+    public UserSetting setUserSetting(UUID userId, UserSettingDto newSettings) {
+        UserSetting userSetting = userSettingRepository.findByUserId(userId);
+        if (userSetting == null) {
+            throw new BusinessException("User setting not found", HttpStatus.NOT_FOUND);
+        }
+        userSetting.setNotificationsEnabled(newSettings.isNotificationsEnabled());
+        userSetting.setDefaultNotifyTime(newSettings.getDefaultNotifyTime());
+        userSetting.setDefaultRemindDaysBefore(newSettings.getNotify_due_days_before());
+        RepaymentPlan repaymentPlan = repaymentPlanRepository.findByUserId(userId);
+        if (repaymentPlan != null) {
+            repaymentPlan.setMonthlyBudget(newSettings.getMonthly_repayment_budget());
+            repaymentPlan.setStrategyId(repaymentPlanRepository.findByUserId(userId).getStrategyId());
+             repaymentPlanRepository.save(repaymentPlan);
+        }else{
+            RepaymentPlan plan = new RepaymentPlan();
+            plan.setPlanId(UUID.randomUUID());
+            plan.setUserId(userId);
+            plan.setMonthlyBudget(newSettings.getMonthly_repayment_budget());
+            plan.setStrategyId(repaymentPlanRepository.findByUserId(userId).getStrategyId());
+             repaymentPlanRepository.save(plan);
+        }
+        userSettingRepository.save(userSetting);
+        return userSetting;
+    }
 }

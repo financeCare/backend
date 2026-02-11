@@ -4,6 +4,7 @@ import com.example.capstone.dto.TransactionRequest;
 import com.example.capstone.dto.TransactionResponse;
 import com.example.capstone.entity.Transaction;
 import com.example.capstone.service.TransactionService;
+import com.example.capstone.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +21,7 @@ import java.util.UUID;
 public class TransactionController {
 
     private final TransactionService transactionService;
+    private final UserService userService;
 
     @GetMapping
     public List<TransactionResponse> getTransactions(@RequestHeader("Authorization") String authorizationHeader) {

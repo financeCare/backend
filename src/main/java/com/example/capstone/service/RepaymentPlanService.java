@@ -262,8 +262,7 @@ public class RepaymentPlanService {
     //TODO : end Simulate Repayment Plan function
 
     //TODO : Create Repayment Plan function
-    public RepaymentPlan changeRepaymentPlan(String token, double monthlyBudget, UUID strategyId) {
-        UUID userId = userService.extractUserIdFromToken(token);
+    public RepaymentPlan changeRepaymentPlan(UUID userId, double monthlyBudget, UUID strategyId) {
         RepaymentPlan repaymentPlan = repaymentPlanRepository.findByUserId(userId);
         if (repaymentPlan != null) {
             repaymentPlan.setMonthlyBudget(monthlyBudget);
@@ -279,10 +278,10 @@ public class RepaymentPlanService {
         }
     }
 
-    
     public BigDecimal sumMinPaymentsForUser(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
         List<Debt> debts = debtRepository.findByIsActiveAndUserId(true, userId);
         return sumMinPayments(debts);
     }
+
 }

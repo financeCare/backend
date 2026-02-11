@@ -1,7 +1,6 @@
 package com.example.capstone.controller;
 
 import com.example.capstone.dto.DeviceListDto;
-import com.example.capstone.dto.NotificationCreateDTO;
 //import com.example.capstone.entity.Notifications;
 import com.example.capstone.dto.UserDeviceRequest;
 import com.example.capstone.dto.UserDeviceResponse;
