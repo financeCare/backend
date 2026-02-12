@@ -46,15 +46,19 @@ public class NotificationRule {
     @Column(name = "body_template", nullable = false, length = 500)
     private String bodyTemplate;
 
+    @Builder.Default
     @Column(name = "remind_days_before", nullable = false)
     private int remindDaysBefore = 3;
 
+    @Builder.Default
     @Column(name = "time_of_day")
     private LocalTime timeOfDay = LocalTime.of(9, 0); // 09:00
 
+    @Builder.Default
     @Column(name = "timezone", length = 64)
     private String timezone = "Asia/Bangkok";
 
+    @Builder.Default
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 

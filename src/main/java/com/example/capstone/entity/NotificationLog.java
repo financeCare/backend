@@ -62,4 +62,7 @@ public class NotificationLog {
 
     @Column(name = "error_message", columnDefinition = "text")
     private String errorMessage;
+
+    @Column(name = "schedule_key", length = 80)
+    private String scheduleKey;
 }

@@ -43,23 +43,6 @@ public class NotificationService {
         return first.withDayOfMonth(safeDay);
     }
 
-    // ถ้าอยากให้ “ถ้าวันนี้เลย dueDate แล้ว” ให้ไปรอบเดือนหน้า (optional)
-    public static LocalDate nextDueDate(int dueDay, ZoneId zoneId) {
-        LocalDate today = LocalDate.now(zoneId);
-        LocalDate dueThisMonth = dueDateOfThisMonth(dueDay, zoneId);
-        if (today.isAfter(dueThisMonth)) {
-            LocalDate firstNextMonth = today.plusMonths(1).withDayOfMonth(1);
-            int lastDay = firstNextMonth.lengthOfMonth();
-            int safeDay = Math.min(Math.max(dueDay, 1), lastDay);
-            return firstNextMonth.withDayOfMonth(safeDay);
-        }
-        return dueThisMonth;
-    }
-
-    public static LocalDate notifyDate(LocalDate dueDate, int remindDaysBefore) {
-        return dueDate.minusDays(remindDaysBefore);
-    }
-
     @Transactional
     public UserDeviceResponse registerDevice(String token, UserDeviceRequest req) {
         UUID userId = userService.extractUserIdFromToken(token);
@@ -140,6 +123,7 @@ public class NotificationService {
 
     //TODO: create notification rule for debt implementation with de
     public void createNotificationRuleForDebt(UUID userId,String debtName,Double minPayment,UUID debtId) {
+        System.out.println("debtId in create notifications function " + debtId);
         System.out.println("min payment in create notifications function " + minPayment);
         UserSetting userSetting = userSettingRepository.findById(userId).orElseThrow(() -> new BusinessException("User id is not found", HttpStatus.NOT_FOUND));
         NotificationRule notificationRule = new NotificationRule();
@@ -152,11 +136,12 @@ public class NotificationService {
         notificationRule.setTimeOfDay(userSetting.getDefaultNotifyTime());
         notificationRule.setTimezone(userSetting.getTimezone());
         notificationRuleRepository.save(notificationRule);
+        System.out.println("create notification rule for debt called");
     }
 
-    public void createNotificationRuleForBudget(UUID userId,String categoryName,Double limitAmount,Double amount) {
+    public void createNotificationRuleForBudget(UUID userId,String categoryName,Double limitAmount,Double amount,UUID budgetId) {
         double usedPercentage = (amount / limitAmount) * 100;
-        if (usedPercentage < 90) {
+        if (usedPercentage > 90) {
         NotificationRule notificationRule = new NotificationRule();
         notificationRule.setUserId(userId);
         notificationRule.setRefType(RefType.BUDGET);
@@ -166,37 +151,59 @@ public class NotificationService {
         notificationRule.setTimeOfDay(null);
         notificationRule.setTimezone("Asia/Bangkok");
         notificationRuleRepository.save(notificationRule);
+        List<UserDevice> devices = userDeviceRepository.findAllByUserIdAndIsActiveTrue(userId);
+
+            if (devices.isEmpty()) {
+                saveLog(
+                        userId, notificationRule.getRuleId(), null,
+                        RefType.BUDGET, budgetId.toString(),
+                        NotificationChannel.PUSH, NotificationStatus.FAILED,
+                        notificationRule.getTitle(), notificationRule.getBodyTemplate(), "this user don't have any device"
+                );
+                return;
+            }
+
+            for (UserDevice d : devices) {
+                try {
+                    Message message = Message.builder()
+                            .setToken(d.getFcmToken())
+                            .setNotification(Notification.builder()
+                                    .setTitle(notificationRule.getTitle())
+                                    .setBody(notificationRule.getBodyTemplate())
+                                    .build())
+                            .putData("refType", "DEBT")
+                            .putData("refId", budgetId.toString())
+                            .build();
+
+                    FirebaseMessaging.getInstance().send(message);
+                } catch (Exception ex) {
+                    saveLog(
+                            userId, notificationRule.getRuleId(), null,
+                            RefType.BUDGET, budgetId.toString(),
+                            NotificationChannel.PUSH, NotificationStatus.FAILED,
+                            notificationRule.getTitle(), notificationRule.getBodyTemplate(), ex.getMessage()
+                    );
+                }
+            }
+
+            saveLog(
+                userId, notificationRule.getRuleId(), null,
+                RefType.BUDGET, budgetId.toString(),
+                NotificationChannel.PUSH, NotificationStatus.SENT,
+                notificationRule.getTitle(), notificationRule.getBodyTemplate(), null
+        );
         }
-    }
-
-    public NotificationRule getNotificationRuleById(String token ,UUID ruleId) {
-        UUID userId = userService.extractUserIdFromToken(token);
-        return notificationRuleRepository.findByRuleIdAndUserId(ruleId,userId)
-                .orElseThrow(() -> new BusinessException("Notification rule not found", HttpStatus.NOT_FOUND));
-    }
-
-    public void deleteNotificationRule(String token,UUID ruleId) {
-        UUID userId = userService.extractUserIdFromToken(token);
-        NotificationRule notificationRule = notificationRuleRepository.findByRuleIdAndUserId(ruleId,userId)
-                .orElseThrow(() -> new BusinessException("Notification rule not found", HttpStatus.NOT_FOUND));
-        notificationRuleRepository.delete(notificationRule);
-    }
-
-    public void deleteNotificationRulesByRefIdAndRefType(String token,UUID refId) {
-        UUID userId = userService.extractUserIdFromToken(token);
-        NotificationRule notificationRules = notificationRuleRepository.findByUserIdAndRefTypeAndRefId(userId,RefType.DEBT,refId.toString()).orElseThrow(()-> new BusinessException("Notification rule not found", HttpStatus.NOT_FOUND));
-        notificationRuleRepository.delete(notificationRules);
     }
 
     public Page<NotificationLog> getNotificationLogs(String token, String refType ,Pageable pageable) {
         UUID userId = userService.extractUserIdFromToken(token);
-        return notificationLogRepository.findAllByUserIdAndRefType(userId, RefType.valueOf(refType), pageable);
+        return notificationLogRepository.findAllByUserIdAndRefTypeAndStatusIsNot(userId, RefType.valueOf(refType),NotificationStatus.FAILED, pageable);
     }
 
     public Page<NotificationLog> getAllNotificationLogs(String token, Pageable pageable) {
         UUID userId = userService.extractUserIdFromToken(token);
         System.out.println(userId);
-        return notificationLogRepository.findAllByUserId(userId, pageable);
+        return notificationLogRepository.findAllByUserIdAndStatusIsNot(userId,NotificationStatus.FAILED, pageable);
     }
 
     public int countUnreadNotifications(String token) {
@@ -231,38 +238,34 @@ public class NotificationService {
     private void processRule(NotificationRule rule) {
         UUID userId = rule.getUserId();
 
-        UserSetting setting = userSettingRepository
-                .findById(userId)
-                .orElse(null);
+        UserSetting setting = userSettingRepository.findById(userId).orElse(null);
         if (setting == null) return;
 
         // master switch
         if (!setting.isNotificationsEnabled()) return;
-
-        // example: DEBT
         if (rule.getRefType() == RefType.DEBT) {
             Debt debt = debtRepository
                     .findById(UUID.fromString(rule.getRefId()))
                     .orElse(null);
-            if (debt == null || !debt.isActive()) return;
-
-            boolean shouldSend = shouldSendToday(
-                    debt.getDueDay(),                      // int day of month
-                    rule.getRemindDaysBefore(),
-                    rule.getTimeOfDay(),                  // LocalTime
-                    setting.getTimezone()                 // String
-            );
-
-            if (shouldSend) {
-                sendDebtNotification(userId, rule.getRuleId(), debt,
-                        rule.getRemindDaysBefore(),
-                        setting.getTimezone()
-                );
+            if (debt == null || !debt.isActive()){
+                return;
             }
+            String timezone = setting.getTimezone();
+            LocalTime timeOfDay = setting.getDefaultNotifyTime();
+            int remindDaysBefore = setting.getDefaultRemindDaysBefore(); // เช่น 3
+            int[] daysList = new int[]{remindDaysBefore, 0};
+
+            for (int daysBefore : daysList) {
+                boolean sendNow = shouldSendNow(debt.getDueDay(), daysBefore, timeOfDay, timezone);
+                if (sendNow) {
+                    sendDebtNotification(userId, rule.getRuleId(), debt, daysBefore, timezone, timeOfDay);
+                }
+            }
+
         }
     }
 
-    private boolean shouldSendToday(
+    private boolean shouldSendNow(
             int dueDay,
             int remindDaysBefore,
             LocalTime timeOfDay,
@@ -273,60 +276,73 @@ public class NotificationService {
         LocalDate today = LocalDate.now(zoneId);
         LocalTime nowTime = LocalTime.now(zoneId);
 
-        // ใช้รอบ "เดือนนี้" (หรือเปลี่ยนเป็น nextDueDate(...) ได้)
-        LocalDate dueDate = dueDateOfThisMonth(dueDay, zoneId);
-        LocalDate notifyDate = notifyDate(dueDate, remindDaysBefore);
+        LocalDate dueDate = getDueDateForThisMonth(dueDay, zoneId);
+        LocalDate notifyDate = dueDate.minusDays(remindDaysBefore);
 
-        // วันนี้ใช่วันแจ้งเตือนหรือไม่
-        if (!today.equals(notifyDate)) return false;
+        if (!today.equals(notifyDate)) {
+            return false;
+        }
 
-        // เวลาถึงเวลาแจ้งหรือยัง
-        LocalTime notifyTime = timeOfDay != null ? timeOfDay : LocalTime.of(9, 0);
+        LocalTime notifyTime = (timeOfDay != null) ? timeOfDay : LocalTime.of(9, 0);
+
+        // ส่งภายในหน้าต่าง 1 นาที เพื่อกัน scheduler วิ่งซ้ำ
         return !nowTime.isBefore(notifyTime) && nowTime.isBefore(notifyTime.plusMinutes(1));
     }
 
     @Transactional
-    public void sendDebtNotification(UUID userId, UUID ruleId, Debt debt, int remindDaysBefore, String timezone) {
+    public void sendDebtNotification(
+            UUID userId,
+            UUID ruleId,
+            Debt debt,
+            int remindDaysBefore,
+            String timezone,
+            LocalTime timeOfDay
+    ) {
+        ZoneId zoneId = ZoneId.of((timezone == null || timezone.isBlank()) ? "Asia/Bangkok" : timezone);
 
-        // 1) กันส่งซ้ำในวันเดียวกัน (SENT เท่านั้น)
-        ZoneId zoneId = ZoneId.of(timezone == null || timezone.isBlank() ? "Asia/Bangkok" : timezone);
         LocalDate today = LocalDate.now(zoneId);
+        LocalTime nowTime = LocalTime.now(zoneId);
+        LocalTime notifyTime = (timeOfDay != null) ? timeOfDay : LocalTime.of(9, 0);
+
+        // ✅ เช็คเวลาอีกชั้น เผื่อถูกเรียกจากที่อื่น
+        if (nowTime.isBefore(notifyTime) || !nowTime.isBefore(notifyTime.plusMinutes(1))) {
+            return;
+        }
+
+        LocalDate dueDate = getDueDateForThisMonth(debt.getDueDay(), zoneId);
+        LocalDate notifyDate = dueDate.minusDays(remindDaysBefore);
+
+        if (!today.equals(notifyDate)) return;
+
+        // ✅ กันส่งซ้ำแบบ “ต่อวัน + ต่อครั้ง (daysBefore)”
+        // ทำ key ให้ต่างกันระหว่าง "ล่วงหน้า" กับ "วันครบกำหนด"
+        String scheduleKey = buildDebtScheduleKey(debt.getDebtId(), remindDaysBefore);
+
         LocalDateTime start = today.atStartOfDay();
         LocalDateTime end = today.plusDays(1).atStartOfDay().minusNanos(1);
 
-        LocalDateTime now = LocalDateTime.now();
         boolean alreadySent = notificationLogRepository
-                .existsByRuleIdAndStatusAndSentAtAfter(ruleId, NotificationStatus.SENT, now.minusHours(24));
+                .existsByRuleIdAndScheduleKeyAndStatusAndSentAtBetween(
+                        ruleId, scheduleKey, NotificationStatus.SENT, start, end
+                );
 
-        if (alreadySent) {
-            return;
-        }
+        if (alreadySent) return;
 
-        // 2) คำนวณ dueDate ของรอบนี้ (ตัวอย่าง: ใช้ dueDay เป็นหลัก)
-        LocalDate dueDate = getDueDateForThisMonth(debt.getDueDay(), zoneId);
-
-        // 3) เช็คว่าควรส่งวันนี้ไหม (วันนี้ = dueDate - remindDaysBefore)
-        LocalDate notifyDate = dueDate.minusDays(remindDaysBefore);
-        if (!today.equals(notifyDate)) {
-            return;
-        }
-
-        // 4) สร้างข้อความ
-        String title = "เตือนหนี้ครบกำหนด";
+        String title = (remindDaysBefore == 0) ? "วันนี้ครบกำหนดชำระหนี้" : "เตือนหนี้ใกล้ครบกำหนด";
         String body = buildDebtBody(debt, dueDate, remindDaysBefore);
 
-        // 5) ดึง device tokens ที่ active
         List<UserDevice> devices = userDeviceRepository.findAllByUserIdAndIsActiveTrue(userId);
 
         if (devices.isEmpty()) {
-            // ไม่มีอุปกรณ์ -> log failed (เพื่อ debug)
-            saveLog(userId, ruleId, RefType.DEBT, String.valueOf(debt.getDebtId()),
+            saveLog(
+                    userId, ruleId, scheduleKey,
+                    RefType.DEBT, String.valueOf(debt.getDebtId()),
                     NotificationChannel.PUSH, NotificationStatus.FAILED,
-                    title, body, "No active device tokens");
+                    title, body, "No active device tokens"
+            );
             return;
         }
 
-        // 6) ส่งให้ทุก device
         for (UserDevice d : devices) {
             try {
                 Message message = Message.builder()
@@ -335,68 +351,80 @@ public class NotificationService {
                                 .setTitle(title)
                                 .setBody(body)
                                 .build())
-                        // ✅ ส่ง data เพื่อให้ Flutter เปิดหน้าที่เกี่ยวข้องได้
                         .putData("refType", "DEBT")
                         .putData("refId", String.valueOf(debt.getDebtId()))
+                        .putData("scheduleKey", scheduleKey)
                         .build();
 
                 FirebaseMessaging.getInstance().send(message);
-
-                saveLog(userId, ruleId, RefType.DEBT, String.valueOf(debt.getDebtId()),
-                        NotificationChannel.PUSH, NotificationStatus.SENT,
-                        title, body, null);
-
             } catch (Exception ex) {
-                // token อาจตาย/invalid -> คุณอาจเลือกปิด device นี้ด้วยก็ได้
-                // d.setActive(false); userDeviceRepository.save(d);
-
-                saveLog(userId, ruleId, RefType.DEBT, String.valueOf(debt.getDebtId()),
+                saveLog(
+                        userId, ruleId, scheduleKey,
+                        RefType.DEBT, String.valueOf(debt.getDebtId()),
                         NotificationChannel.PUSH, NotificationStatus.FAILED,
-                        title, body, ex.getMessage());
+                        title, body, ex.getMessage()
+                );
             }
         }
+        saveLog(
+                userId, ruleId, scheduleKey,
+                RefType.DEBT, String.valueOf(debt.getDebtId()),
+                NotificationChannel.PUSH, NotificationStatus.SENT,
+                title, body, null
+        );
+    }
+
+    // ===== Helpers =====
+
+    private String buildDebtScheduleKey(UUID debtId, int daysBefore) {
+        return "DEBT:" + debtId + ":D-" + daysBefore; // เช่น DEBT:xxxx:D-3 และ DEBT:xxxx:D-0
+    }
+
+    /**
+     * รองรับ dueDay 29/30/31 โดย clamp เป็นวันสุดท้ายของเดือนถ้าเดือนนั้นไม่มีวันนั้น
+     */
+    public static LocalDate getDueDateForThisMonth(int dueDay, ZoneId zoneId) {
+        LocalDate today = LocalDate.now(zoneId);
+        int lastDay = today.lengthOfMonth();
+        int safeDay = Math.min(Math.max(dueDay, 1), lastDay);
+        return LocalDate.of(today.getYear(), today.getMonth(), safeDay);
+    }
+
+    private String buildDebtBody(Debt debt, LocalDate dueDate, int remindDaysBefore) {
+        if (remindDaysBefore == 0) {
+            return "วันนี้ (" + dueDate + ") ครบกำหนดชำระหนี้: " + debt.getDebtName();
+        }
+        return "อีก " + remindDaysBefore + " วัน จะครบกำหนดชำระหนี้ (" + dueDate + "): " + debt.getDebtName();
     }
 
     private void saveLog(
             UUID userId,
             UUID ruleId,
+            String scheduleKey,
             RefType refType,
             String refId,
             NotificationChannel channel,
             NotificationStatus status,
             String title,
             String body,
-            String error
+            String errorMessage
     ) {
         NotificationLog log = NotificationLog.builder()
                 .userId(userId)
                 .ruleId(ruleId)
+                .scheduleKey(scheduleKey)
                 .refType(refType)
                 .refId(refId)
                 .channel(channel)
                 .status(status)
                 .title(title)
                 .body(body)
-                .errorMessage(error)
+                .errorMessage(errorMessage)
+                .sentAt(LocalDateTime.now())
                 .build();
-
         notificationLogRepository.save(log);
     }
 
-    private String buildDebtBody(Debt debt, LocalDate dueDate, int remindDaysBefore) {
-        if (remindDaysBefore == 0) {
-            return "หนี้ " + debt.getDebtName() + " จำนวน " + debt.getMinPayment() + " บาทครบกำหนดวันนี้";
-        }
-        return "อีก " + remindDaysBefore + " วัน จะถึงกำหนดชำระหนี้ " + debt.getDebtName()
-                + " (กำหนด " + dueDate + ") ขั้นต่ำ " + debt.getMinPayment() + " บาท";
-    }
-
-    private LocalDate getDueDateForThisMonth(int dueDay, ZoneId zoneId) {
-        LocalDate today = LocalDate.now(zoneId);
-        int lastDay = today.lengthOfMonth();
-        int day = Math.min(dueDay, lastDay);
-        return today.withDayOfMonth(day);
-    }
 
 }
 

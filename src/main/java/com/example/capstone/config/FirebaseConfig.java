@@ -5,7 +5,6 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -19,14 +18,19 @@ public class FirebaseConfig {
             return FirebaseApp.getInstance();
         }
 
-        ClassPathResource resource = new ClassPathResource("firebase/serviceAccountKey.json");
-        try (InputStream is = resource.getInputStream()) {
-            GoogleCredentials credentials = GoogleCredentials.fromStream(is);
+        String keyPath = System.getenv("FIREBASE_SERVICE_ACCOUNT");
+        if (keyPath == null || keyPath.isBlank()) {
+            throw new IllegalStateException(
+                    "Missing FIREBASE_SERVICE_ACCOUNT env var. " +
+                            "Set it to the absolute path of your Firebase service account JSON file."
+            );
+        }
 
+        try (InputStream is = new FileInputStream(keyPath)) {
+            GoogleCredentials credentials = GoogleCredentials.fromStream(is);
             FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(credentials)
                     .build();
-
             return FirebaseApp.initializeApp(options);
         }
     }

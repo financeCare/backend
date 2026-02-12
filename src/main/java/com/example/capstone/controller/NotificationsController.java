@@ -70,6 +70,7 @@ public class NotificationsController {
     public UserDeviceResponse registerDevice(@RequestHeader("Authorization") String authorizationHeader,
                                              @RequestBody UserDeviceRequest userDeviceRequest) {
         String token = authorizationHeader.replace("Bearer ", "");
+        System.out.println("register devices");
         return notificationsService.registerDevice(token, userDeviceRequest);
     }
 
@@ -79,52 +80,4 @@ public class NotificationsController {
         String token = authorizationHeader.replace("Bearer ", "");
         notificationsService.unregisterDevice(token, deviceId);
     }
-
-//    @GetMapping
-//    public Page<Notifications> getMyNotifications(
-//            @RequestHeader("Authorization") String authorizationHeader,
-//            @RequestParam(required = false) Boolean isRead,
-//            @RequestParam(defaultValue = "0") int page,
-//            @RequestParam(defaultValue = "10") int size
-//    ) {
-//        String token = authorizationHeader.replace("Bearer ", "");
-//        return notificationsService.getMyNotifications(
-//                token,
-//                isRead,
-//                PageRequest.of(page, size, Sort.by("createdAt").descending())
-//        );
-//    }
-//
-//    @GetMapping("/unread-count")
-//    public long unreadCount(@RequestHeader("Authorization") String authorizationHeader) {
-//        String token = authorizationHeader.replace("Bearer ", "");
-//        return notificationsService.countUnread(token);
-//    }
-//
-//    @PostMapping
-//    public Notifications create(@RequestHeader("Authorization") String authorizationHeader,
-//                                @RequestBody NotificationCreateDTO dto) {
-//        String token = authorizationHeader.replace("Bearer ", "");
-//        return notificationsService.createForMe(token, dto);
-//    }
-//
-//    @PatchMapping("/{id}/read")
-//    public Notifications markAsRead(@RequestHeader("Authorization") String authorizationHeader,
-//                                    @PathVariable UUID id) {
-//        String token = authorizationHeader.replace("Bearer ", "");
-//        return notificationsService.markAsRead(token, id);
-//    }
-//
-//    @PatchMapping("/read-all")
-//    public void markAllAsRead(@RequestHeader("Authorization") String authorizationHeader) {
-//        String token = authorizationHeader.replace("Bearer ", "");
-//        notificationsService.markAllAsRead(token);
-//    }
-//
-//    @DeleteMapping("/{id}")
-//    public void delete(@RequestHeader("Authorization") String authorizationHeader,
-//                       @PathVariable UUID id) {
-//        String token = authorizationHeader.replace("Bearer ", "");
-//        notificationsService.deleteMyNotification(token, id);
-//    }
 }

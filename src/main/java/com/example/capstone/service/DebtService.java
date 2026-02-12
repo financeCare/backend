@@ -89,7 +89,9 @@ public class DebtService {
         debt.setDebtName(debtDTO.getDebtName());
         debt.setMinPayment(debtDTO.getMinPayment());
         debt.setDueDay(debtDTO.getDueDay());
+        System.out.println("getDueDay : " + debtDTO.getDueDay() + " before save");
         debtRepository.save(debt);
+        System.out.println(debt.getDebtId() + " after save");
         notificationService.createNotificationRuleForDebt(userId, debt.getDebtName(), debt.getMinPayment(),debt.getDebtId());
         return debt;
     }

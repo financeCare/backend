@@ -26,12 +26,11 @@ public class BudgetService {
         budgetRepository.save(budget);
     }
 
-    public Budget updateLimitAmountBudget(String token, UUID id, double amount) {
+    public Budget updateLimitAmountBudget(String token, UUID budgetId, double amount) {
         UUID userId = userService.extractUserIdFromToken(token);
-        Budget existingBudget = budgetRepository.findByUserIdAndBudgetId(userId,id).orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
-        existingBudget.setAmount(amount);
-        String categoryName = categoryRepository.findByBudgetIdAndUserId(id,userId).orElseThrow(() -> new BusinessException("Category not found for this budget", HttpStatus.NOT_FOUND)).getCategoryName();
-        notificationService.createNotificationRuleForBudget(userId,categoryName,existingBudget.getLimitBudget(),existingBudget.getAmount());
+        Budget existingBudget = budgetRepository.findByUserIdAndBudgetId(userId,budgetId).orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
+        existingBudget.setLimitBudget(amount);
+        String categoryName = categoryRepository.findByBudgetIdAndUserId(budgetId,userId).orElseThrow(() -> new BusinessException("Category not found for this budget", HttpStatus.NOT_FOUND)).getCategoryName();
         return budgetRepository.save(existingBudget);
     }
 

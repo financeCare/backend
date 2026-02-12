@@ -44,6 +44,7 @@ public class UserDevice {
     @Column(name = "device_name", length = 120)
     private String deviceName;
 
+    @Builder.Default
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 

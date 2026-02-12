@@ -33,7 +33,7 @@ public class TransactionService {
     private final UserService userService;
     private final CategoryRepository categoryRepository;
     private final BudgetRepository budgetRepository;
-
+    private final NotificationService notificationService;
 
     public TransactionResponse mapToResponse(Transaction t) {
         CategoryDTO categoryDTO = new CategoryDTO(
@@ -105,6 +105,7 @@ public class TransactionService {
         double newAmount = budget.getAmount() + transactionRequest.getAmount();
         budget.setAmount(newAmount);
         budgetRepository.save(budget);
+        notificationService.createNotificationRuleForBudget(userId,category.getCategoryName(),budget.getLimitBudget(),transactionRequest.getAmount(),budget.getBudgetId());
         return savedTransaction;
     }
 
