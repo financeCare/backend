@@ -2,6 +2,7 @@ package com.example.capstone.controller;
 
 import com.example.capstone.dto.RepaymentPlanDTO;
 import com.example.capstone.dto.RepaymentStrategyDTO;
+import com.example.capstone.dto.RepaymentStrategyDtoResponse;
 import com.example.capstone.service.RepaymentPlanService;
 import com.example.capstone.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,9 @@ public class RepaymentPlanController {
     }
 
     @GetMapping("/strategies")
-    public ResponseEntity<?> getAllRepaymentStrategies() {
-        return ResponseEntity.ok(repaymentPlanService.getAllRepaymentStrategies());
+    public ResponseEntity<RepaymentStrategyDtoResponse> getAllRepaymentStrategies(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        return ResponseEntity.ok(repaymentPlanService.getAllRepaymentStrategies(token));
     }
 
     @DeleteMapping("/strategies/{id}")

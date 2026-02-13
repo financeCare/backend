@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/notifications")
+    @RequestMapping("/notifications")
 @RequiredArgsConstructor
 public class NotificationsController {
 
@@ -44,7 +44,7 @@ public class NotificationsController {
         return notificationsService.getNotificationLogs(
                 token,
                 refType,
-                PageRequest.of(page, size, Sort.by("createdAt").descending())
+                PageRequest.of(page, size, Sort.by("sentAt").descending())
         );
     }
 

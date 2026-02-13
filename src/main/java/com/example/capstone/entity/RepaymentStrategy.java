@@ -35,4 +35,7 @@ public class RepaymentStrategy {
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "tags")
+    private String[] tags;
 }

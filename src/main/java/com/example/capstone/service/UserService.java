@@ -1,7 +1,9 @@
 package com.example.capstone.service;
 
 import com.example.capstone.config.LineConfig;
+import com.example.capstone.dto.DeviceListDto;
 import com.example.capstone.dto.UserSettingDto;
+import com.example.capstone.dto.UserSettingResponseDto;
 import com.example.capstone.dto.login.IdTokenRequest;
 import com.example.capstone.dto.login.LoginResponse;
 import com.example.capstone.dto.login.RegisterRequest;
@@ -53,6 +55,7 @@ public class UserService implements UserDetailsService {
     private final BudgetRepository budgetRepository;
     private final UserSettingRepository userSettingRepository;
     private final RepaymentPlanRepository repaymentPlanRepository;
+    private final UserDeviceRepository userDeviceRepository;
 
     @Value("${app.mail.enabled}")
     private boolean mailEnabled;
@@ -294,7 +297,21 @@ public class UserService implements UserDetailsService {
         }
     }
 
-    public UserSetting setUserSetting(UUID userId, UserSettingDto newSettings) {
+    public UserSettingResponseDto getUserSetting(String token){
+        UUID userId = extractUserIdFromToken(token);
+        List<UserDevice> userDevices = userDeviceRepository.findAllByUserIdAndIsActiveTrue(userId);
+        return new UserSettingResponseDto(userSettingRepository.findByUserId(userId),userDevices.stream()
+                .map(ud -> new DeviceListDto(
+                        ud.getDeviceId(),
+                        ud.getDeviceName(),
+                        ud.getPlatform(),
+                        ud.getLastSeen()
+                ))
+                .toList());
+    }
+
+    public UserSetting setUserSetting(String token, UserSettingDto newSettings) {
+        UUID userId = extractUserIdFromToken(token);
         UserSetting userSetting = userSettingRepository.findByUserId(userId);
         if (userSetting == null) {
             throw new BusinessException("User setting not found", HttpStatus.NOT_FOUND);

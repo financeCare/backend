@@ -1,5 +1,6 @@
 package com.example.capstone.engineImp;
 
+import com.example.capstone.dto.DebtSim;
 import com.example.capstone.engineInterface.DebtMonthEngine;
 import com.example.capstone.engineInterface.DebtMonthResult;
 import com.example.capstone.entity.Debt;
@@ -10,7 +11,7 @@ import java.math.RoundingMode;
 public class BulletEngine implements DebtMonthEngine {
 
     @Override
-    public DebtMonthResult runMonth(Debt d, BigDecimal minPaid, BigDecimal extraPaid) {
+    public DebtMonthResult runMonth(DebtSim d, BigDecimal minPaid, BigDecimal extraPaid) {
         DebtMonthResult r = new DebtMonthResult();
 
         BigDecimal principal = BigDecimal.valueOf(d.getPrincipalAmount());

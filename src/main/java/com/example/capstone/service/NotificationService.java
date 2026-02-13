@@ -123,8 +123,6 @@ public class NotificationService {
 
     //TODO: create notification rule for debt implementation with de
     public void createNotificationRuleForDebt(UUID userId,String debtName,Double minPayment,UUID debtId) {
-        System.out.println("debtId in create notifications function " + debtId);
-        System.out.println("min payment in create notifications function " + minPayment);
         UserSetting userSetting = userSettingRepository.findById(userId).orElseThrow(() -> new BusinessException("User id is not found", HttpStatus.NOT_FOUND));
         NotificationRule notificationRule = new NotificationRule();
         notificationRule.setUserId(userId);
@@ -136,7 +134,6 @@ public class NotificationService {
         notificationRule.setTimeOfDay(userSetting.getDefaultNotifyTime());
         notificationRule.setTimezone(userSetting.getTimezone());
         notificationRuleRepository.save(notificationRule);
-        System.out.println("create notification rule for debt called");
     }
 
     public void createNotificationRuleForBudget(UUID userId,String categoryName,Double limitAmount,Double amount,UUID budgetId) {
@@ -202,7 +199,6 @@ public class NotificationService {
 
     public Page<NotificationLog> getAllNotificationLogs(String token, Pageable pageable) {
         UUID userId = userService.extractUserIdFromToken(token);
-        System.out.println(userId);
         return notificationLogRepository.findAllByUserIdAndStatusIsNot(userId,NotificationStatus.FAILED, pageable);
     }
 
@@ -227,7 +223,6 @@ public class NotificationService {
     }
     @Scheduled(cron = "0 * * * * *") // ทุก 1 นาที
     public void runNotificationScheduler() {
-        System.out.println("⏰ Scheduler running at " + LocalDateTime.now());
         List<NotificationRule> rules =
                 notificationRuleRepository.findAllByIsActive(true);
         for (NotificationRule rule : rules) {
