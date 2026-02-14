@@ -24,6 +24,12 @@ public class Budget {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Column(name = "month", nullable = false)
+    private Integer month; // 1-12
+
+    @Column(name = "year", nullable = false)
+    private Integer year;
+
     @Column(name = "amount", nullable = false)
     private Double amount;
 

@@ -12,9 +12,20 @@ public interface CategoryRepository extends JpaRepository<Category, Integer> {
     Optional<Category> findByCategoryIdAndUserId(Integer categoryId, UUID userId);
     List<Category> findByUserIdAndType(UUID userId, String type);
     Optional<Category> findByBudgetIdAndUserId(UUID budgetId,UUID userId);
-    List<Category> findByUserIdAndBudgetIdAndTypeNot(
+    Category findByUserIdAndBudgetIdAndTypeNot(
             UUID userId,
             UUID budgetId,
             String type
     );
+    Category findByUserIdAndBudgetIdAndCategoryNameNot(
+            UUID userId,
+            UUID budgetId,
+            String name
+    );
+    Category findByUserIdAndCategoryName(
+            UUID userId,
+            String name
+    );
+
+    Optional<Category> findByUserIdAndTypeAndCategoryName(UUID userId, String type, String categoryName);
 }

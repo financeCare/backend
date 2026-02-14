@@ -7,6 +7,8 @@ import java.util.UUID;
 
 import jakarta.validation.constraints.*;
 
+import javax.annotation.Nullable;
+
 @Data
 public class TransactionRequest {
 

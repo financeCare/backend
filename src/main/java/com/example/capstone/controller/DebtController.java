@@ -1,6 +1,8 @@
 package com.example.capstone.controller;
 
 import com.example.capstone.dto.DebtDTO;
+import com.example.capstone.dto.DebtPaymentRequestDTO;
+import com.example.capstone.dto.DebtPaymentResponseDTO;
 import com.example.capstone.entity.Debt;
 import com.example.capstone.service.DebtService;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +39,7 @@ public class DebtController {
         return ResponseEntity.ok(debtGraph);
     }
 
-    @PostMapping
+    @PostMapping()
     public ResponseEntity<Debt> createDebt(@RequestHeader("Authorization") String authorizationHeader,@RequestBody DebtDTO debtDTO) {
         String token = authorizationHeader.replace("Bearer ", "");
         Debt created = debtService.addDebt(token,debtDTO);
@@ -57,4 +59,14 @@ public class DebtController {
         Debt debt = debtService.deleteDebt(token,UUID.fromString(debtId));
         return ResponseEntity.ok(debt);
     }
+
+    @PostMapping("/pays")
+    public DebtPaymentResponseDTO payDebt(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestBody DebtPaymentRequestDTO req
+    ) {
+        String token = authHeader.replace("Bearer ", "");
+        return debtService.payDebt(token, req);
+    }
+
 }

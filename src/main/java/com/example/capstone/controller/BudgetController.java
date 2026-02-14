@@ -32,4 +32,21 @@ public class BudgetController {
         String token = authorizationHeader.replace("Bearer ", "");
         return budgetService.getAllBudgets(token);
     }
+
+    @GetMapping("/income-amount")
+    public double getIncomeAmount(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        return budgetService.getIncomeAmount(token);
+    }
+
+    @GetMapping("/transactions-overview")
+    public List<BudgetOverviewDto> getTransactionOverview(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        return budgetService.getTransactionOverview(token);
+    }
+
+    @GetMapping("/reset-budget")
+    public void resetBudget(){
+        budgetService.monthlyRollover();
+    }
 }

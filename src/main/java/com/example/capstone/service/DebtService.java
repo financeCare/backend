@@ -1,20 +1,16 @@
 package com.example.capstone.service;
 
 import com.example.capstone.dto.*;
-import com.example.capstone.entity.Category;
-import com.example.capstone.entity.Debt;
-import com.example.capstone.entity.DebtType;
-import com.example.capstone.entity.RepaymentType;
+import com.example.capstone.entity.*;
 import com.example.capstone.exception.BusinessException;
-import com.example.capstone.repository.CategoryRepository;
-import com.example.capstone.repository.DebtRepository;
-import com.example.capstone.repository.DebtTypeRepository;
-import com.example.capstone.repository.RepaymentTypeRepository;
+import com.example.capstone.repository.*;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,6 +24,7 @@ public class DebtService {
     private final BudgetService budgetService;
     private final CategoryRepository categoryRepository;
     private final NotificationService notificationService;
+    private final RepaymentHistoryRepository repaymentHistoryRepository;
 
     public List<Debt> getOwnDebt(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
@@ -132,5 +129,48 @@ public class DebtService {
          return debt;
     }
 
+    @Transactional
+    public DebtPaymentResponseDTO payDebt(String token, DebtPaymentRequestDTO req) {
+        UUID userId = userService.extractUserIdFromToken(token);
+        Debt debt = debtRepository.findById(req.getDebtId())
+                .orElseThrow(() -> new BusinessException("Debt not found", HttpStatus.NOT_FOUND));
+        // ✅ กันจ่ายหนี้คนอื่น
+        if (!debt.getUserId().equals(userId)) {
+            throw new BusinessException("Forbidden", HttpStatus.FORBIDDEN);
+        }
+        // ✅ กันจ่ายหนี้ที่ปิดแล้ว
+        if (!debt.isActive()) {
+            throw new BusinessException("Debt is already closed", HttpStatus.BAD_REQUEST);
+        }
+        double amount = req.getAmount();
+        if (amount <= 0) {
+            throw new BusinessException("Amount must be > 0", HttpStatus.BAD_REQUEST);
+        }
+        double before = debt.getPrincipalAmount();
+        // ✅ จ่ายเกินยอดได้ แต่ตัดให้ไม่ติดลบ (หรือจะเก็บเป็น overpay ก็ได้)
+        double paid = Math.min(amount, before);
+        debt.setPrincipalAmount(before - paid);
+        boolean closed = debt.getPrincipalAmount() <= 0.000001;
+        if (closed) {
+            debt.setActive(false);
+            debt.setPrincipalAmount(0.0);
+            debt.setEndDate(req.getPaidAt() != null ? req.getPaidAt() : new Date());
+        }
+        debtRepository.save(debt);
+        // ✅ บันทึกประวัติ
+        RepaymentHistory history = new RepaymentHistory();
+        history.setUserId(userId);
+        history.setDebtId(debt.getDebtId());
+        history.setAmountPaid(paid);
+        history.setPaidDate(req.getPaidAt() != null ? req.getPaidAt() : new Date());
+        repaymentHistoryRepository.save(history);
+        return new DebtPaymentResponseDTO(
+                debt.getDebtId(),
+                paid,
+                before,
+                debt.getPrincipalAmount(),
+                closed
+        );
+    }
 
 }
