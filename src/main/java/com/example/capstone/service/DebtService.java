@@ -118,6 +118,7 @@ public class DebtService {
         existingDebt.setDebtName(debtDTO.getDebtName());
         existingDebt.setMinPayment(debtDTO.getMinPayment());
         existingDebt.setDueDay(debtDTO.getDueDay());
+        existingDebt.setActive(true);
         return debtRepository.save(existingDebt);
     }
 
