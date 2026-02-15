@@ -14,22 +14,21 @@ public class LumpSumEngine implements DebtMonthEngine {
     public DebtMonthResult runMonth(DebtSim d, BigDecimal minPaid, BigDecimal extraPaid) {
         DebtMonthResult r = new DebtMonthResult();
 
-        System.out.println(d.getDebtName());
-        System.out.println(d.getPrincipalAmount());
         BigDecimal principal = BigDecimal.valueOf(d.getPrincipalAmount());
-        BigDecimal rateMonthly = BigDecimal.valueOf(d.getInterestRate())
-                .divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP);
 
-        // interest
+        BigDecimal annualRate = BigDecimal.valueOf(d.getInterestRate());
+        if (annualRate.compareTo(BigDecimal.ONE) > 0) {
+            annualRate = annualRate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+        }
+        BigDecimal rateMonthly = annualRate.divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP);
+
         BigDecimal interest = principal.multiply(rateMonthly).setScale(2, RoundingMode.HALF_UP);
         principal = principal.add(interest);
         r.interestAdded = interest;
 
-        // pay (normally 0 until final)
-        BigDecimal pay = minPaid.add(extraPaid).min(principal);
+        BigDecimal pay = minPaid.add(extraPaid).max(BigDecimal.ZERO).min(principal);
         principal = principal.subtract(pay);
 
-        // treat all as extra to keep semantics
         r.minPaidApplied = BigDecimal.ZERO;
         r.extraPaidApplied = pay;
 

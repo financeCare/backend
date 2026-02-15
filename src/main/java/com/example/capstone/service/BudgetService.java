@@ -126,6 +126,30 @@ public class BudgetService {
         budgetRepository.deleteById(id);
     }
 
+    public double getSalary(String token){
+        UUID userId = userService.extractUserIdFromToken(token);
+        Category category = categoryRepository.findByUserIdAndCategoryName(userId,CATEGORY_SALARY);
+        List<Budget> budgets = budgetRepository.findByUserId(userId);
+        for(Budget budget : budgets){
+            if (budget.getBudgetId().equals(category.getBudgetId())){
+                return budget.getAmount();
+            }
+        }
+        return 0;
+    }
+
+    public void setSalary(String token,double amount){
+        UUID userId = userService.extractUserIdFromToken(token);
+        Category category = categoryRepository.findByUserIdAndCategoryName(userId,CATEGORY_SALARY);
+        List<Budget> budgets = budgetRepository.findByUserId(userId);
+        for(Budget budget : budgets){
+            if (budget.getBudgetId().equals(category.getBudgetId())){
+                budget.setAmount(amount);
+                budgetRepository.save(budget);
+            }
+        }
+    }
+
     @Transactional
     public void ensureBudgetMonth(UUID userId, int month, int year) {
         List<Budget> budgets = budgetRepository.findByUserIdAndMonthAndYear(userId, month, year);

@@ -63,22 +63,23 @@ public class RepaymentPlanService {
         return d.getRepaymentType().getRepaymentTypeId();
     }
 
-    private DebtSim selectTarget(
-            List<DebtSim> debts,
-            UUID strategyId
-    ) {
+    private double annualRateDecimal(DebtSim d) {
+        double r = d.getInterestRate();
+        // ถ้าเก็บเป็น % เช่น 18 = 18% ให้แปลงเป็น 0.18
+        return (r > 1.0) ? (r / 100.0) : r;
+    }
+
+    private DebtSim selectTarget(List<DebtSim> debts, UUID strategyId) {
 
         RepaymentStrategy strategy = repaymentStrategyRepository.findById(strategyId)
                 .orElseThrow(() -> new IllegalArgumentException("Strategy not found"));
 
         String name = strategy.getStrategyName();
 
-        // ❌ ไม่โปะ
         if ("MINIMUM_ONLY".equalsIgnoreCase(name)) {
             return null;
         }
 
-        // 🔵 Snowball: ยอดคงเหลือน้อยที่สุด
         if ("SNOWBALL".equalsIgnoreCase(name)) {
             return debts.stream()
                     .filter(DebtSim::isActive)
@@ -86,17 +87,15 @@ public class RepaymentPlanService {
                     .orElse(null);
         }
 
-        // 🔴 Avalanche: ดอกเบี้ยสูงสุด
+        // ✅ AVALANCHE ใช้ rate แบบ normalize
         if ("AVALANCHE".equalsIgnoreCase(name)) {
             return debts.stream()
                     .filter(DebtSim::isActive)
-                    .max(Comparator.comparing(DebtSim::getInterestRate))
+                    .max(Comparator.comparing(this::annualRateDecimal))
                     .orElse(null);
         }
 
-        // 🟣 Hybrid: ดอกสูง แต่ยอดไม่เกิน median
         if ("HYBRID".equalsIgnoreCase(name)) {
-
             double median = debts.stream()
                     .mapToDouble(DebtSim::getPrincipalAmount)
                     .sorted()
@@ -107,9 +106,10 @@ public class RepaymentPlanService {
             return debts.stream()
                     .filter(DebtSim::isActive)
                     .filter(d -> d.getPrincipalAmount() <= median)
-                    .max(Comparator.comparing(DebtSim::getInterestRate))
+                    .max(Comparator.comparing(this::annualRateDecimal))
                     .orElse(null);
         }
+
         throw new IllegalStateException("Unsupported strategy: " + name);
     }
 
@@ -158,6 +158,7 @@ public class RepaymentPlanService {
 
 
     private PlanResultDTO simulateCore(RepaymentPlan plan, List<DebtSim> debts) {
+
         BigDecimal monthlyBudget = BigDecimal.valueOf(plan.getMonthlyBudget());
         int month = 0;
         BigDecimal totalInterest = BigDecimal.ZERO;
@@ -166,44 +167,104 @@ public class RepaymentPlanService {
         List<MonthlyPlanResultDTO> monthlyResults = new ArrayList<>();
 
         while (!debts.isEmpty()) {
+
             month++;
 
-            // 1) คำนวณยอดขั้นต่ำ (เฉพาะหนี้ที่มี minPayment > 0)
+            // ===== 1) คำนวณยอดขั้นต่ำ =====
             BigDecimal minSum = debts.stream()
                     .map(d -> BigDecimal.valueOf(Math.max(0, d.getMinPayment())))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
             if (monthlyBudget.compareTo(minSum) < 0) {
-                throw new BusinessException("Monthly budget is not enough. Need at least " + minSum, HttpStatus.BAD_REQUEST);
+                throw new BusinessException(
+                        "Monthly budget is not enough. Need at least " + minSum,
+                        HttpStatus.BAD_REQUEST
+                );
             }
 
             BigDecimal remaining = monthlyBudget.subtract(minSum);
 
-            // 2) เลือก target สำหรับ extra (ใช้ strategyId ของแผน หรือใช้ priority ก็ได้)
+            // ===== 2) เลือก target =====
             DebtSim target = selectTarget(debts, plan.getStrategyId());
 
-            // 3) Run month per debt แล้วเก็บรายงาน
+            // ===== 3) เตรียม extraMap กรณีไม่มี target (เช่น MINIMUM_ONLY) =====
+            Map<UUID, BigDecimal> extraMap = new HashMap<>();
+
+            if (target == null && remaining.compareTo(BigDecimal.ZERO) > 0) {
+
+                List<DebtSim> activeDebts = debts.stream()
+                        .filter(DebtSim::isActive)
+                        .toList();
+
+                int n = activeDebts.size();
+
+                if (n > 0) {
+                    BigDecimal each = remaining.divide(
+                            BigDecimal.valueOf(n),
+                            2,
+                            RoundingMode.DOWN
+                    );
+
+                    BigDecimal used = each.multiply(BigDecimal.valueOf(n));
+                    BigDecimal leftover = remaining.subtract(used);
+
+                    for (DebtSim d : activeDebts) {
+                        extraMap.put(d.getDebtId(), each);
+                    }
+
+                    // เอาเศษไปโปะหนี้แรก
+                    if (leftover.compareTo(BigDecimal.ZERO) > 0) {
+                        DebtSim first = activeDebts.get(0);
+                        extraMap.put(
+                                first.getDebtId(),
+                                extraMap.get(first.getDebtId()).add(leftover)
+                        );
+                    }
+                }
+            }
+
+            // ===== 4) เก็บยอดก่อนเดือนนี้ =====
+            double totalBeforeMonth = debts.stream()
+                    .mapToDouble(DebtSim::getPrincipalAmount)
+                    .sum();
+
             List<DebtPaymentDTO> debtPayments = new ArrayList<>();
             BigDecimal monthInterest = BigDecimal.ZERO;
             BigDecimal paidThisMonth = BigDecimal.ZERO;
 
+            // ===== 5) Run month per debt =====
             for (DebtSim d : debts) {
+
                 int typeId = d.repaymentTypeId;
 
                 BigDecimal minPaid = BigDecimal.valueOf(Math.max(0, d.getMinPayment()));
                 BigDecimal extraPaid = BigDecimal.ZERO;
 
-                if (target != null && Objects.equals(d.getDebtId(), target.getDebtId())) {
-                    extraPaid = remaining;
+                if (target != null) {
+                    if (Objects.equals(d.getDebtId(), target.getDebtId())) {
+                        extraPaid = remaining;
+                    }
+                } else {
+                    extraPaid = extraMap.getOrDefault(
+                            d.getDebtId(),
+                            BigDecimal.ZERO
+                    );
                 }
 
                 double before = d.getPrincipalAmount();
 
                 DebtMonthEngine engine = engineFactory.get(typeId);
                 DebtMonthResult r = engine.runMonth(d, minPaid, extraPaid);
+                System.out.println("---- " + d.getDebtName() + " ----");
+                System.out.println("before=" + before + " after=" + d.getPrincipalAmount());
+                System.out.println("interestAdded=" + r.interestAdded);
+                System.out.println("minPaidApplied=" + r.minPaidApplied + " extraPaidApplied=" + r.extraPaidApplied);
+                System.out.println("minPaidInput=" + minPaid + " extraPaidInput=" + extraPaid);
 
                 monthInterest = monthInterest.add(r.interestAdded);
-                paidThisMonth = paidThisMonth.add(r.minPaidApplied).add(r.extraPaidApplied);
+                paidThisMonth = paidThisMonth
+                        .add(r.minPaidApplied)
+                        .add(r.extraPaidApplied);
 
                 debtPayments.add(new DebtPaymentDTO(
                         d.getDebtId(),
@@ -219,11 +280,24 @@ public class RepaymentPlanService {
             totalInterest = totalInterest.add(monthInterest);
             totalPaid = totalPaid.add(paidThisMonth);
 
-            // 4) ปิดหนี้
+            // ===== 6) เช็คว่า principal ลดลงจริงไหม =====
+            double totalAfterMonth = debts.stream()
+                    .mapToDouble(DebtSim::getPrincipalAmount)
+                    .sum();
+
+            if (paidThisMonth.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessException(
+                        "Simulation not progressing: no payment applied by engine.",
+                        HttpStatus.BAD_REQUEST
+                );
+            }
+
+            // ===== 7) ปิดหนี้ที่จ่ายหมด =====
             closePaidDebts(debts);
 
-            // 5) รวมยอดคงเหลือ
-            double remainingTotal = debts.stream().mapToDouble(DebtSim::getPrincipalAmount).sum();
+            double remainingTotal = debts.stream()
+                    .mapToDouble(DebtSim::getPrincipalAmount)
+                    .sum();
 
             monthlyResults.add(new MonthlyPlanResultDTO(
                     month,
@@ -233,10 +307,18 @@ public class RepaymentPlanService {
                     debtPayments
             ));
 
-            if (month > 600) throw new IllegalStateException("Simulation exceeds 50 years");
+            // กันลูปยาวเกินจริง
+            if (month > 600) {
+                throw new IllegalStateException("Simulation exceeds 50 years");
+            }
         }
 
-        return new PlanResultDTO(month, totalInterest.doubleValue(), totalPaid.doubleValue(), monthlyResults);
+        return new PlanResultDTO(
+                month,
+                totalInterest.doubleValue(),
+                totalPaid.doubleValue(),
+                monthlyResults
+        );
     }
     //TODO : end Simulate Repayment Plan function
 

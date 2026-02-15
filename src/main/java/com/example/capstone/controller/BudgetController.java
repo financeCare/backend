@@ -39,6 +39,18 @@ public class BudgetController {
         return budgetService.getIncomeAmount(token);
     }
 
+    @GetMapping("/salary")
+    public double getUserSalary(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        return budgetService.getSalary(token);
+    }
+
+    @PostMapping("/salary/{amount}")
+    public void setUserSalary(@RequestHeader("Authorization") String authorizationHeader,@PathVariable double amount) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        budgetService.setSalary(token,amount);
+    }
+
     @GetMapping("/transactions-overview")
     public List<BudgetOverviewDto> getTransactionOverview(@RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.replace("Bearer ", "");
