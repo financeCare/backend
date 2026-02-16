@@ -20,6 +20,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -133,11 +134,16 @@ public class UserService implements UserDetailsService {
             User newUser = userRepository.findByEmail(email).get();
             createDefaultCategoriesForUser(newUser.getUserId());
         }
+        else if (categoryRepository.findByUserId(user.getUserId()).isEmpty()){
+            createDefaultCategoriesForUser(user.getUserId());
+        }
+
         CreateUserSettingIfNotExists(user.getUserId());
         System.out.println("end line login function");
         return new LoginResponse(accessToken, refreshToken);
     }
 
+    @Transactional
     public LoginResponse loginWithGoogle(IdTokenRequest idTokenString) {
         try {
             System.out.println("start google login function");
@@ -174,6 +180,9 @@ public class UserService implements UserDetailsService {
             if (userOpt.isEmpty()) {
                 User newUser = userRepository.findByEmail(email).get();
                 createDefaultCategoriesForUser(newUser.getUserId());
+            }
+            else if (categoryRepository.findByUserId(user.getUserId()).isEmpty()){
+                createDefaultCategoriesForUser(user.getUserId());
             }
             System.out.println("end google login function");
             CreateUserSettingIfNotExists(user.getUserId());

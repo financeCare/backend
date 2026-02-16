@@ -105,7 +105,7 @@ public class TransactionService {
         double newAmount = budget.getAmount() + transactionRequest.getAmount();
         budget.setAmount(newAmount);
         budgetRepository.save(budget);
-        notificationService.createNotificationRuleForBudget(userId,category.getCategoryName(),budget.getLimitBudget(),transactionRequest.getAmount(),budget.getBudgetId());
+        notificationService.createNotificationRuleForBudget(userId,category.getCategoryName(),budget.getLimitBudget(),budget.getAmount(),budget.getBudgetId());
         return savedTransaction;
     }
 

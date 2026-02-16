@@ -136,60 +136,79 @@ public class NotificationService {
         notificationRuleRepository.save(notificationRule);
     }
 
-    public void createNotificationRuleForBudget(UUID userId,String categoryName,Double limitAmount,Double amount,UUID budgetId) {
-        double usedPercentage = (amount / limitAmount) * 100;
-        if (usedPercentage > 90) {
+    public void createNotificationRuleForBudget(UUID userId, String categoryName,
+                                                Double limitAmount, Double amount, UUID budgetId) {
+        System.out.println("start noti budget");
+        double usedPercentage = (amount / limitAmount) * 100.0;
+        System.out.println("user percentage : " + usedPercentage);
+        if (usedPercentage <= 90) return;
+        double remaining = limitAmount - amount;
         NotificationRule notificationRule = new NotificationRule();
         notificationRule.setUserId(userId);
         notificationRule.setRefType(RefType.BUDGET);
-        notificationRule.setTitle("เตือนงบประมาณใกล้ครบกำหนด");
-        notificationRule.setBodyTemplate("งบประมาณของ " + categoryName+" คงเหลือ " + (limitAmount - amount) + " บาท ("+String.format("%.2f",usedPercentage)+"% ของงบประมาณทั้งหมด)");
         notificationRule.setRemindDaysBefore(0);
         notificationRule.setTimeOfDay(null);
         notificationRule.setTimezone("Asia/Bangkok");
+        if (usedPercentage >= 100) {
+            notificationRule.setTitle("แจ้งเตือนงบประมาณเกินกำหนด");
+            notificationRule.setBodyTemplate(String.format(
+                    "หมวด %s ใช้งบเกินแล้ว %.2f บาท (ใช้ไป %.2f%% ของงบทั้งหมด)",
+                    categoryName,
+                    Math.abs(remaining),
+                    usedPercentage
+            ));
+        } else {
+            notificationRule.setTitle("แจ้งเตือนงบประมาณใกล้ครบกำหนด");
+            notificationRule.setBodyTemplate(String.format(
+                    "หมวด %s เหลืองบประมาณ %.2f บาท (ใช้ไปแล้ว %.2f%% ของงบทั้งหมด)",
+                    categoryName,
+                    remaining,
+                    usedPercentage
+            ));
+        }
         notificationRuleRepository.save(notificationRule);
         List<UserDevice> devices = userDeviceRepository.findAllByUserIdAndIsActiveTrue(userId);
-
-            if (devices.isEmpty()) {
+        if (devices.isEmpty()) {
+            saveLog(
+                    userId, notificationRule.getRuleId(), null,
+                    RefType.BUDGET, budgetId.toString(),
+                    NotificationChannel.PUSH, NotificationStatus.FAILED,
+                    notificationRule.getTitle(), notificationRule.getBodyTemplate(),
+                    "this user doesn't have any device"
+            );
+            return;
+        }
+        for (UserDevice d : devices) {
+            try {
+                System.out.println("before send message");
+                Message message = Message.builder()
+                        .setToken(d.getFcmToken())
+                        .setNotification(Notification.builder()
+                                .setTitle(notificationRule.getTitle())
+                                .setBody(notificationRule.getBodyTemplate())
+                                .build())
+                        .putData("refType", "BUDGET")
+                        .putData("refId", budgetId.toString())
+                        .build();
+                FirebaseMessaging.getInstance().send(message);
+                System.out.println("after send message");
+            } catch (Exception ex) {
                 saveLog(
                         userId, notificationRule.getRuleId(), null,
                         RefType.BUDGET, budgetId.toString(),
                         NotificationChannel.PUSH, NotificationStatus.FAILED,
-                        notificationRule.getTitle(), notificationRule.getBodyTemplate(), "this user don't have any device"
+                        notificationRule.getTitle(), notificationRule.getBodyTemplate(),
+                        ex.getMessage()
                 );
-                return;
             }
-
-            for (UserDevice d : devices) {
-                try {
-                    Message message = Message.builder()
-                            .setToken(d.getFcmToken())
-                            .setNotification(Notification.builder()
-                                    .setTitle(notificationRule.getTitle())
-                                    .setBody(notificationRule.getBodyTemplate())
-                                    .build())
-                            .putData("refType", "DEBT")
-                            .putData("refId", budgetId.toString())
-                            .build();
-
-                    FirebaseMessaging.getInstance().send(message);
-                } catch (Exception ex) {
-                    saveLog(
-                            userId, notificationRule.getRuleId(), null,
-                            RefType.BUDGET, budgetId.toString(),
-                            NotificationChannel.PUSH, NotificationStatus.FAILED,
-                            notificationRule.getTitle(), notificationRule.getBodyTemplate(), ex.getMessage()
-                    );
-                }
-            }
-
-            saveLog(
+        }
+        saveLog(
                 userId, notificationRule.getRuleId(), null,
                 RefType.BUDGET, budgetId.toString(),
                 NotificationChannel.PUSH, NotificationStatus.SENT,
                 notificationRule.getTitle(), notificationRule.getBodyTemplate(), null
         );
-        }
+        System.out.println("saved log");
     }
 
     public Page<NotificationLog> getNotificationLogs(String token, String refType ,Pageable pageable) {
