@@ -37,6 +37,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.*;
 
 import static com.example.capstone.config.GlobalVariables.*;
@@ -195,14 +196,19 @@ public class UserService implements UserDetailsService {
     }
 
     public void createCategoryForUser(UUID userId, String categoryName, String type) {
+        LocalDate today = LocalDate.now();
+        int currentMonth = today.getMonthValue();
+        int currentYear = today.getYear();
         Budget budget = new Budget();
         budget.setUserId(userId);
         budget.setAmount(DEFAULT_BUDGET_AMOUNT);
         if( type.equals(TYPE_EXPENSE)){
             budget.setLimitBudget(DEFAULT_LIMIT_BUDGET);
         } else {
-            budget.setLimitBudget(null);
+            budget.setLimitBudget(0.0);
         }
+        budget.setMonth(currentMonth);
+        budget.setYear(currentYear);
         Budget savedBudget = budgetRepository.save(budget);
         Category category = Category.builder()
                 .userId(userId)
