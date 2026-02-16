@@ -167,6 +167,7 @@ public class UserService implements UserDetailsService {
                 );
             } else {
                 user = userOpt.get();
+                user.setEmailConfirm(true);
                 user.setRefreshToken(refreshToken);
             }
             userRepository.save(user);
