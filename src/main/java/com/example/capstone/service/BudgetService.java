@@ -152,17 +152,26 @@ public class BudgetService {
 
     @Transactional
     public void ensureBudgetMonth(UUID userId, int month, int year) {
-        List<Budget> budgets = budgetRepository.findByUserIdAndMonthAndYear(userId, month, year);
-        Category category = categoryRepository.findByUserIdAndCategoryName(userId,CATEGORY_SALARY);
-            for(Budget b : budgets){
-                if (category.getBudgetId() != b.getBudgetId()) {
-                    b.setUserId(userId);
-                    b.setMonth(month);
-                    b.setYear(year);
-                    b.setAmount(0.0);
-                    budgetRepository.save(b);
-                }
+        List<Category> userCategories = categoryRepository.findByUserId(userId);
+        for (Category category : userCategories) {
+            if (category.getBudgetId() == null) continue;
+
+            Budget currentBudget = budgetRepository.findById(category.getBudgetId()).orElse(null);
+            if (currentBudget != null && (currentBudget.getMonth() != month || currentBudget.getYear() != year)) {
+                
+                Budget newBudget = new Budget();
+                newBudget.setUserId(userId);
+                newBudget.setMonth(month);
+                newBudget.setYear(year);
+                newBudget.setAmount(0.0);
+                newBudget.setLimitBudget(currentBudget.getLimitBudget());
+                
+                budgetRepository.save(newBudget);
+                
+                category.setBudgetId(newBudget.getBudgetId());
+                categoryRepository.save(category);
             }
+        }
     }
 
     @Scheduled(cron = "0 5 0 1 * *", zone = "Asia/Bangkok")
@@ -175,7 +184,7 @@ public class BudgetService {
         List<User> users = userRepository.findAll();
 
         for (User user : users) {
-            ensureBudgetMonth(user.getUserId(),month,year);
+            ensureBudgetMonth(user.getUserId(), month, year);
         }
     }
 

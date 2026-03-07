@@ -48,7 +48,7 @@ public class NotificationRule {
 
     @Builder.Default
     @Column(name = "remind_days_before", nullable = false)
-    private int remindDaysBefore = 3;
+    private Integer remindDaysBefore = 3;
 
     @Builder.Default
     @Column(name = "time_of_day")
@@ -60,7 +60,7 @@ public class NotificationRule {
 
     @Builder.Default
     @Column(name = "is_active", nullable = false)
-    private boolean isActive = true;
+    private Boolean active = true;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

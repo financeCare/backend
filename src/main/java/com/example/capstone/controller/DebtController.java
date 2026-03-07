@@ -2,9 +2,11 @@ package com.example.capstone.controller;
 
 import com.example.capstone.dto.DebtDTO;
 import com.example.capstone.dto.DebtPaymentRequestDTO;
-import com.example.capstone.dto.DebtPaymentResponseDTO;
+
 import com.example.capstone.entity.Debt;
 import com.example.capstone.service.DebtService;
+import com.example.capstone.service.RepaymentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +20,7 @@ import java.util.UUID;
 public class DebtController {
 
     private final DebtService debtService;
+    private final RepaymentService repaymentService;
 
     @GetMapping()
     public ResponseEntity<List<Debt>> getOwnDebt(@RequestHeader("Authorization") String authorizationHeader) {
@@ -40,14 +43,14 @@ public class DebtController {
     }
 
     @PostMapping()
-    public ResponseEntity<Debt> createDebt(@RequestHeader("Authorization") String authorizationHeader,@RequestBody DebtDTO debtDTO) {
+    public ResponseEntity<Debt> createDebt(@RequestHeader("Authorization") String authorizationHeader,@Valid @RequestBody DebtDTO debtDTO) {
         String token = authorizationHeader.replace("Bearer ", "");
         Debt created = debtService.addDebt(token,debtDTO);
         return ResponseEntity.status(201).body(created);
     }
 
     @PutMapping("/{debtId}")
-    public ResponseEntity<Debt> updateDebt(@RequestHeader("Authorization") String authorizationHeader ,@PathVariable String debtId, @RequestBody DebtDTO debtDTO) {
+    public ResponseEntity<Debt> updateDebt(@RequestHeader("Authorization") String authorizationHeader ,@PathVariable String debtId,@Valid @RequestBody DebtDTO debtDTO) {
         String token = authorizationHeader.replace("Bearer ", "");
         Debt updated = debtService.updateDebt(token,UUID.fromString(debtId), debtDTO);
         return ResponseEntity.ok(updated);
@@ -61,12 +64,12 @@ public class DebtController {
     }
 
     @PostMapping("/pays")
-    public DebtPaymentResponseDTO payDebt(
+    public void payDebt(
             @RequestHeader("Authorization") String authHeader,
-            @RequestBody DebtPaymentRequestDTO req
+            @Valid @RequestBody DebtPaymentRequestDTO debtPaymentRequestDTO
     ) {
         String token = authHeader.replace("Bearer ", "");
-        return debtService.payDebt(token, req);
+        repaymentService.payDebt(token, debtPaymentRequestDTO);
     }
 
 }

@@ -3,6 +3,7 @@ package com.example.capstone.dto;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 import jakarta.validation.constraints.*;
@@ -13,12 +14,18 @@ import java.util.UUID;
 @Data
 public class DebtDTO {
 
-    private double principalAmount;
+    @NotNull(message = "Principal amount is required")
+    @PositiveOrZero(message = "Principal amount must be zero or positive")
+    private BigDecimal principalAmount;
 
-    private double interestRate;
+    @NotNull(message = "Interest rate is required")
+    @PositiveOrZero(message = "Interest rate must be zero or positive")
+    private BigDecimal interestRate;
 
+    @NotNull(message = "Repayment type is required")
     private Integer repaymentTypeId;
 
+    @NotNull(message = "Start date is required")
     private Date startDate;
 
     private Date endDate;
@@ -27,11 +34,30 @@ public class DebtDTO {
 
     private int priority;
 
+    @NotNull(message = "Debt type is required")
     private Integer debtTypeId;
 
+    @NotBlank(message = "Debt name is required")
     private String debtName;
 
-    private double minPayment;
+    @NotNull(message = "Minimum payment is required")
+    @PositiveOrZero(message = "Minimum payment must be zero or positive")
+    private BigDecimal minPayment;
 
+    @Min(value = 1, message = "Due day must be at least 1")
+    @Max(value = 31, message = "Due day must be at most 31")
     private int dueDay;
+
+    @PositiveOrZero(message = "Penalty annual rate must be zero or positive")
+    private BigDecimal penaltyAnnualRate;
+
+    @PositiveOrZero(message = "Grace period days must be zero or positive")
+    private int gracePeriodDays;
+
+    @PositiveOrZero(message = "Penalty trigger days must be zero or positive")
+    private int penaltyTriggerDays;
+
+    private boolean isDefaulted;
+
+    private Boolean isInformal;
 }

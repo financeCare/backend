@@ -4,6 +4,7 @@ import com.example.capstone.dto.CategoryDTO;
 import com.example.capstone.entity.Category;
 import com.example.capstone.service.CategoryService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,13 +28,13 @@ public class CategoryController {
     }
 
     @PostMapping
-    public Category createCategory(@RequestHeader("Authorization") String authorizationHeader,@RequestBody CategoryDTO category) {
+    public Category createCategory(@RequestHeader("Authorization") String authorizationHeader,@Valid @RequestBody CategoryDTO category) {
         String token = authorizationHeader.replace("Bearer ", "");
         return categoryService.createCategory(token,category);
     }
 
     @PutMapping("/{categoryId}")
-    public Category updateCategory(@RequestHeader("Authorization") String authorizationHeader,@PathVariable Integer categoryId, @RequestBody CategoryDTO category) {
+    public Category updateCategory(@RequestHeader("Authorization") String authorizationHeader,@PathVariable Integer categoryId,@Valid @RequestBody CategoryDTO category) {
         String token = authorizationHeader.replace("Bearer ", "");
         return categoryService.updateCategory(token,categoryId, category);
     }

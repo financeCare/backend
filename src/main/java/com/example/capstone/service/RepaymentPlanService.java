@@ -1,13 +1,16 @@
 package com.example.capstone.service;
 
+import com.example.capstone.domain.DebtSim;
 import com.example.capstone.dto.*;
-import com.example.capstone.engineFactory.DebtEngineFactory;
-import com.example.capstone.engineInterface.DebtMonthEngine;
-import com.example.capstone.engineInterface.DebtMonthResult;
+import com.example.capstone.enums.RepaymentTypeEnum;
 import com.example.capstone.entity.*;
+import com.example.capstone.entity.RepaymentPlan;
+import com.example.capstone.enums.StrategyType;
 import com.example.capstone.exception.BusinessException;
+import com.example.capstone.factory.StrategyFactory;
 import com.example.capstone.repository.*;
-import jakarta.transaction.Transactional;
+import com.example.capstone.strategy.repayment.RepaymentStrategyInterface;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,7 +18,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -24,8 +26,8 @@ public class RepaymentPlanService {
     private final DebtRepository debtRepository;
     private final RepaymentStrategyRepository repaymentStrategyRepository;
     private final UserService userService;
-
-    private final DebtEngineFactory engineFactory = new DebtEngineFactory();
+    private final RepaymentPlanSimulator repaymentPlanSimulator;
+    private final StrategyFactory strategyFactory;
 
     public RepaymentStrategy createRepaymentStrategy(RepaymentStrategyDTO repaymentStrategyDTO) {
         RepaymentStrategy strategy = new RepaymentStrategy();
@@ -42,9 +44,9 @@ public class RepaymentPlanService {
 
     public RepaymentStrategyDtoResponse getAllRepaymentStrategies(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
-        List<Debt> debts = debtRepository.findByIsActiveAndUserId(true,userId);
+        List<Debt> debts = debtRepository.findByActiveAndUserId(true,userId);
         BigDecimal minSum = debts.stream()
-                .map(d -> BigDecimal.valueOf(Math.max(0, d.getMinPayment())))
+                .map(d -> BigDecimal.valueOf(Math.max(0, d.getMinPayment().intValue())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         return new RepaymentStrategyDtoResponse(minSum.doubleValue(),repaymentStrategyRepository.findAll());
     }
@@ -54,276 +56,8 @@ public class RepaymentPlanService {
         return "Repayment Strategy id " + strategyId + " delete successfully";
     }
 
-    //TODO : helper function for simulate Repayment Plan
-
-    private int resolveRepaymentTypeId(Debt d) {
-        if (d.getRepaymentType() == null) {
-            throw new IllegalStateException("Debt " + d.getDebtId() + " missing repaymentType");
-        }
-        return d.getRepaymentType().getRepaymentTypeId();
-    }
-
-    private double annualRateDecimal(DebtSim d) {
-        double r = d.getInterestRate();
-        // ถ้าเก็บเป็น % เช่น 18 = 18% ให้แปลงเป็น 0.18
-        return (r > 1.0) ? (r / 100.0) : r;
-    }
-
-    private DebtSim selectTarget(List<DebtSim> debts, UUID strategyId) {
-
-        RepaymentStrategy strategy = repaymentStrategyRepository.findById(strategyId)
-                .orElseThrow(() -> new IllegalArgumentException("Strategy not found"));
-
-        String name = strategy.getStrategyName();
-
-        if ("MINIMUM_ONLY".equalsIgnoreCase(name)) {
-            return null;
-        }
-
-        if ("SNOWBALL".equalsIgnoreCase(name)) {
-            return debts.stream()
-                    .filter(DebtSim::isActive)
-                    .min(Comparator.comparing(DebtSim::getPrincipalAmount))
-                    .orElse(null);
-        }
-
-        // ✅ AVALANCHE ใช้ rate แบบ normalize
-        if ("AVALANCHE".equalsIgnoreCase(name)) {
-            return debts.stream()
-                    .filter(DebtSim::isActive)
-                    .max(Comparator.comparing(this::annualRateDecimal))
-                    .orElse(null);
-        }
-
-        if ("HYBRID".equalsIgnoreCase(name)) {
-            double median = debts.stream()
-                    .mapToDouble(DebtSim::getPrincipalAmount)
-                    .sorted()
-                    .skip(debts.size() / 2)
-                    .findFirst()
-                    .orElse(Double.MAX_VALUE);
-
-            return debts.stream()
-                    .filter(DebtSim::isActive)
-                    .filter(d -> d.getPrincipalAmount() <= median)
-                    .max(Comparator.comparing(this::annualRateDecimal))
-                    .orElse(null);
-        }
-
-        throw new IllegalStateException("Unsupported strategy: " + name);
-    }
-
-    private BigDecimal sumMinPayments(List<Debt> debts) {
-        return debts.stream()
-                .map(d -> BigDecimal.valueOf(d.getMinPayment()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-    private void closePaidDebts(List<DebtSim> debts) {
-        for (DebtSim d : debts) {
-            if (d.getPrincipalAmount() <= 0.000001) {
-                d.setActive(false);
-            }
-        }
-        debts.removeIf(d -> !d.isActive());
-    }
-
-    //TODO : end helper simulator for Repayment Plan function
-
-    //TODO : Simulate Repayment Plan function
-    @Transactional()
-    public PlanResultDTO simulate(String token) {
-        UUID userId = userService.extractUserIdFromToken(token);
-        RepaymentPlan plan = repaymentPlanRepository.findByUserId(userId);
-        if (plan == null) {
-            throw new BusinessException("Repayment plan not found for user", HttpStatus.NOT_FOUND);
-        }
-        List<Debt> debts = debtRepository.findByIsActiveAndUserId(true,userId);
-        if (debts.isEmpty()) {
-            return new PlanResultDTO(0, 0.0, 0.0, List.of());
-        }
-        List<DebtSim> simDebts = debts.stream().map(d -> {
-            DebtSim s = new DebtSim();
-            s.debtId = d.getDebtId();
-            s.debtName = d.getDebtName();
-            s.principalAmount = d.getPrincipalAmount();
-            s.interestRate = d.getInterestRate();
-            s.minPayment = d.getMinPayment();
-            s.isActive = d.isActive();
-            s.setRepaymentTypeId(resolveRepaymentTypeId(d));
-            return s;
-        }).collect(Collectors.toList());
-        return simulateCore(plan, simDebts);
-    }
-
-
-    private PlanResultDTO simulateCore(RepaymentPlan plan, List<DebtSim> debts) {
-
-        BigDecimal monthlyBudget = BigDecimal.valueOf(plan.getMonthlyBudget());
-        int month = 0;
-        BigDecimal totalInterest = BigDecimal.ZERO;
-        BigDecimal totalPaid = BigDecimal.ZERO;
-
-        List<MonthlyPlanResultDTO> monthlyResults = new ArrayList<>();
-
-        while (!debts.isEmpty()) {
-
-            month++;
-
-            // ===== 1) คำนวณยอดขั้นต่ำ =====
-            BigDecimal minSum = debts.stream()
-                    .map(d -> BigDecimal.valueOf(Math.max(0, d.getMinPayment())))
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            if (monthlyBudget.compareTo(minSum) < 0) {
-                throw new BusinessException(
-                        "Monthly budget is not enough. Need at least " + minSum,
-                        HttpStatus.BAD_REQUEST
-                );
-            }
-
-            BigDecimal remaining = monthlyBudget.subtract(minSum);
-
-            // ===== 2) เลือก target =====
-            DebtSim target = selectTarget(debts, plan.getStrategyId());
-
-            // ===== 3) เตรียม extraMap กรณีไม่มี target (เช่น MINIMUM_ONLY) =====
-            Map<UUID, BigDecimal> extraMap = new HashMap<>();
-
-            if (target == null && remaining.compareTo(BigDecimal.ZERO) > 0) {
-
-                List<DebtSim> activeDebts = debts.stream()
-                        .filter(DebtSim::isActive)
-                        .toList();
-
-                int n = activeDebts.size();
-
-                if (n > 0) {
-                    BigDecimal each = remaining.divide(
-                            BigDecimal.valueOf(n),
-                            2,
-                            RoundingMode.DOWN
-                    );
-
-                    BigDecimal used = each.multiply(BigDecimal.valueOf(n));
-                    BigDecimal leftover = remaining.subtract(used);
-
-                    for (DebtSim d : activeDebts) {
-                        extraMap.put(d.getDebtId(), each);
-                    }
-
-                    // เอาเศษไปโปะหนี้แรก
-                    if (leftover.compareTo(BigDecimal.ZERO) > 0) {
-                        DebtSim first = activeDebts.get(0);
-                        extraMap.put(
-                                first.getDebtId(),
-                                extraMap.get(first.getDebtId()).add(leftover)
-                        );
-                    }
-                }
-            }
-
-            // ===== 4) เก็บยอดก่อนเดือนนี้ =====
-            double totalBeforeMonth = debts.stream()
-                    .mapToDouble(DebtSim::getPrincipalAmount)
-                    .sum();
-
-            List<DebtPaymentDTO> debtPayments = new ArrayList<>();
-            BigDecimal monthInterest = BigDecimal.ZERO;
-            BigDecimal paidThisMonth = BigDecimal.ZERO;
-
-            // ===== 5) Run month per debt =====
-            for (DebtSim d : debts) {
-
-                int typeId = d.repaymentTypeId;
-
-                BigDecimal minPaid = BigDecimal.valueOf(Math.max(0, d.getMinPayment()));
-                BigDecimal extraPaid = BigDecimal.ZERO;
-
-                if (target != null) {
-                    if (Objects.equals(d.getDebtId(), target.getDebtId())) {
-                        extraPaid = remaining;
-                    }
-                } else {
-                    extraPaid = extraMap.getOrDefault(
-                            d.getDebtId(),
-                            BigDecimal.ZERO
-                    );
-                }
-
-                double before = d.getPrincipalAmount();
-
-                DebtMonthEngine engine = engineFactory.get(typeId);
-                DebtMonthResult r = engine.runMonth(d, minPaid, extraPaid);
-                System.out.println("---- " + d.getDebtName() + " ----");
-                System.out.println("before=" + before + " after=" + d.getPrincipalAmount());
-                System.out.println("interestAdded=" + r.interestAdded);
-                System.out.println("minPaidApplied=" + r.minPaidApplied + " extraPaidApplied=" + r.extraPaidApplied);
-                System.out.println("minPaidInput=" + minPaid + " extraPaidInput=" + extraPaid);
-
-                monthInterest = monthInterest.add(r.interestAdded);
-                paidThisMonth = paidThisMonth
-                        .add(r.minPaidApplied)
-                        .add(r.extraPaidApplied);
-
-                debtPayments.add(new DebtPaymentDTO(
-                        d.getDebtId(),
-                        d.getDebtName(),
-                        before,
-                        r.interestAdded.doubleValue(),
-                        r.minPaidApplied.doubleValue(),
-                        r.extraPaidApplied.doubleValue(),
-                        d.getPrincipalAmount()
-                ));
-            }
-
-            totalInterest = totalInterest.add(monthInterest);
-            totalPaid = totalPaid.add(paidThisMonth);
-
-            // ===== 6) เช็คว่า principal ลดลงจริงไหม =====
-            double totalAfterMonth = debts.stream()
-                    .mapToDouble(DebtSim::getPrincipalAmount)
-                    .sum();
-
-            if (paidThisMonth.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new BusinessException(
-                        "Simulation not progressing: no payment applied by engine.",
-                        HttpStatus.BAD_REQUEST
-                );
-            }
-
-            // ===== 7) ปิดหนี้ที่จ่ายหมด =====
-            closePaidDebts(debts);
-
-            double remainingTotal = debts.stream()
-                    .mapToDouble(DebtSim::getPrincipalAmount)
-                    .sum();
-
-            monthlyResults.add(new MonthlyPlanResultDTO(
-                    month,
-                    monthInterest.doubleValue(),
-                    paidThisMonth.doubleValue(),
-                    remainingTotal,
-                    debtPayments
-            ));
-
-            // กันลูปยาวเกินจริง
-            if (month > 600) {
-                throw new IllegalStateException("Simulation exceeds 50 years");
-            }
-        }
-
-        return new PlanResultDTO(
-                month,
-                totalInterest.doubleValue(),
-                totalPaid.doubleValue(),
-                monthlyResults
-        );
-    }
-    //TODO : end Simulate Repayment Plan function
-
     //TODO : Create Repayment Plan function
-    public RepaymentPlan changeRepaymentPlan(UUID userId, double monthlyBudget, UUID strategyId) {
+    public RepaymentPlan changeRepaymentPlan(UUID userId, BigDecimal monthlyBudget, UUID strategyId) {
         RepaymentPlan repaymentPlan = repaymentPlanRepository.findByUserId(userId);
         if (repaymentPlan != null) {
             repaymentPlan.setMonthlyBudget(monthlyBudget);
@@ -339,10 +73,135 @@ public class RepaymentPlanService {
         }
     }
 
-    public BigDecimal sumMinPaymentsForUser(String token) {
+    @Transactional(readOnly = true)
+    public PlanResultDTO simulate(String token) {
+
         UUID userId = userService.extractUserIdFromToken(token);
-        List<Debt> debts = debtRepository.findByIsActiveAndUserId(true, userId);
-        return sumMinPayments(debts);
+
+        RepaymentPlan planEntity =
+                repaymentPlanRepository.findByUserId(userId);
+
+        if (planEntity == null) {
+            throw new BusinessException(
+                    "Repayment plan not found",
+                    HttpStatus.NOT_FOUND
+            );
+        }
+
+        List<Debt> debtEntities =
+                debtRepository.findByActiveAndUserId(true, userId);
+
+        if (debtEntities.isEmpty()) {
+            return new PlanResultDTO(
+                    0,
+                    BigDecimal.ZERO,
+                    BigDecimal.ZERO,
+                    new ArrayList<>()
+            );
+        }
+
+        RepaymentPlanDtoV2 simPlan = mapToDomainPlan(planEntity);
+
+        List<DebtSim> simDebts =
+                debtEntities.stream()
+                        .map(this::mapToDomainDebt)
+                        .toList();
+
+        RepaymentStrategyInterface strategy =
+                strategyFactory.getStrategy(simPlan.getStrategyType());
+
+        return repaymentPlanSimulator.simulateCore(simPlan, simDebts, strategy);
     }
 
+    private RepaymentPlanDtoV2 mapToDomainPlan(RepaymentPlan entity) {
+
+        if (entity == null) {
+            throw new IllegalArgumentException("RepaymentPlanEntity must not be null");
+        }
+
+        if (entity.getStrategyId() == null) {
+            throw new IllegalStateException("Strategy is not configured for this plan");
+        }
+
+        RepaymentPlanDtoV2 plan = new RepaymentPlanDtoV2();
+
+        // Budget
+        plan.setMonthlyBudget(
+                entity.getMonthlyBudget() != null
+                        ? entity.getMonthlyBudget()
+                        : BigDecimal.ZERO
+        );
+
+        // Strategy Mapping (Entity → Domain Enum)
+        String strategyName = repaymentStrategyRepository.findById(entity.getStrategyId()).orElseThrow(
+                () -> new IllegalArgumentException("Strategy not found")).getStrategyName();
+
+        try {
+            plan.setStrategyType(StrategyType.valueOf(strategyName));
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalStateException(
+                    "Unknown strategy type in database: " + strategyName
+            );
+        }
+
+        return plan;
+    }
+    private DebtSim mapToDomainDebt(Debt entity) {
+
+        if (entity == null) {
+            throw new IllegalArgumentException("Debt entity must not be null");
+        }
+
+        DebtSim debtSim = new DebtSim();
+
+        debtSim.setDebtId(entity.getDebtId());
+        debtSim.setDebtName(entity.getDebtName());
+
+        // Principal
+        debtSim.setPrincipal(
+                entity.getPrincipalAmount() != null
+                        ? entity.getPrincipalAmount()
+                        : BigDecimal.ZERO
+        );
+
+        // Interest Rate (normalize % → decimal)
+        debtSim.setAnnualInterestRate(normalizeRate(entity.getInterestRate()));
+
+        // Interest Type (รองรับ DAILY_COMPOUND)
+        debtSim.setInterestType(entity.getInterestCalculationType());
+
+        // Min Payment
+        debtSim.setMinPayment(
+                entity.getMinPayment() != null
+                        ? entity.getMinPayment()
+                        : BigDecimal.ZERO
+        );
+
+        debtSim.setActive(entity.getActive());
+        debtSim.setRepaymentType(RepaymentTypeEnum.valueOf(entity.getRepaymentType().getRepaymentTypeName()));
+
+        // New fields for penalty and late detection
+        debtSim.setDueDay(entity.getDueDay());
+        debtSim.setGracePeriodDays(entity.getGracePeriodDays());
+        debtSim.setPenaltyTriggerDays(entity.getPenaltyTriggerDays());
+        debtSim.setPenaltyAnnualRate(normalizeRate(entity.getPenaltyAnnualRate()));
+        debtSim.setDefaulted(entity.getDefaulted());
+        debtSim.setInformal(entity.getIsInformal() != null ? entity.getIsInformal() : false);
+
+        return debtSim;
+    }
+
+    private BigDecimal normalizeRate(BigDecimal rate) {
+
+        if (rate == null) {
+            return BigDecimal.ZERO;
+        }
+
+        // ถ้าเก็บ 10 = 10% → แปลงเป็น 0.10
+        if (rate.compareTo(BigDecimal.ONE) > 0) {
+            return rate.divide(BigDecimal.valueOf(100), RoundingMode.HALF_UP);
+        }
+
+        return rate;
+    }
 }

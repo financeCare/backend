@@ -10,7 +10,7 @@ import java.util.UUID;
 public interface UserDeviceRepository extends JpaRepository<UserDevice, UUID> {
 
     Optional<UserDevice> findByFcmToken(String fcmToken);
-    List<UserDevice> findAllByUserIdAndIsActiveTrue(UUID userId);
+    List<UserDevice> findAllByUserIdAndActiveTrue(UUID userId);
     long deleteByFcmToken(String fcmToken);
     boolean existsByFcmToken(String fcmToken);
     Optional<UserDevice> findByDeviceKeyAndUserId(String deviceKey, UUID userId);

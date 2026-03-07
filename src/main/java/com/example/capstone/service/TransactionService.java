@@ -187,19 +187,5 @@ public class TransactionService {
         transactionRepository.save(transaction);
     }
 
-    @Scheduled(cron = "0 0 0 1 * *")
-    public void clearBudgetForExtraIncome() {
-        List<Category> categories = categoryRepository.findAll();
-        for (Category category : categories) {
-            if (!category.getCategoryName().equals(CATEGORY_SALARY) && !category.getCategoryName().equals(CATEGORY_SAVING)) {
-                List<Budget> budgets = budgetRepository.findByUserId(category.getUserId());
-                for (Budget budget : budgets) {
-                    budget.setAmount(0.0);
-                    budgetRepository.save(budget);
-                }
-            }
-        }
-    }
-
 
 }

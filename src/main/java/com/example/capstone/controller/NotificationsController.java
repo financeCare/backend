@@ -6,6 +6,7 @@ import com.example.capstone.dto.UserDeviceRequest;
 import com.example.capstone.dto.UserDeviceResponse;
 import com.example.capstone.entity.NotificationLog;
 import com.example.capstone.service.NotificationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -68,7 +69,7 @@ public class NotificationsController {
 
     @PostMapping("/devices/register")
     public UserDeviceResponse registerDevice(@RequestHeader("Authorization") String authorizationHeader,
-                                             @RequestBody UserDeviceRequest userDeviceRequest) {
+                                             @Valid @RequestBody UserDeviceRequest userDeviceRequest) {
         String token = authorizationHeader.replace("Bearer ", "");
         System.out.println("register devices");
         return notificationsService.registerDevice(token, userDeviceRequest);

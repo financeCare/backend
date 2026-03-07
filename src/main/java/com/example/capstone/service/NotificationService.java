@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -63,7 +64,7 @@ public class NotificationService {
                 d.setActive(true);
 
                 userDeviceRepository.save(d);
-                return new UserDeviceResponse(d.getDeviceId(), d.isActive(), now);
+                return new UserDeviceResponse(d.getDeviceId(), d.getActive(), now);
             }
         }
 
@@ -80,7 +81,7 @@ public class NotificationService {
             d.setActive(true);
 
             userDeviceRepository.save(d);
-            return new UserDeviceResponse(d.getDeviceId(), d.isActive(), now);
+            return new UserDeviceResponse(d.getDeviceId(), d.getActive(), now);
         }
 
         // 3) ไม่เจอทั้งคู่ → create ใหม่
@@ -94,12 +95,12 @@ public class NotificationService {
         d.setActive(true);
 
         userDeviceRepository.save(d);
-        return new UserDeviceResponse(d.getDeviceId(), d.isActive(), now);
+        return new UserDeviceResponse(d.getDeviceId(), d.getActive(), now);
     }
 
     public List<DeviceListDto> getMyDevices(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
-        List<UserDevice> userDevices = userDeviceRepository.findAllByUserIdAndIsActiveTrue(userId);
+        List<UserDevice> userDevices = userDeviceRepository.findAllByUserIdAndActiveTrue(userId);
         return userDevices.stream()
                 .map(ud -> new DeviceListDto(
                         ud.getDeviceId(),
@@ -122,7 +123,7 @@ public class NotificationService {
     }
 
     //TODO: create notification rule for debt implementation with de
-    public void createNotificationRuleForDebt(UUID userId,String debtName,Double minPayment,UUID debtId) {
+    public void createNotificationRuleForDebt(UUID userId, String debtName, BigDecimal minPayment, UUID debtId) {
         UserSetting userSetting = userSettingRepository.findById(userId).orElseThrow(() -> new BusinessException("User id is not found", HttpStatus.NOT_FOUND));
         NotificationRule notificationRule = new NotificationRule();
         notificationRule.setUserId(userId);
@@ -167,7 +168,7 @@ public class NotificationService {
             ));
         }
         notificationRuleRepository.save(notificationRule);
-        List<UserDevice> devices = userDeviceRepository.findAllByUserIdAndIsActiveTrue(userId);
+        List<UserDevice> devices = userDeviceRepository.findAllByUserIdAndActiveTrue(userId);
         if (devices.isEmpty()) {
             saveLog(
                     userId, notificationRule.getRuleId(), null,
@@ -243,7 +244,7 @@ public class NotificationService {
     @Scheduled(cron = "0 * * * * *") // ทุก 1 นาที
     public void runNotificationScheduler() {
         List<NotificationRule> rules =
-                notificationRuleRepository.findAllByIsActive(true);
+                notificationRuleRepository.findAllByActive(true);
         for (NotificationRule rule : rules) {
             processRule(rule);
         }
@@ -256,12 +257,12 @@ public class NotificationService {
         if (setting == null) return;
 
         // master switch
-        if (!setting.isNotificationsEnabled()) return;
+        if (!setting.getNotificationsEnabled()) return;
         if (rule.getRefType() == RefType.DEBT) {
             Debt debt = debtRepository
                     .findById(UUID.fromString(rule.getRefId()))
                     .orElse(null);
-            if (debt == null || !debt.isActive()){
+            if (debt == null || !debt.getActive()){
                 return;
             }
             String timezone = setting.getTimezone();
@@ -345,7 +346,7 @@ public class NotificationService {
         String title = (remindDaysBefore == 0) ? "วันนี้ครบกำหนดชำระหนี้" : "เตือนหนี้ใกล้ครบกำหนด";
         String body = buildDebtBody(debt, dueDate, remindDaysBefore);
 
-        List<UserDevice> devices = userDeviceRepository.findAllByUserIdAndIsActiveTrue(userId);
+        List<UserDevice> devices = userDeviceRepository.findAllByUserIdAndActiveTrue(userId);
 
         if (devices.isEmpty()) {
             saveLog(

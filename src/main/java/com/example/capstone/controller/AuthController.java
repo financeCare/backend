@@ -10,6 +10,7 @@ import com.example.capstone.repository.UserRepository;
 import com.example.capstone.security.RefreshTokenService;
 import com.example.capstone.service.UserService;
 import com.example.capstone.security.JwtUtil;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,7 +55,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
             UsernamePasswordAuthenticationToken authToken =
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword());
@@ -100,7 +101,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request){
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request){
         try {
             userService.registerUser(request);
             return ResponseEntity.status(HttpStatus.CREATED).body("user created");

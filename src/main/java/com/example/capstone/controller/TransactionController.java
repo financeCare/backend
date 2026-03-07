@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -49,13 +50,13 @@ public class TransactionController {
     }
 
     @PostMapping
-    public Transaction createTransaction(@RequestHeader("Authorization") String authorizationHeader,@RequestBody TransactionRequest transaction) {
+    public Transaction createTransaction(@RequestHeader("Authorization") String authorizationHeader,@Valid @RequestBody TransactionRequest transaction) {
         String token = authorizationHeader.replace("Bearer ", "");
         return transactionService.createTransaction(token,transaction);
     }
 
     @PutMapping("/{transactionId}")
-    public Transaction updateTransaction(@RequestHeader("Authorization") String authorizationHeader,@PathVariable UUID transactionId, @RequestBody TransactionRequest transaction) {
+    public Transaction updateTransaction(@RequestHeader("Authorization") String authorizationHeader,@PathVariable UUID transactionId,@Valid @RequestBody TransactionRequest transaction) {
         String token = authorizationHeader.replace("Bearer ", "");
         return transactionService.updateTransaction(token,transactionId, transaction);
     }

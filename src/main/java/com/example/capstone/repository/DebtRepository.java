@@ -11,6 +11,8 @@ import java.util.UUID;
 public interface DebtRepository extends JpaRepository<Debt,UUID > {
     List<Debt> findAllByUserId(UUID userId);
     Optional<Debt> findByDebtIdAndUserId(UUID debtId, UUID userId);
-    List<Debt> findByIsActiveAndUserId(boolean isActive, UUID userId);
-    List<Debt> findByIsActiveTrueAndDueDay(int dueDay);
+    Optional<Debt> findByDebtIdAndUserIdAndActiveTrue(UUID debtId, UUID userId);
+    List<Debt> findByActiveAndUserId(Boolean active, UUID userId);
+    List<Debt> findByActiveTrueAndDueDay(Integer dueDay);
+    List<Debt> findByActiveTrue();
 }

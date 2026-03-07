@@ -9,6 +9,7 @@ import com.example.capstone.entity.User;
 import com.example.capstone.entity.UserSetting;
 import com.example.capstone.service.TransactionService;
 import com.example.capstone.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -33,7 +34,7 @@ public class UserSettingController {
     }
 
     @PutMapping
-    public UserSetting setUserUserSetting(@RequestHeader("Authorization") String authorizationHeader, @RequestBody UserSettingDto userSettingDto) {
+    public UserSetting setUserUserSetting(@RequestHeader("Authorization") String authorizationHeader, @Valid @RequestBody UserSettingDto userSettingDto) {
         String token = authorizationHeader.replace("Bearer ", "");
         return userService.setUserSetting(token,userSettingDto);
     }

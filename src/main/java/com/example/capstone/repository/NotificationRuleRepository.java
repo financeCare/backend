@@ -12,12 +12,12 @@ public interface NotificationRuleRepository extends JpaRepository<NotificationRu
 
     List<NotificationRule> findAllByUserId(UUID userId);
 
-    List<NotificationRule> findAllByUserIdAndIsActiveTrue(UUID userId);
+    List<NotificationRule> findAllByUserIdAndActiveTrue(UUID userId);
 
     Optional<NotificationRule> findByUserIdAndRefTypeAndRefId(UUID userId, RefType refType, String refId);
 
-    List<NotificationRule> findAllByRefTypeAndIsActiveTrue(RefType refType);
+    List<NotificationRule> findAllByRefTypeAndActiveTrue(RefType refType);
     Optional<NotificationRule> findByRuleIdAndUserId(UUID notificationRuleId, UUID userId);
-    Optional<NotificationRule> findByUserIdAndRefTypeAndRefIdAndIsActiveTrue(UUID userId, RefType refType, String refId);
-    List<NotificationRule> findAllByIsActive(boolean isActive);
+    Optional<NotificationRule> findByUserIdAndRefTypeAndRefIdAndActiveTrue(UUID userId, RefType refType, String refId);
+    List<NotificationRule> findAllByActive(Boolean active);
 }

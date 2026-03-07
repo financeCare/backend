@@ -37,6 +37,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.*;
@@ -131,7 +132,7 @@ public class UserService implements UserDetailsService {
         }
         userRepository.save(user);
         if (userOpt.isEmpty()) {
-            User newUser = userRepository.findByEmail(email).get();
+            User newUser = userRepository.findByEmail(email).orElseThrow(() -> new BusinessException("can't find this user email",HttpStatus.BAD_REQUEST));
             createDefaultCategoriesForUser(newUser.getUserId());
         }
         else if (categoryRepository.findByUserId(user.getUserId()).isEmpty()){
@@ -178,7 +179,7 @@ public class UserService implements UserDetailsService {
             }
             userRepository.save(user);
             if (userOpt.isEmpty()) {
-                User newUser = userRepository.findByEmail(email).get();
+                User newUser = userRepository.findByEmail(email).orElseThrow(() -> new BusinessException("can't find this user email",HttpStatus.BAD_REQUEST));
                 createDefaultCategoriesForUser(newUser.getUserId());
             }
             else if (categoryRepository.findByUserId(user.getUserId()).isEmpty()){
@@ -315,8 +316,8 @@ public class UserService implements UserDetailsService {
 
     public UserSettingResponseDto getUserSetting(String token){
         UUID userId = extractUserIdFromToken(token);
-        List<UserDevice> userDevices = userDeviceRepository.findAllByUserIdAndIsActiveTrue(userId);
-        return new UserSettingResponseDto(userSettingRepository.findByUserId(userId),userDevices.stream()
+        List<UserDevice> devices = userDeviceRepository.findAllByUserIdAndActiveTrue(userId);
+        return new UserSettingResponseDto(userSettingRepository.findByUserId(userId),devices.stream()
                 .map(ud -> new DeviceListDto(
                         ud.getDeviceId(),
                         ud.getDeviceName(),
@@ -337,14 +338,14 @@ public class UserService implements UserDetailsService {
         userSetting.setDefaultRemindDaysBefore(newSettings.getNotify_due_days_before());
         RepaymentPlan repaymentPlan = repaymentPlanRepository.findByUserId(userId);
         if (repaymentPlan != null) {
-            repaymentPlan.setMonthlyBudget(newSettings.getMonthly_repayment_budget());
+            repaymentPlan.setMonthlyBudget(BigDecimal.valueOf(newSettings.getMonthly_repayment_budget()));
             repaymentPlan.setStrategyId(repaymentPlanRepository.findByUserId(userId).getStrategyId());
              repaymentPlanRepository.save(repaymentPlan);
         }else{
             RepaymentPlan plan = new RepaymentPlan();
             plan.setPlanId(UUID.randomUUID());
             plan.setUserId(userId);
-            plan.setMonthlyBudget(newSettings.getMonthly_repayment_budget());
+            plan.setMonthlyBudget(BigDecimal.valueOf(newSettings.getMonthly_repayment_budget()));
             plan.setStrategyId(repaymentPlanRepository.findByUserId(userId).getStrategyId());
              repaymentPlanRepository.save(plan);
         }

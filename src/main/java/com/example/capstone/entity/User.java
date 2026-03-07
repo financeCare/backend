@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.awt.print.Book;
 import java.util.Date;
 import java.util.UUID;
 
@@ -32,7 +31,8 @@ public class User {
     @Column(name = "refresh_token")
     private String refreshToken;
 
-    public User(String username, String passwordHash, Date dob, String email, Boolean emailConfirm, String refreshToken) {
+    public User(String username, String passwordHash, Date dob, String email, Boolean emailConfirm,
+            String refreshToken) {
         this.username = username;
         this.passwordHash = passwordHash;
         this.dob = dob;

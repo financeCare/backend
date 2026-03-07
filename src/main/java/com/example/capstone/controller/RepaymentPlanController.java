@@ -6,6 +6,7 @@ import com.example.capstone.dto.RepaymentStrategyDtoResponse;
 import com.example.capstone.service.RepaymentPlanService;
 import com.example.capstone.service.UserService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +21,7 @@ public class RepaymentPlanController {
     private final UserService userService;
 
 @PostMapping("/strategies")
-    public ResponseEntity<?> createRepaymentStrategy(@RequestBody RepaymentStrategyDTO repaymentStrategyDTO) {
+    public ResponseEntity<?> createRepaymentStrategy(@Valid @RequestBody RepaymentStrategyDTO repaymentStrategyDTO) {
         return ResponseEntity.ok(repaymentPlanService.createRepaymentStrategy(repaymentStrategyDTO));
     }
 
@@ -36,14 +37,14 @@ public class RepaymentPlanController {
     }
 
     @PostMapping()
-    public ResponseEntity<?> createRepaymentPlan(@RequestHeader("Authorization") String authorizationHeader, @RequestBody RepaymentPlanDTO repaymentPlanDTO){
+    public ResponseEntity<?> createRepaymentPlan(@RequestHeader("Authorization") String authorizationHeader,@Valid @RequestBody RepaymentPlanDTO repaymentPlanDTO){
         String token = authorizationHeader.replace("Bearer ", "");
         return ResponseEntity.ok(repaymentPlanService.changeRepaymentPlan(userService.extractUserIdFromToken(token), repaymentPlanDTO.getMonthlyBudget(),repaymentPlanDTO.getStrategyId()));
     }
 
-    @GetMapping("/simulate")
-    public ResponseEntity<?> simulateRepaymentPlan(@RequestHeader("Authorization") String authorizationHeader){
-        String token = authorizationHeader.replace("Bearer ", "");
-        return ResponseEntity.ok(repaymentPlanService.simulate(token));
-    }
+//    @GetMapping("/simulate")
+//    public ResponseEntity<?> simulateRepaymentPlan(@RequestHeader("Authorization") String authorizationHeader){
+//        String token = authorizationHeader.replace("Bearer ", "");
+//        return ResponseEntity.ok(repaymentPlanService.simulate(token));
+//    }
 }

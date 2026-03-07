@@ -12,18 +12,24 @@ import org.springframework.web.context.request.WebRequest;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<Map<String, Object>> handleEmailExistsException(EmailAlreadyExistsException ex) {
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("error", ex.getMessage());
-
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+    public ResponseEntity<ErrorResponse> handleEmailExistsException(EmailAlreadyExistsException ex, WebRequest request) {
+        ErrorResponse error = buildErrorResponse(
+                "EMAIL_ALREADY_EXISTS",
+                ex.getMessage(),
+                request
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     private ErrorResponse buildErrorResponse(String error, String message, WebRequest request) {
@@ -40,10 +46,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex, WebRequest request) {
-        ex.printStackTrace();
+        logger.error("Internal Server Error: ", ex);
         ErrorResponse error = buildErrorResponse(
                 "INTERNAL_SERVER_ERROR",
-                ex.getMessage(),
+                "An unexpected error occurred. Please try again later.",
                 request
         );
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -61,17 +67,39 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex, WebRequest request) {
+        Map<String, String> fieldErrors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> 
+            fieldErrors.put(error.getField(), error.getDefaultMessage())
+        );
 
-        String message = ex.getBindingResult().getFieldErrors()
-                .stream()
-                .map(err -> err.getField() + ": " + err.getDefaultMessage())
-                .collect(Collectors.joining(", "));
+        String message = "Validation failed for " + ex.getBindingResult().getObjectName();
 
         ErrorResponse error = buildErrorResponse(
                 "VALIDATION_ERROR",
                 message,
                 request
         );
+        error.setFieldErrors(fieldErrors);
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex, WebRequest request) {
+        ErrorResponse error = buildErrorResponse(
+                "BAD_REQUEST",
+                "Malformed JSON request or invalid data format",
+                request
+        );
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoHandlerFoundException(NoHandlerFoundException ex, WebRequest request) {
+        ErrorResponse error = buildErrorResponse(
+                "NOT_FOUND",
+                "The requested resource was not found",
+                request
+        );
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 }

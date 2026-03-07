@@ -19,4 +19,5 @@ public class GlobalVariables {
     public static final double DEFAULT_BUDGET_AMOUNT = 0.0;
     public static final double DEFAULT_LIMIT_BUDGET = 1000;
 
+
 }

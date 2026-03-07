@@ -25,16 +25,16 @@ public class UserSetting {
     // Master switch
     @Column(name = "notifications_enabled", nullable = false)
     @Builder.Default
-    private boolean notificationsEnabled = true;
+    private Boolean notificationsEnabled = true;
 
     @Builder.Default
     @Column(name = "push_enabled", nullable = false)
-    private boolean pushEnabled = true;
+    private Boolean pushEnabled = true;
 
     // Defaults for notification rules
     @Builder.Default
     @Column(name = "default_remind_days_before", nullable = false)
-    private int defaultRemindDaysBefore = 3;
+    private Integer defaultRemindDaysBefore = 3;
 
     @Builder.Default
     @Column(name = "default_notify_time", nullable = false)

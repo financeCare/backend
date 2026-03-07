@@ -3,6 +3,7 @@ package com.example.capstone.controller;
 import com.example.capstone.entity.DebtType;
 import com.example.capstone.service.DebtTypeService;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +22,7 @@ public class DebtTypeController {
     }
 
     @PostMapping
-    public ResponseEntity<String> addDebtType(@RequestBody DebtType debtType) {
+    public ResponseEntity<String> addDebtType(@Valid @RequestBody DebtType debtType) {
         String msg = debtTypeService.addDebtType(debtType);
         return ResponseEntity.status(201).body(msg);
     }
