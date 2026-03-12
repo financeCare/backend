@@ -22,7 +22,7 @@ public class DebtController {
     private final DebtService debtService;
     private final RepaymentService repaymentService;
 
-    @GetMapping()
+    @GetMapping
     public ResponseEntity<List<Debt>> getOwnDebt(@RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.replace("Bearer ", "");
         List<Debt> debt = debtService.getOwnDebt(token);
@@ -30,7 +30,7 @@ public class DebtController {
     }
 
     @GetMapping("/{debtId}")
-    public ResponseEntity<Debt> getDebtDetail(@RequestHeader("Authorization") String authorizationHeader,@PathVariable String debtId){
+    public ResponseEntity<Debt> getDebtDetail(@RequestHeader("Authorization") String authorizationHeader,@PathVariable(name = "debtId") String debtId){
         String token = authorizationHeader.replace("Bearer ", "");
         return ResponseEntity.ok(debtService.getDebtDetail(token, UUID.fromString(debtId)));
     }
@@ -50,14 +50,14 @@ public class DebtController {
     }
 
     @PutMapping("/{debtId}")
-    public ResponseEntity<Debt> updateDebt(@RequestHeader("Authorization") String authorizationHeader ,@PathVariable String debtId,@Valid @RequestBody DebtDTO debtDTO) {
+    public ResponseEntity<Debt> updateDebt(@RequestHeader("Authorization") String authorizationHeader ,@PathVariable(name = "debtId") String debtId,@Valid @RequestBody DebtDTO debtDTO) {
         String token = authorizationHeader.replace("Bearer ", "");
         Debt updated = debtService.updateDebt(token,UUID.fromString(debtId), debtDTO);
         return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{debtId}")
-    public ResponseEntity<Debt> deleteDebt(@RequestHeader("Authorization") String authorizationHeader ,@PathVariable String debtId) {
+    public ResponseEntity<Debt> deleteDebt(@RequestHeader("Authorization") String authorizationHeader ,@PathVariable(name = "debtId") String debtId) {
         String token = authorizationHeader.replace("Bearer ", "");
         Debt debt = debtService.deleteDebt(token,UUID.fromString(debtId));
         return ResponseEntity.ok(debt);

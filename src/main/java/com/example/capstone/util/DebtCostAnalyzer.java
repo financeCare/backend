@@ -24,10 +24,9 @@ public class DebtCostAnalyzer {
 
         BigDecimal interest = calculateMonthlyInterest(d);
 
-        BigDecimal penalty =
-                d.getPenaltyRate() != null
-                        ? d.getPenaltyRate()
-                        : BigDecimal.ZERO;
+        BigDecimal penalty = d.getPenaltyAnnualRate() != null 
+                ? PenaltyCalculator.calculateMonthly(d.getPrincipal(), d.getPenaltyAnnualRate())
+                : BigDecimal.ZERO;
 
         return interest.add(penalty);
     }

@@ -12,7 +12,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class    RepaymentType {
+public class RepaymentType {
     @Id
     @GeneratedValue
     @Column(name = "type_id")

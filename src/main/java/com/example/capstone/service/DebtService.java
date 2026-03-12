@@ -74,6 +74,7 @@ public class DebtService {
                 Debt debt = new Debt();
                 debt.setUserId(userId);
                 debt.setPrincipalAmount(debtDTO.getPrincipalAmount());
+                debt.setPrincipalOutstanding(debtDTO.getPrincipalAmount()); // Initialize outstanding balance
                 debt.setInterestRate(debtDTO.getInterestRate());
                 debt.setRepaymentType(repaymentTypeRepository.findById(debtDTO.getRepaymentTypeId())
                                 .orElseThrow(() -> new BusinessException("invalid repayment type id",
@@ -93,9 +94,8 @@ public class DebtService {
                 debt.setPenaltyTriggerDays(debtDTO.getPenaltyTriggerDays());
                 debt.setDefaulted(debtDTO.isDefaulted());
                 debt.setIsInformal(debtDTO.getIsInformal() != null ? debtDTO.getIsInformal() : false);
-                System.out.println("getDueDay : " + debtDTO.getDueDay() + " before save");
+                debt.setInterestCalculationType(debtDTO.getInterestCalculationType());
                 debtRepository.save(debt);
-                System.out.println(debt.getDebtId() + " after save");
                 notificationService.createNotificationRuleForDebt(userId, debt.getDebtName(), debt.getMinPayment(),
                                 debt.getDebtId());
                 return debt;
@@ -120,6 +120,8 @@ public class DebtService {
                                                 HttpStatus.BAD_REQUEST));
 
                 existingDebt.setPrincipalAmount(debtDTO.getPrincipalAmount());
+                // Update outstanding balance only if debt is newly activated or requested
+                existingDebt.setPrincipalOutstanding(debtDTO.getPrincipalAmount());
                 existingDebt.setInterestRate(debtDTO.getInterestRate());
                 existingDebt.setRepaymentType(repaymentType);
                 existingDebt.setStartDate(debtDTO.getStartDate());
@@ -135,6 +137,7 @@ public class DebtService {
                 existingDebt.setPenaltyTriggerDays(debtDTO.getPenaltyTriggerDays());
                 existingDebt.setDefaulted(debtDTO.isDefaulted());
                 existingDebt.setIsInformal(debtDTO.getIsInformal() != null ? debtDTO.getIsInformal() : false);
+                existingDebt.setInterestCalculationType(debtDTO.getInterestCalculationType());
                 existingDebt.setActive(true);
                 return debtRepository.save(existingDebt);
         }

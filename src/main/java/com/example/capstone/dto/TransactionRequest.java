@@ -1,13 +1,11 @@
 package com.example.capstone.dto;
+
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.UUID;
 
 import jakarta.validation.constraints.*;
-
-import javax.annotation.Nullable;
 
 @Data
 public class TransactionRequest {

@@ -16,10 +16,16 @@ public class BudgetController {
     private final BudgetService budgetService;
 
     @PutMapping("/{budgetId}/amount/{amount}")
-    public Budget updateBudget(@RequestHeader("Authorization") String authorizationHeader,@PathVariable String budgetId,@PathVariable String amount){
-        String token = authorizationHeader.replace("Bearer ", "");
-        return budgetService.updateLimitAmountBudget(token,UUID.fromString(budgetId),Double.parseDouble(amount));
+    public Budget updateBudget(@RequestHeader("Authorization") String authorizationHeader,@PathVariable(name = "budgetId") String budgetId,@PathVariable(name = "amount") String amount){
+        try {
+            String token = authorizationHeader.replace("Bearer ", "");
+            return budgetService.updateLimitAmountBudget(token, UUID.fromString(budgetId), Double.parseDouble(amount));
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
+
 
     @GetMapping("/overview")
     public List<BudgetOverviewDto> getAmountFromBudget(@RequestHeader("Authorization") String authorizationHeader){
@@ -46,10 +52,16 @@ public class BudgetController {
     }
 
     @PostMapping("/salary/{amount}")
-    public void setUserSalary(@RequestHeader("Authorization") String authorizationHeader,@PathVariable double amount) {
-        String token = authorizationHeader.replace("Bearer ", "");
-        budgetService.setSalary(token,amount);
+    public void setUserSalary(@RequestHeader("Authorization") String authorizationHeader,@PathVariable(name = "amount") double amount) {
+        try {
+            String token = authorizationHeader.replace("Bearer ", "");
+            budgetService.setSalary(token, amount);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
+
 
     @GetMapping("/transactions-overview")
     public List<BudgetOverviewDto> getTransactionOverview(@RequestHeader("Authorization") String authorizationHeader) {

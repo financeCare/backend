@@ -28,7 +28,7 @@ public class DebtTypeController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteDebtType(@PathVariable Integer id) {
+    public ResponseEntity<String> deleteDebtType(@PathVariable("id") Integer id) {
         String msg = debtTypeService.deleteDebtType(id);
         return ResponseEntity.ok(msg);
     }

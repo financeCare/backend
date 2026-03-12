@@ -2,7 +2,7 @@ package com.example.capstone.repository;
 
 import com.example.capstone.entity.Debt;
 import com.example.capstone.entity.DebtStatement;
-import io.lettuce.core.dynamic.annotation.Param;
+import org.springframework.data.repository.query.Param;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;

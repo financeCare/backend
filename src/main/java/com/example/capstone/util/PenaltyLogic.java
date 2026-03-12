@@ -28,9 +28,9 @@ public class PenaltyLogic {
                                 debt.getCurrentDate().lengthOfMonth())
                 );
 
-        LocalDate paymentDate = debt.getCurrentDate()
-                .withDayOfMonth(debt.getCurrentDate().lengthOfMonth());
-
+        // สำหรับการ Simulation เราสมมติว่าผู้ใช้จ่าย "ตรงเวลา" (คือจ่ายในวัน Due Date) เพื่อดูแผนการชำระปกติ
+        // หากต้องการจำลองตอนจ่ายเลท ค่อยปรับปรุงตรรกะนี้ในอนาคตเทียบกับวันชำระจริง
+        LocalDate paymentDate = dueDate;
         LocalDate graceEnd = dueDate.plusDays(debt.getGracePeriodDays());
 
         boolean late = paymentDate.isAfter(graceEnd);

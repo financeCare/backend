@@ -6,10 +6,8 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.Date;
 
+import com.example.capstone.enums.InterestCalculationType;
 import jakarta.validation.constraints.*;
-
-import java.util.Date;
-import java.util.UUID;
 
 @Data
 public class DebtDTO {
@@ -60,4 +58,7 @@ public class DebtDTO {
     private boolean isDefaulted;
 
     private Boolean isInformal;
+
+    @NotNull(message = "Interest calculation type is required")
+    private InterestCalculationType interestCalculationType;
 }

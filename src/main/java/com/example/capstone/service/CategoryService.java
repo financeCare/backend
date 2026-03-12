@@ -3,11 +3,14 @@ package com.example.capstone.service;
 import com.example.capstone.dto.CategoryDTO;
 import com.example.capstone.entity.Budget;
 import com.example.capstone.entity.Category;
+import com.example.capstone.exception.BusinessException;
 import com.example.capstone.repository.BudgetRepository;
 import com.example.capstone.repository.CategoryRepository;
 import com.example.capstone.repository.TransactionRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,7 +28,7 @@ public class CategoryService {
 
     private final double defaultBudgets = 1000;
 
-    public Category getCategoryById(String token,Integer categoryId) {
+    public Category getCategoryById(String token, Integer categoryId) {
         UUID userId = userService.extractUserIdFromToken(token);
         return categoryRepository.findByCategoryIdAndUserId(categoryId, userId)
                 .orElseThrow(() -> new RuntimeException("Category not found or not owned by this user"));
@@ -51,21 +54,23 @@ public class CategoryService {
         return categoryRepository.save(category);
     }
 
-    public Category updateCategory(String token,Integer categoryId, CategoryDTO categoryDTO) {
+    public Category updateCategory(String token, Integer categoryId, CategoryDTO categoryDTO) {
         UUID userId = userService.extractUserIdFromToken(token);
         Category category = categoryRepository.findByCategoryIdAndUserId(categoryId, userId)
-                .orElseThrow(() -> new RuntimeException("Category not found or not owned by this user"));
+                .orElseThrow(() -> new BusinessException("Category not found or not owned by this user",
+                        HttpStatus.BAD_REQUEST));
         category.setCategoryName(categoryDTO.getCategoryName());
         category.setType(categoryDTO.getType());
         return categoryRepository.save(category);
     }
 
     @Transactional
-    public void deleteCategory(String token,Integer categoryId) {
+    public void deleteCategory(String token, Integer categoryId) {
         UUID userId = userService.extractUserIdFromToken(token);
         Category category = categoryRepository.findByCategoryIdAndUserId(categoryId, userId)
                 .orElseThrow(() -> new RuntimeException("Category not found or not owned by this user"));
-        Budget budget = budgetRepository.findById(category.getBudgetId()).orElseThrow(() -> new RuntimeException("Budget not found for this category"));
+        Budget budget = budgetRepository.findById(category.getBudgetId())
+                .orElseThrow(() -> new RuntimeException("Budget not found for this category"));
         transactionRepository.deleteByCategory_CategoryId(categoryId);
         categoryRepository.delete(category);
         budgetRepository.delete(budget);

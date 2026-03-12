@@ -3,7 +3,6 @@ package com.example.capstone.engineImp;
 import com.example.capstone.domain.DebtSim;
 import com.example.capstone.domain.LoanMonthResult;
 import com.example.capstone.engineImp.calculator.InterestCalculator;
-import com.example.capstone.engineImp.calculator.PenaltyCalculator;
 import com.example.capstone.engineInterface.LoanMonthEngine;
 import com.example.capstone.util.PenaltyLogic;
 import com.example.capstone.enums.InterestCalculationType;
@@ -11,8 +10,6 @@ import com.example.capstone.enums.InterestCalculationType;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 
 @Component
 public class DefaultLoanMonthEngine implements LoanMonthEngine {

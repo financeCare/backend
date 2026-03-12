@@ -1,7 +1,6 @@
 package com.example.capstone.controller;
 
 import com.example.capstone.dto.DeviceListDto;
-//import com.example.capstone.entity.Notifications;
 import com.example.capstone.dto.UserDeviceRequest;
 import com.example.capstone.dto.UserDeviceResponse;
 import com.example.capstone.entity.NotificationLog;
@@ -17,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-    @RequestMapping("/notifications")
+@RequestMapping("/notifications")
 @RequiredArgsConstructor
 public class NotificationsController {
 
@@ -26,8 +25,8 @@ public class NotificationsController {
     @GetMapping("/logs")
     public Page<NotificationLog> getAllNotifications(
             @RequestHeader("Authorization") String authorizationHeader,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size
     ) {
         String token = authorizationHeader.replace("Bearer ", "");
         return notificationsService.getAllNotificationLogs(token, PageRequest.of(page, size, Sort.by("sentAt").descending())
@@ -37,9 +36,9 @@ public class NotificationsController {
     @GetMapping("/logs/filter-refType/{refType}")
     public Page<NotificationLog> getNotificationsByRefType(
             @RequestHeader("Authorization") String authorizationHeader,
-            @PathVariable String refType,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @PathVariable("refType") String refType,
+            @RequestParam(name = "page", defaultValue = "0") int page,
+            @RequestParam(name = "size", defaultValue = "10") int size
     ) {
         String token = authorizationHeader.replace("Bearer ", "");
         return notificationsService.getNotificationLogs(
@@ -71,13 +70,12 @@ public class NotificationsController {
     public UserDeviceResponse registerDevice(@RequestHeader("Authorization") String authorizationHeader,
                                              @Valid @RequestBody UserDeviceRequest userDeviceRequest) {
         String token = authorizationHeader.replace("Bearer ", "");
-        System.out.println("register devices");
         return notificationsService.registerDevice(token, userDeviceRequest);
     }
 
     @DeleteMapping("/devices/{deviceId}")
     public void unregisterDevice(@RequestHeader("Authorization") String authorizationHeader,
-                                 @PathVariable UUID deviceId) {
+                                 @PathVariable("deviceId") UUID deviceId) {
         String token = authorizationHeader.replace("Bearer ", "");
         notificationsService.unregisterDevice(token, deviceId);
     }

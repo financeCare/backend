@@ -27,7 +27,7 @@ public class RepaymentTypeController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteRepaymentType(@PathVariable Integer id) {
+    public ResponseEntity<String> deleteRepaymentType(@PathVariable("id") Integer id) {
         String msg = repaymentTypeService.deleteRepaymentType(id);
         return ResponseEntity.ok(msg);
     }

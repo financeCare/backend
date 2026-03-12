@@ -46,6 +46,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex, WebRequest request) {
+        try {
+            java.io.FileWriter fw = new java.io.FileWriter("exception_error.txt", true);
+            fw.write("Exception from: " + request.getDescription(false) + "\n");
+            fw.write(ex.getMessage() + "\n");
+            for(StackTraceElement el : ex.getStackTrace()){
+                fw.write(el.toString() + "\n");
+            }
+            fw.write("---------------------------\n");
+            fw.close();
+        } catch(Exception e){}
         logger.error("Internal Server Error: ", ex);
         ErrorResponse error = buildErrorResponse(
                 "INTERNAL_SERVER_ERROR",
@@ -88,6 +98,16 @@ public class GlobalExceptionHandler {
         ErrorResponse error = buildErrorResponse(
                 "BAD_REQUEST",
                 "Malformed JSON request or invalid data format",
+                request
+        );
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
+        ErrorResponse error = buildErrorResponse(
+                "BAD_REQUEST",
+                "Invalid argument: " + ex.getMessage(),
                 request
         );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);

@@ -19,7 +19,6 @@ public class DebtSim {
     private BigDecimal minPayment;
     private RepaymentTypeEnum repaymentType;
     private InterestCalculationType interestType;
-    private BigDecimal penaltyRate;
     private LocalDate startDate;
     private LocalDate currentDate;
     private boolean defaulted;
@@ -29,6 +28,7 @@ public class DebtSim {
     private int gracePeriodDays;   // ผ่อนผัน เช่น 5 วัน
     private int penaltyTriggerDays;
     private boolean isInformal;
+    private int priority;
 
     // convenience function
     public boolean isPaidOff() {

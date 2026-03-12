@@ -6,10 +6,11 @@ import com.example.capstone.domain.LoanMonthResult;
 import com.example.capstone.dto.*;
 import com.example.capstone.factory.DebtEngineFactory;
 import com.example.capstone.engineInterface.DebtMonthEngine;
-import com.example.capstone.engineInterface.LoanMonthEngine;
 import com.example.capstone.strategy.repayment.RepaymentStrategyInterface;
 import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import com.example.capstone.exception.BusinessException;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -18,107 +19,107 @@ import java.util.*;
 @AllArgsConstructor
 public class RepaymentPlanSimulator {
 
-    private static final int MAX_MONTHS = 600;
+        private static final int MAX_MONTHS = 600;
 
-    private final LoanMonthEngine loanEngine;
-    private final DefaultBudgetAllocator allocator;
-    private final DebtEngineFactory debtEngineFactory;
+        private final DefaultBudgetAllocator allocator;
+        private final DebtEngineFactory debtEngineFactory;
 
-    public PlanResultDTO simulateCore(
-            RepaymentPlanDtoV2 plan,
-            List<DebtSim> originalDebts,
-            RepaymentStrategyInterface strategy
-    ) {
+        public PlanResultDTO simulateCore(
+                        RepaymentPlanDtoV2 plan,
+                        List<DebtSim> originalDebts,
+                        RepaymentStrategyInterface strategy) {
 
-        List<DebtSim> debts = new ArrayList<>(originalDebts);
+                List<DebtSim> debts = new ArrayList<>(originalDebts);
 
-        int month = 0;
+                int month = 0;
 
-        BigDecimal totalInterest = BigDecimal.ZERO;
-        BigDecimal totalPaid = BigDecimal.ZERO;
+                BigDecimal totalInterest = BigDecimal.ZERO;
+                BigDecimal totalPaid = BigDecimal.ZERO;
 
-        List<MonthlyPlanResultDTO> monthlyResults = new ArrayList<>();
+                List<MonthlyPlanResultDTO> monthlyResults = new ArrayList<>();
 
-        while (!debts.isEmpty()) {
+                while (!debts.isEmpty()) {
 
-            if (month >= MAX_MONTHS) {
-                throw new IllegalStateException("Simulation exceeds 50 years");
-            }
+                        if (month >= MAX_MONTHS) {
+                                throw new BusinessException("Simulation exceeds 50 years", HttpStatus.BAD_REQUEST);
+                        }
 
-            month++;
+                        month++;
 
-            DebtSim target = strategy.apply(debts);
+                        // Update current date for all debts for penalty calculation
+                        for (DebtSim d : debts) {
+                            if (d.getStartDate() != null) {
+                                d.setCurrentDate(d.getStartDate().plusMonths(month - 1));
+                            }
+                        }
 
-            Map<UUID, BigDecimal> extraMap =
-                    allocator.allocate(plan.getMonthlyBudget(), debts, target);
+                        DebtSim target = strategy.apply(debts);
 
-            List<DebtPaymentDTO> debtPayments = new ArrayList<>();
+                        Map<UUID, BigDecimal> extraMap = allocator.allocate(plan.getMonthlyBudget(), debts, target);
 
-            BigDecimal monthInterest = BigDecimal.ZERO;
-            BigDecimal paidThisMonth = BigDecimal.ZERO;
+                        List<DebtPaymentDTO> debtPayments = new ArrayList<>();
 
-            for (DebtSim d : debts) {
+                        BigDecimal monthInterest = BigDecimal.ZERO;
+                        BigDecimal paidThisMonth = BigDecimal.ZERO;
 
-                DebtMonthEngine engine =
-                        debtEngineFactory.getEngine(d.getRepaymentType().toString());
+                        for (DebtSim d : debts) {
 
-                BigDecimal totalAllocated =
-                        extraMap.getOrDefault(d.getDebtId(), BigDecimal.ZERO);
+                                DebtMonthEngine engine = debtEngineFactory.getEngine(d.getRepaymentType().toString());
 
-                // Split into min and extra for the engine
-                BigDecimal minPaid = totalAllocated.min(d.getMinPayment());
-                BigDecimal extra = totalAllocated.subtract(minPaid);
+                                BigDecimal totalAllocated = extraMap.getOrDefault(d.getDebtId(), BigDecimal.ZERO);
 
-                LoanMonthResult r =
-                        engine.runMonth(d, d.getMinPayment(), extra);
+                                // Split into min and extra for the engine
+                                BigDecimal minPaid = totalAllocated.min(d.getMinPayment());
+                                BigDecimal extra = totalAllocated.subtract(minPaid);
 
-                monthInterest = monthInterest.add(r.getInterest());
+                                LoanMonthResult r = engine.runMonth(d, minPaid, extra);
 
-                BigDecimal paid = r.getMinPaid().add(r.getExtraPaid());
+                                d.setPrincipal(r.getPrincipalEnd()); // Update current principal
+                                monthInterest = monthInterest.add(r.getInterest());
 
-                paidThisMonth = paidThisMonth.add(paid);
+                                BigDecimal paid = r.getMinPaid().add(r.getExtraPaid());
 
-                DebtPaymentDTO dto = new DebtPaymentDTO();
+                                paidThisMonth = paidThisMonth.add(paid);
 
-                dto.setDebtId(d.getDebtId());
-                dto.setDebtName(d.getDebtName());
-                dto.setPrincipalStart(r.getPrincipalStart());
-                dto.setInterest(r.getInterest());
-                dto.setPaid(paid);
-                dto.setPrincipalEnd(r.getPrincipalEnd());
+                                DebtPaymentDTO dto = new DebtPaymentDTO();
 
-                debtPayments.add(dto);
-            }
+                                dto.setDebtId(d.getDebtId());
+                                dto.setDebtName(d.getDebtName());
+                                dto.setPrincipalStart(r.getPrincipalStart());
+                                dto.setInterest(r.getInterest());
+                                dto.setPaid(paid);
+                                dto.setPrincipalEnd(r.getPrincipalEnd());
 
-            totalInterest = totalInterest.add(monthInterest);
-            totalPaid = totalPaid.add(paidThisMonth);
+                                debtPayments.add(dto);
+                        }
 
-            debts.removeIf(d ->
-                    d.getPrincipal().compareTo(BigDecimal.ZERO) <= 0
-            );
+                        totalInterest = totalInterest.add(monthInterest);
+                        totalPaid = totalPaid.add(paidThisMonth);
 
-            BigDecimal remainingTotal = debts.stream()
-                    .map(DebtSim::getPrincipal)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        debts.removeIf(d -> d.getPrincipal().compareTo(BigDecimal.ZERO) <= 0);
 
-            MonthlyPlanResultDTO m = new MonthlyPlanResultDTO();
+                        BigDecimal remainingTotal = debts.stream()
+                                        .map(DebtSim::getPrincipal)
+                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            m.setMonth(month);
-            m.setTotalInterest(monthInterest);
-            m.setTotalPaid(paidThisMonth);
-            m.setRemainingTotal(remainingTotal);
-            m.setDebtPayments(debtPayments);
+                        MonthlyPlanResultDTO m = new MonthlyPlanResultDTO();
 
-            monthlyResults.add(m);
+                        m.setMonth(month);
+                        m.setTotalInterest(monthInterest);
+                        m.setTotalPaid(paidThisMonth);
+                        m.setRemainingTotal(remainingTotal);
+                        m.setDebtPayments(debtPayments);
+
+                        monthlyResults.add(m);
+                }
+
+                PlanResultDTO result = new PlanResultDTO();
+
+                result.setTotalMonths(month);
+                result.setTotalInterest(totalInterest);
+                result.setTotalPaid(totalPaid);
+                result.setMonthlyResults(monthlyResults);
+
+                return result;
         }
-
-        PlanResultDTO result = new PlanResultDTO();
-
-        result.setTotalMonths(month);
-        result.setTotalInterest(totalInterest);
-        result.setTotalPaid(totalPaid);
-        result.setMonthlyResults(monthlyResults);
-
-        return result;
-    }
 }

@@ -22,7 +22,7 @@ public class CategoryController {
     }
 
     @GetMapping("/{categoryId}")
-    public Category getCategoryById(@RequestHeader("Authorization") String authorizationHeader,@PathVariable Integer categoryId) {
+    public Category getCategoryById(@RequestHeader("Authorization") String authorizationHeader,@PathVariable(name = "categoryId") Integer categoryId) {
         String token = authorizationHeader.replace("Bearer ", "");
         return categoryService.getCategoryById(token,categoryId);
     }
@@ -34,13 +34,13 @@ public class CategoryController {
     }
 
     @PutMapping("/{categoryId}")
-    public Category updateCategory(@RequestHeader("Authorization") String authorizationHeader,@PathVariable Integer categoryId,@Valid @RequestBody CategoryDTO category) {
+    public Category updateCategory(@RequestHeader("Authorization") String authorizationHeader,@PathVariable(name = "categoryId") Integer categoryId,@Valid @RequestBody CategoryDTO category) {
         String token = authorizationHeader.replace("Bearer ", "");
         return categoryService.updateCategory(token,categoryId, category);
     }
 
     @DeleteMapping("/{categoryId}")
-    public void deleteCategory(@RequestHeader("Authorization") String authorizationHeader,@PathVariable Integer categoryId) {
+    public void deleteCategory(@RequestHeader("Authorization") String authorizationHeader,@PathVariable(name = "categoryId") Integer categoryId) {
         String token = authorizationHeader.replace("Bearer ", "");
         categoryService.deleteCategory(token,categoryId);
     }

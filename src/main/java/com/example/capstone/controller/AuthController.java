@@ -31,13 +31,15 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final UserRepository userRepository;
     @PostMapping("/send-otp/{email}")
-    public ResponseEntity<?> sendOtp(@PathVariable String email) {
+    public ResponseEntity<?> sendOtp(@PathVariable("email") String email) {
         try {
             userService.sendOtp(email);
             return ResponseEntity.ok("OTP sent successfully");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error in sendOtp: " + e.getMessage());
         }
+
     }
 
     @PostMapping("/verify-otp")
@@ -106,7 +108,9 @@ public class AuthController {
             userService.registerUser(request);
             return ResponseEntity.status(HttpStatus.CREATED).body("user created");
         } catch (Exception e){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error in register: " + e.getMessage());
         }
+
     }
 }

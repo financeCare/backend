@@ -7,7 +7,6 @@ import com.example.capstone.entity.User;
 import com.example.capstone.exception.BusinessException;
 import com.example.capstone.repository.BudgetRepository;
 import com.example.capstone.repository.CategoryRepository;
-import com.example.capstone.repository.TransactionRepository;
 import com.example.capstone.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
@@ -16,7 +15,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,8 +30,6 @@ public class BudgetService {
     private final BudgetRepository budgetRepository;
     private final UserService userService;
     private final CategoryRepository categoryRepository;
-    private final NotificationService notificationService;
-    private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
 
     public void createBudget(Budget budget) {
@@ -42,9 +38,9 @@ public class BudgetService {
 
     public Budget updateLimitAmountBudget(String token, UUID budgetId, double amount) {
         UUID userId = userService.extractUserIdFromToken(token);
-        Budget existingBudget = budgetRepository.findByUserIdAndBudgetId(userId,budgetId).orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
+        Budget existingBudget = budgetRepository.findByUserIdAndBudgetId(userId, budgetId).orElseThrow(
+                () -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
         existingBudget.setLimitBudget(amount);
-        String categoryName = categoryRepository.findByBudgetIdAndUserId(budgetId,userId).orElseThrow(() -> new BusinessException("Category not found for this budget", HttpStatus.NOT_FOUND)).getCategoryName();
         return budgetRepository.save(existingBudget);
     }
 
@@ -53,12 +49,10 @@ public class BudgetService {
         List<Budget> budgets = budgetRepository.findByUserId(userId);
         List<BudgetOverviewDto> result = new ArrayList<>();
         for (Budget budget : budgets) {
-            Category relatedCategories =
-                    categoryRepository.findByUserIdAndBudgetIdAndTypeNot(
-                            userId,
-                            budget.getBudgetId(),
-                            "Income"
-                    );
+            Category relatedCategories = categoryRepository.findByUserIdAndBudgetIdAndTypeNot(
+                    userId,
+                    budget.getBudgetId(),
+                    "Income");
             if (relatedCategories == null) {
                 continue;
             }
@@ -78,12 +72,10 @@ public class BudgetService {
         List<Budget> budgets = budgetRepository.findByUserId(userId);
         List<BudgetOverviewDto> result = new ArrayList<>();
         for (Budget budget : budgets) {
-            Category relatedCategories =
-                    categoryRepository.findByUserIdAndBudgetIdAndCategoryNameNot(
-                            userId,
-                            budget.getBudgetId(),
-                            CATEGORY_SALARY
-                    );
+            Category relatedCategories = categoryRepository.findByUserIdAndBudgetIdAndCategoryNameNot(
+                    userId,
+                    budget.getBudgetId(),
+                    CATEGORY_SALARY);
             if (relatedCategories == null) {
                 continue;
             }
@@ -99,51 +91,50 @@ public class BudgetService {
     }
 
     public List<Budget> getAllBudgets(String token) {
-    UUID userId = userService.extractUserIdFromToken(token);
+        UUID userId = userService.extractUserIdFromToken(token);
         return budgetRepository.findByUserId(userId);
     }
 
-    public double getIncomeAmount(String token){
+    public double getIncomeAmount(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
         List<Budget> budgets = budgetRepository.findByUserId(userId);
         double sum = 0;
         for (Budget budget : budgets) {
-            Category relatedCategories =
-                    categoryRepository.findByUserIdAndBudgetIdAndTypeNot(
-                            userId,
-                            budget.getBudgetId(),
-                            TYPE_EXPENSE
+            Category relatedCategories = categoryRepository.findByUserIdAndBudgetIdAndTypeNot(
+                    userId,
+                    budget.getBudgetId(),
+                    TYPE_EXPENSE
 
-                    );
-            if (relatedCategories != null){
+            );
+            if (relatedCategories != null) {
                 sum = sum + budget.getAmount();
             }
         }
         return sum;
-}
+    }
 
     public void deleteBudget(UUID id) {
         budgetRepository.deleteById(id);
     }
 
-    public double getSalary(String token){
+    public double getSalary(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
-        Category category = categoryRepository.findByUserIdAndCategoryName(userId,CATEGORY_SALARY);
+        Category category = categoryRepository.findByUserIdAndCategoryName(userId, CATEGORY_SALARY);
         List<Budget> budgets = budgetRepository.findByUserId(userId);
-        for(Budget budget : budgets){
-            if (budget.getBudgetId().equals(category.getBudgetId())){
+        for (Budget budget : budgets) {
+            if (budget.getBudgetId().equals(category.getBudgetId())) {
                 return budget.getAmount();
             }
         }
         return 0;
     }
 
-    public void setSalary(String token,double amount){
+    public void setSalary(String token, double amount) {
         UUID userId = userService.extractUserIdFromToken(token);
-        Category category = categoryRepository.findByUserIdAndCategoryName(userId,CATEGORY_SALARY);
+        Category category = categoryRepository.findByUserIdAndCategoryName(userId, CATEGORY_SALARY);
         List<Budget> budgets = budgetRepository.findByUserId(userId);
-        for(Budget budget : budgets){
-            if (budget.getBudgetId().equals(category.getBudgetId())){
+        for (Budget budget : budgets) {
+            if (budget.getBudgetId().equals(category.getBudgetId())) {
                 budget.setAmount(amount);
                 budgetRepository.save(budget);
             }
@@ -154,20 +145,21 @@ public class BudgetService {
     public void ensureBudgetMonth(UUID userId, int month, int year) {
         List<Category> userCategories = categoryRepository.findByUserId(userId);
         for (Category category : userCategories) {
-            if (category.getBudgetId() == null) continue;
+            if (category.getBudgetId() == null)
+                continue;
 
             Budget currentBudget = budgetRepository.findById(category.getBudgetId()).orElse(null);
             if (currentBudget != null && (currentBudget.getMonth() != month || currentBudget.getYear() != year)) {
-                
+
                 Budget newBudget = new Budget();
                 newBudget.setUserId(userId);
                 newBudget.setMonth(month);
                 newBudget.setYear(year);
                 newBudget.setAmount(0.0);
                 newBudget.setLimitBudget(currentBudget.getLimitBudget());
-                
+
                 budgetRepository.save(newBudget);
-                
+
                 category.setBudgetId(newBudget.getBudgetId());
                 categoryRepository.save(category);
             }

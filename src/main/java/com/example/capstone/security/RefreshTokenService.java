@@ -1,19 +1,16 @@
 package com.example.capstone.security;
 
-import com.example.capstone.dto.login.LoginResponse;
 import com.example.capstone.entity.User;
 import com.example.capstone.repository.UserRepository;
-import com.example.capstone.service.UserService;
 import lombok.AllArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.util.Base64;
 import java.util.Date;
-import java.util.Objects;
 
 @Service
 @AllArgsConstructor
+@Profile("!test")
 public class RefreshTokenService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;

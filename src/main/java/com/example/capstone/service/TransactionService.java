@@ -13,12 +13,12 @@ import com.example.capstone.repository.TransactionRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -152,15 +152,10 @@ public class TransactionService {
     }
 
     public boolean checkThisMonth(String token,Transaction transaction) {
-        UUID userId = userService.extractUserIdFromToken(token);
-        List<Transaction> transactions = transactionRepository.findByUserId(userId);
-        java.time.LocalDate currentDate = java.time.LocalDate.now();
-            java.time.LocalDate transactionDate = transaction.getTransactionDate().toLocalDate();
-            if (transactionDate.getMonth() == currentDate.getMonth() &&
-                    transactionDate.getYear() == currentDate.getYear()) {
-                return true;
-            }
-        return false;
+        LocalDate currentDate = LocalDate.now();
+        LocalDate transactionDate = transaction.getTransactionDate().toLocalDate();
+        return transactionDate.getMonth() == currentDate.getMonth() &&
+                transactionDate.getYear() == currentDate.getYear();
     }
 
     @Transactional
@@ -180,7 +175,7 @@ public class TransactionService {
         Transaction transaction = new Transaction();
         transaction.setUserId(userId);
         transaction.setAmount(amount);
-        transaction.setTransactionDate(java.time.LocalDateTime.now());
+        transaction.setTransactionDate(LocalDateTime.now());
         transaction.setDescription("Extra Income");
         Category incomeCategory = categoryRepository.findByUserIdAndType(userId, "Income").get(0);
         transaction.setCategory(incomeCategory);

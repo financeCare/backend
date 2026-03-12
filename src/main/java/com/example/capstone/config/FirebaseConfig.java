@@ -1,4 +1,6 @@
 package com.example.capstone.config;
+ 
+import java.io.File;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
@@ -6,10 +8,12 @@ import com.google.firebase.FirebaseOptions;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import org.springframework.context.annotation.Profile;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
 @Configuration
+@Profile("!test")
 public class FirebaseConfig {
 
     @Bean
@@ -20,18 +24,26 @@ public class FirebaseConfig {
 
         String keyPath = System.getenv("FIREBASE_SERVICE_ACCOUNT");
         if (keyPath == null || keyPath.isBlank()) {
-            throw new IllegalStateException(
-                    "Missing FIREBASE_SERVICE_ACCOUNT env var. " +
-                            "Set it to the absolute path of your Firebase service account JSON file."
-            );
+            System.err.println("WARNING: FIREBASE_SERVICE_ACCOUNT env var is missing. Push notifications will be disabled.");
+            return null;
         }
 
-        try (InputStream is = new FileInputStream(keyPath)) {
+        File file = new File(keyPath);
+        if (!file.exists()) {
+            System.err.println("ERROR: Firebase service account file not found at: " + keyPath);
+            System.err.println("Push notifications will be disabled. Please check your FIREBASE_SERVICE_ACCOUNT environment variable.");
+            return null;
+        }
+
+        try (InputStream is = new FileInputStream(file)) {
             GoogleCredentials credentials = GoogleCredentials.fromStream(is);
             FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(credentials)
                     .build();
             return FirebaseApp.initializeApp(options);
+        } catch (Exception e) {
+            System.err.println("ERROR: Failed to initialize Firebase: " + e.getMessage());
+            return null;
         }
     }
 }

@@ -109,7 +109,6 @@ public class UserService implements UserDetailsService {
     }
 
     public LoginResponse loginWithLine(IdTokenRequest idTokenRequest) {
-        System.out.println("start line login function");
         Map<String, Object> userDetail = getLineUserInfo(idTokenRequest.getIdToken());
         String email = userDetail.get("email").toString();
         String name = userDetail.get("name").toString();
@@ -140,14 +139,12 @@ public class UserService implements UserDetailsService {
         }
 
         CreateUserSettingIfNotExists(user.getUserId());
-        System.out.println("end line login function");
         return new LoginResponse(accessToken, refreshToken);
     }
 
     @Transactional
     public LoginResponse loginWithGoogle(IdTokenRequest idTokenString) {
         try {
-            System.out.println("start google login function");
             GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
                     GoogleNetHttpTransport.newTrustedTransport(),
                     JSON_FACTORY
@@ -185,7 +182,6 @@ public class UserService implements UserDetailsService {
             else if (categoryRepository.findByUserId(user.getUserId()).isEmpty()){
                 createDefaultCategoriesForUser(user.getUserId());
             }
-            System.out.println("end google login function");
             CreateUserSettingIfNotExists(user.getUserId());
             return new LoginResponse(accessToken, refreshToken);
         } catch (Exception e) {
@@ -272,7 +268,6 @@ public class UserService implements UserDetailsService {
         String otp = generateOTP();
         redisTemplate.opsForValue().set("otp:" + email, otp, Duration.ofMinutes(5));
         if (!mailEnabled) {
-            System.out.println("DEV MODE OTP for " + email + " = " + otp);
             return;
         }
         try {

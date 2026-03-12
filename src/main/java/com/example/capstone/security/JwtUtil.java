@@ -4,17 +4,18 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-import java.time.Instant;
 import java.util.Date;
 
 @Component
+@Profile("!test")
 public class JwtUtil {
     private final String secret = "uV9yK3j5YhN8Lx2QpW7eZ0rJtB6nMfLgSxAaCdEfGhI=";
-    private final long expirationMs = 3600000; // 1 hour
-    private final long refreshExpirationMs =  2592000000L; // 1 month
+    private final long expirationMs = 21600000; // 6 hours
+    private final long refreshExpirationMs = 2592000000L; // 1 month
 
     public Key getSigningKey() {
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
