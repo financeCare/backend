@@ -5,8 +5,6 @@ import com.example.capstone.engineImp.calculator.PenaltyCalculator;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 
 public class PenaltyLogic {
 
@@ -16,28 +14,19 @@ public class PenaltyLogic {
         private final BigDecimal penalty;
     }
 
-    public static LateResult checkAndCalculate(DebtSim debt, BigDecimal principal) {
+    // เพิ่ม parameter plannedPayment เพื่อเช็คว่ายอดที่จ่ายเข้ามาน้อยกว่าขั้นต่ำหรือไม่
+    public static LateResult checkAndCalculate(DebtSim debt, BigDecimal principal, BigDecimal plannedPayment) {
         if (debt.getCurrentDate() == null) {
             return new LateResult(false, BigDecimal.ZERO);
         }
 
-        // Logic assumes payment is made at the end of the month for simulation purposes
-        LocalDate dueDate = debt.getCurrentDate()
-                .withDayOfMonth(
-                        Math.min(debt.getDueDay(),
-                                debt.getCurrentDate().lengthOfMonth())
-                );
-
-        // สำหรับการ Simulation เราสมมติว่าผู้ใช้จ่าย "ตรงเวลา" (คือจ่ายในวัน Due Date) เพื่อดูแผนการชำระปกติ
-        // หากต้องการจำลองตอนจ่ายเลท ค่อยปรับปรุงตรรกะนี้ในอนาคตเทียบกับวันชำระจริง
-        LocalDate paymentDate = dueDate;
-        LocalDate graceEnd = dueDate.plusDays(debt.getGracePeriodDays());
-
-        boolean late = paymentDate.isAfter(graceEnd);
+        // เช็คว่าเงินที่นำมาจ่ายรวมกันน้อยกว่ายอดจ่ายขั้นต่ำที่ระบบกำหนดหรือไม่
+        boolean isUnderpaid = plannedPayment.compareTo(debt.getMinPayment()) < 0;
         BigDecimal penalty = BigDecimal.ZERO;
 
-        if (late) {
-            long overdueDays = ChronoUnit.DAYS.between(dueDate, paymentDate);
+        if (isUnderpaid) {
+            // ใน Simulation สมมติว่าเมื่อจ่ายไม่ครบ ถือว่าค้างชำระเป็นเวลา 30 วัน (1 เดือน)
+            long overdueDays = 30;
             if (overdueDays > debt.getPenaltyTriggerDays() && debt.getPenaltyAnnualRate() != null) {
                 penalty = PenaltyCalculator.calculateMonthly(
                         principal,
@@ -46,6 +35,6 @@ public class PenaltyLogic {
             }
         }
 
-        return new LateResult(late, penalty);
+        return new LateResult(isUnderpaid, penalty);
     }
 }

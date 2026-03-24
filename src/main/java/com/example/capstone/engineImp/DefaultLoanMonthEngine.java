@@ -33,8 +33,11 @@ public class DefaultLoanMonthEngine implements LoanMonthEngine {
             principal = principal.add(interest);
         }
 
+        BigDecimal minPaid = debt.getMinPayment();
+        BigDecimal totalPaid = minPaid.add(extraPayment);
+
         // Check for penalty using unified logic
-        PenaltyLogic.LateResult lateResult = PenaltyLogic.checkAndCalculate(debt, principal);
+        PenaltyLogic.LateResult lateResult = PenaltyLogic.checkAndCalculate(debt, principal, totalPaid);
         BigDecimal penalty = lateResult.getPenalty();
 
         if (penalty.compareTo(BigDecimal.ZERO) > 0) {
@@ -42,9 +45,6 @@ public class DefaultLoanMonthEngine implements LoanMonthEngine {
                 principal = principal.add(penalty);
             }
         }
-
-        BigDecimal minPaid = debt.getMinPayment();
-        BigDecimal totalPaid = minPaid.add(extraPayment);
 
         principal = principal.subtract(totalPaid);
 

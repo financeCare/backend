@@ -71,5 +71,19 @@ public class DebtController {
         String token = authHeader.replace("Bearer ", "");
         repaymentService.payDebt(token, debtPaymentRequestDTO);
     }
+    @GetMapping("/priorities")
+    public ResponseEntity<List<com.example.capstone.dto.DebtPriorityResponseDTO>> getDebtPriorities(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        return ResponseEntity.ok(debtService.getDebtPriorities(token));
+    }
+
+    @PutMapping("/priorities")
+    public ResponseEntity<Void> updateDebtPriorities(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @Valid @RequestBody List<com.example.capstone.dto.DebtPriorityUpdateRequestDTO> requests) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        debtService.updateDebtPriorities(token, requests);
+        return ResponseEntity.ok().build();
+    }
 
 }

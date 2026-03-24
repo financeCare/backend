@@ -60,18 +60,56 @@ public class RepaymentPlanService {
 
     public RepaymentPlan changeRepaymentPlan(UUID userId, BigDecimal monthlyBudget, UUID strategyId) {
         RepaymentPlan repaymentPlan = repaymentPlanRepository.findByUserId(userId);
+        RepaymentPlan savedPlan;
         if (repaymentPlan != null) {
             repaymentPlan.setMonthlyBudget(monthlyBudget);
             repaymentPlan.setStrategyId(strategyId);
-            return repaymentPlanRepository.save(repaymentPlan);
+            savedPlan = repaymentPlanRepository.save(repaymentPlan);
         } else {
             RepaymentPlan plan = new RepaymentPlan();
             plan.setPlanId(UUID.randomUUID());
             plan.setUserId(userId);
             plan.setMonthlyBudget(monthlyBudget);
             plan.setStrategyId(strategyId);
-            return repaymentPlanRepository.save(plan);
+            savedPlan = repaymentPlanRepository.save(plan);
         }
+        applyStrategyPriority(userId, strategyId);
+        return savedPlan;
+    }
+
+    private void applyStrategyPriority(UUID userId, UUID strategyId) {
+        List<Debt> debts = debtRepository.findByActiveAndUserId(true, userId);
+        if (debts.isEmpty()) {
+            return;
+        }
+
+        RepaymentStrategy strategyEntity = repaymentStrategyRepository.findById(strategyId)
+                .orElseThrow(() -> new BusinessException("Strategy not found", HttpStatus.NOT_FOUND));
+
+        StrategyType type;
+        try {
+            type = StrategyType.fromString(strategyEntity.getStrategyName());
+        } catch (Exception e) {
+            throw new BusinessException("Unknown strategy type", HttpStatus.BAD_REQUEST);
+        }
+
+        List<Debt> sortedDebts = new ArrayList<>(debts);
+
+        // Sort based on strategy
+        if (type == StrategyType.SNOWBALL) {
+            // Smaller principal first
+            sortedDebts.sort(Comparator.comparing(Debt::getPrincipalOutstanding, Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(Debt::getPrincipalAmount, Comparator.nullsLast(Comparator.naturalOrder())));
+        } else if (type == StrategyType.AVALANCHE || type == StrategyType.OPTIMAL_COST) {
+            // Higher interest rate first
+            sortedDebts.sort(Comparator.comparing(Debt::getInterestRate, Comparator.nullsLast(Comparator.reverseOrder())));
+        }
+
+        // Update priority in database
+        for (int i = 0; i < sortedDebts.size(); i++) {
+            sortedDebts.get(i).setPriority(i + 1);
+        }
+        debtRepository.saveAll(sortedDebts);
     }
 
     public BigDecimal getTotalMinPayment(String token) {

@@ -33,4 +33,6 @@ public class DebtPaymentDTO {
     public BigDecimal interest;
     public BigDecimal paid;
     public BigDecimal principalEnd;
+    public boolean isLate;
+    public BigDecimal penalty;
 }

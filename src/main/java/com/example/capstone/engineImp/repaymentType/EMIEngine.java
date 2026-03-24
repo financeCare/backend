@@ -35,7 +35,7 @@ public class EMIEngine implements DebtMonthEngine {
         BigDecimal totalPlannedPayment = minPayment.add(extraPayment);
 
         // Check for penalty
-        PenaltyLogic.LateResult lateResult = PenaltyLogic.checkAndCalculate(debt, principalStart);
+        PenaltyLogic.LateResult lateResult = PenaltyLogic.checkAndCalculate(debt, principalStart, totalPlannedPayment);
         BigDecimal penalty = lateResult.getPenalty();
 
         // Calculate max needed to clear the debt this month

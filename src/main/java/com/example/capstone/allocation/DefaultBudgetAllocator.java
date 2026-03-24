@@ -31,20 +31,17 @@ public class DefaultBudgetAllocator {
             }
             remaining = remaining.subtract(totalMin);
         } else {
-            if (target != null && debts.contains(target)) {
-                BigDecimal toTarget = remaining.min(target.getMinPayment());
-                map.put(target.getDebtId(), toTarget);
-                remaining = remaining.subtract(toTarget);
-            }
-            
-            if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-                for (DebtSim d : debts) {
-                    if (d.equals(target)) continue;
-                    BigDecimal toOther = remaining.min(d.getMinPayment());
-                    map.put(d.getDebtId(), toOther);
-                    remaining = remaining.subtract(toOther);
-                    if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
-                }
+            // เมื่อเงินไม่พอจ่ายขั้นต่ำ ให้จัดสรรเงินตามลำดับ Priority (ตัวเลขน้อยคือสำคัญมาก)
+            List<DebtSim> prioritySorted = debts.stream()
+                    .sorted(Comparator.comparingInt(DebtSim::getPriority))
+                    .toList();
+
+            for (DebtSim d : prioritySorted) {
+                if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
+                
+                BigDecimal toOther = remaining.min(d.getMinPayment());
+                map.put(d.getDebtId(), toOther);
+                remaining = remaining.subtract(toOther);
             }
             return map;
         }

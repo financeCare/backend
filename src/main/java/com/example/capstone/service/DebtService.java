@@ -150,5 +150,33 @@ public class DebtService {
                 debtRepository.delete(debt);
                 return debt;
         }
+        public List<DebtPriorityResponseDTO> getDebtPriorities(String token) {
+                UUID userId = userService.extractUserIdFromToken(token);
+                List<Debt> debts = debtRepository.findAllByUserId(userId);
+                
+                return debts.stream()
+                                .map(debt -> new DebtPriorityResponseDTO(
+                                                debt.getDebtId(),
+                                                debt.getDebtName(),
+                                                debt.getPriority() != null ? debt.getPriority() : 0,
+                                                debt.getPrincipalAmount()
+                                ))
+                                .sorted((d1, d2) -> Integer.compare(d1.getPriority(), d2.getPriority()))
+                                .toList();
+        }
+
+        public void updateDebtPriorities(String token, List<DebtPriorityUpdateRequestDTO> requests) {
+                UUID userId = userService.extractUserIdFromToken(token);
+                List<Debt> debtsToUpdate = new ArrayList<>();
+                
+                for (DebtPriorityUpdateRequestDTO request : requests) {
+                        Debt debt = debtRepository.findByDebtIdAndUserId(request.getDebtId(), userId)
+                                        .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", HttpStatus.NOT_FOUND));
+                        
+                        debt.setPriority(request.getPriority());
+                        debtsToUpdate.add(debt);
+                }
+                debtRepository.saveAll(debtsToUpdate);
+        }
 
 }

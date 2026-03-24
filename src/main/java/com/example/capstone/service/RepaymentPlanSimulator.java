@@ -89,6 +89,8 @@ public class RepaymentPlanSimulator {
                                 dto.setInterest(r.getInterest());
                                 dto.setPaid(paid);
                                 dto.setPrincipalEnd(r.getPrincipalEnd());
+                                dto.setLate(r.isLate());
+                                dto.setPenalty(r.getPenaltyInterest());
 
                                 debtPayments.add(dto);
                         }

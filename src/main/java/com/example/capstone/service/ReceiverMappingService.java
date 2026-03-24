@@ -63,6 +63,10 @@ public class ReceiverMappingService {
 
     public Optional<Category> suggestCategory(String token, String receiverName) {
         UUID userId = userService.extractUserIdFromToken(token);
+        return suggestCategory(userId, receiverName);
+    }
+
+    public Optional<Category> suggestCategory(UUID userId, String receiverName) {
         if (receiverName == null || receiverName.trim().isEmpty()) {
             return Optional.empty();
         }
