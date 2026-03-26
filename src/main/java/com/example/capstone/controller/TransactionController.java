@@ -68,4 +68,9 @@ public class TransactionController {
         transactionService.deleteTransaction(token, transactionId);
     }
 
+    @GetMapping("/monthly-expenses")
+    public Double getMonthlyExpenses(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        return transactionService.getMonthlyExpenses(token);
+    }
 }

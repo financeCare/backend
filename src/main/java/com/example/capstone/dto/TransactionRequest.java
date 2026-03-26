@@ -26,4 +26,15 @@ public class TransactionRequest {
     private String description;
 
     private UUID budgetId;
+    
+    @Size(max = 100, message = "Sender bank cannot exceed 100 characters")
+    private String senderBank;
+
+    @Size(max = 100, message = "Receiver name cannot exceed 100 characters")
+    private String receiverName;
+
+    @Size(max = 500, message = "Image path cannot exceed 500 characters")
+    private String imagePath;
+
+    private Long slipId;
 }

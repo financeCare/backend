@@ -38,15 +38,18 @@ public class TransactionService {
     public TransactionResponse mapToResponse(Transaction t) {
         CategoryDTO categoryDTO = new CategoryDTO(
                 t.getCategory().getCategoryName(),
-                t.getCategory().getType()
-        );
+                t.getCategory().getType());
 
         return new TransactionResponse(
                 t.getTransactionId(),
                 t.getAmount(),
                 t.getTransactionDate(),
                 t.getDescription(),
-                categoryDTO
+                categoryDTO,
+                t.getSenderBank(),
+                t.getReceiverName(),
+                t.getImagePath(),
+                t.getSlipId()
         );
     }
 
@@ -58,8 +61,7 @@ public class TransactionService {
                 .toList();
     }
 
-
-    public List<Transaction> filterTransactionByIncome(String token){
+    public List<Transaction> filterTransactionByIncome(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
         List<Category> incomeCategories = categoryRepository.findByUserIdAndType(userId, "Income");
         List<Transaction> allTransaction = transactionRepository.findAllByUserId(userId);
@@ -77,8 +79,7 @@ public class TransactionService {
     public Page<Transaction> getTransactionByCategory(
             String token,
             Integer categoryId,
-            Pageable pageable
-    ) {
+            Pageable pageable) {
         UUID userId = userService.extractUserIdFromToken(token);
         return transactionRepository.findByUserIdAndCategoryCategoryId(userId, categoryId, pageable);
     }
@@ -101,11 +102,16 @@ public class TransactionService {
         transaction.setCategory(category);
         transaction.setTransactionDate(transactionRequest.getTransactionDate());
         transaction.setDescription(transactionRequest.getDescription());
+        transaction.setSenderBank(transactionRequest.getSenderBank());
+        transaction.setReceiverName(transactionRequest.getReceiverName());
+        transaction.setImagePath(transactionRequest.getImagePath());
+        transaction.setSlipId(transactionRequest.getSlipId());
         Transaction savedTransaction = transactionRepository.save(transaction);
         double newAmount = budget.getAmount() + transactionRequest.getAmount();
         budget.setAmount(newAmount);
         budgetRepository.save(budget);
-        notificationService.createNotificationRuleForBudget(userId,category.getCategoryName(),budget.getLimitBudget(),budget.getAmount(),budget.getBudgetId());
+        notificationService.createNotificationRuleForBudget(userId, category.getCategoryName(), budget.getLimitBudget(),
+                budget.getAmount(), budget.getBudgetId());
         return savedTransaction;
     }
 
@@ -113,7 +119,8 @@ public class TransactionService {
         UUID userId = userService.extractUserIdFromToken(token);
         Transaction existingTransaction = transactionRepository
                 .findByTransactionIdAndUserId(transactionId, userId)
-                .orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user",
+                        HttpStatus.NOT_FOUND));
         existingTransaction.setAmount(transactionRequest.getAmount());
         Category category = categoryRepository
                 .findByCategoryIdAndUserId(transactionRequest.getCategoryId(), userId)
@@ -129,14 +136,19 @@ public class TransactionService {
         budgetRepository.save(budget);
         existingTransaction.setTransactionDate(transactionRequest.getTransactionDate());
         existingTransaction.setDescription(transactionRequest.getDescription());
+        existingTransaction.setSenderBank(transactionRequest.getSenderBank());
+        existingTransaction.setReceiverName(transactionRequest.getReceiverName());
+        existingTransaction.setImagePath(transactionRequest.getImagePath());
+        existingTransaction.setSlipId(transactionRequest.getSlipId());
         return transactionRepository.save(existingTransaction);
     }
 
-    public void deleteTransaction(String token,UUID transactionId) {
+    public void deleteTransaction(String token, UUID transactionId) {
         UUID userId = userService.extractUserIdFromToken(token);
         Transaction existingTransaction = transactionRepository
                 .findByTransactionIdAndUserId(transactionId, userId)
-                .orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user",
+                        HttpStatus.NOT_FOUND));
         Category category = categoryRepository
                 .findByCategoryIdAndUserId(existingTransaction.getCategory().getCategoryId(), userId)
                 .orElseThrow(() -> new BusinessException("Category not found or not owned by this user",
@@ -151,7 +163,7 @@ public class TransactionService {
         transactionRepository.delete(existingTransaction);
     }
 
-    public boolean checkThisMonth(String token,Transaction transaction) {
+    public boolean checkThisMonth(String token, Transaction transaction) {
         LocalDate currentDate = LocalDate.now();
         LocalDate transactionDate = transaction.getTransactionDate().toLocalDate();
         return transactionDate.getMonth() == currentDate.getMonth() &&
@@ -166,7 +178,8 @@ public class TransactionService {
             if (category.getCategoryName().equals(CATEGORY_EXTRA_INCOME)) {
                 Budget extraIncomeBudget = budgetRepository
                         .findByUserIdAndBudgetId(userId, category.getBudgetId())
-                        .orElseThrow(() -> new BusinessException("Budget not found or not owned by this user", HttpStatus.NOT_FOUND));
+                        .orElseThrow(() -> new BusinessException("Budget not found or not owned by this user",
+                                HttpStatus.NOT_FOUND));
                 double newAmount = extraIncomeBudget.getAmount() + amount;
                 extraIncomeBudget.setAmount(newAmount);
                 budgetRepository.save(extraIncomeBudget);
@@ -182,5 +195,11 @@ public class TransactionService {
         transactionRepository.save(transaction);
     }
 
-
+    public Double getMonthlyExpenses(String token) {
+        UUID userId = userService.extractUserIdFromToken(token);
+        LocalDateTime start = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        LocalDateTime end = LocalDate.now().withDayOfMonth(1).plusMonths(1).atStartOfDay();
+        return transactionRepository.sumByCategoryType(userId, TYPE_EXPENSE, start, end);
+    }
+}
 }

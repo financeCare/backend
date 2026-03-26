@@ -35,4 +35,16 @@ public class Transaction {
 
     @Column(length = 128)
     private String description;
+
+    @Column(name = "sender_bank")
+    private String senderBank;
+
+    @Column(name = "receiver_name")
+    private String receiverName;
+
+    @Column(name = "image_path", length = 500)
+    private String imagePath;
+
+    @Column(name = "slip_id")
+    private Long slipId;
 }

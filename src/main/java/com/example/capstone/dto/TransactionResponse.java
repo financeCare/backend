@@ -16,4 +16,8 @@ public class TransactionResponse {
     private LocalDateTime transactionDate;
     private String description;
     private CategoryDTO categoryDTO;
+    private String senderBank;
+    private String receiverName;
+    private String imagePath;
+    private Long slipId;
 }
