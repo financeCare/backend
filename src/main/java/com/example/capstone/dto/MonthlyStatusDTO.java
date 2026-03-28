@@ -13,4 +13,6 @@ public class MonthlyStatusDTO {
     private BigDecimal totalAmount;
     private BigDecimal paidAmount;
     private BigDecimal remainingAmount;
+    private BigDecimal requiredMinPayment;
+    private boolean isBudgetInsufficient;
 }

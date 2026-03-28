@@ -296,12 +296,23 @@ public class RepaymentPlanService {
         BigDecimal paidAmount = debtTransactionRepository.sumPaymentsByUserIdAndMonth(userId, year, month);
         if (paidAmount == null) paidAmount = BigDecimal.ZERO;
 
+        BigDecimal requiredMinPayment = activeDebts.stream()
+                .map(this::calculateSafeMinPayment)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        boolean isBudgetInsufficient = false;
+        if (plan != null && plan.getMonthlyBudget() != null && plan.getMonthlyBudget().compareTo(BigDecimal.ZERO) > 0) {
+            if (plan.getMonthlyBudget().compareTo(requiredMinPayment) < 0) {
+                isBudgetInsufficient = true;
+            }
+        }
+
         BigDecimal remainingAmount = totalAmount.subtract(paidAmount);
         if (remainingAmount.compareTo(BigDecimal.ZERO) < 0) {
             remainingAmount = BigDecimal.ZERO;
         }
 
-        return new MonthlyStatusDTO(totalAmount, paidAmount, remainingAmount);
+        return new MonthlyStatusDTO(totalAmount, paidAmount, remainingAmount, requiredMinPayment, isBudgetInsufficient);
     }
 
     public Map<UUID, BigDecimal> calculateCurrentMonthAllocation(UUID userId) {
