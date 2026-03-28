@@ -29,10 +29,9 @@ public class DebtPaymentDTO {
 
     public UUID debtId;
     public String debtName;
-    public BigDecimal principalStart;
-    public BigDecimal interest;
-    public BigDecimal paid;
-    public BigDecimal principalEnd;
-    public boolean isLate;
-    public BigDecimal penalty;
+    public BigDecimal beforeBalance;
+    public BigDecimal interestAdded;
+    public BigDecimal minPaid;
+    public BigDecimal extraPaid;
+    public BigDecimal afterBalance;
 }

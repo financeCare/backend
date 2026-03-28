@@ -24,7 +24,7 @@ import java.util.List;
 @NoArgsConstructor
 public class PlanResultDTO {
 
-    public int totalMonths;
+    public int estimatedMonths;
     public BigDecimal totalInterest;
     public BigDecimal totalPaid;
 

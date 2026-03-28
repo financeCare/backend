@@ -85,12 +85,11 @@ public class RepaymentPlanSimulator {
 
                                 dto.setDebtId(d.getDebtId());
                                 dto.setDebtName(d.getDebtName());
-                                dto.setPrincipalStart(r.getPrincipalStart());
-                                dto.setInterest(r.getInterest());
-                                dto.setPaid(paid);
-                                dto.setPrincipalEnd(r.getPrincipalEnd());
-                                dto.setLate(r.isLate());
-                                dto.setPenalty(r.getPenaltyInterest());
+                                dto.setBeforeBalance(r.getPrincipalStart());
+                                dto.setInterestAdded(r.getInterest());
+                                dto.setMinPaid(r.getMinPaid());
+                                dto.setExtraPaid(r.getExtraPaid());
+                                dto.setAfterBalance(r.getPrincipalEnd());
 
                                 debtPayments.add(dto);
                         }
@@ -106,10 +105,10 @@ public class RepaymentPlanSimulator {
 
                         MonthlyPlanResultDTO m = new MonthlyPlanResultDTO();
 
-                        m.setMonth(month);
-                        m.setTotalInterest(monthInterest);
-                        m.setTotalPaid(paidThisMonth);
-                        m.setRemainingTotal(remainingTotal);
+                        m.setMonthNo(month);
+                        m.setMonthInterest(monthInterest);
+                        m.setPaidThisMonth(paidThisMonth);
+                        m.setRemainingDebtTotal(remainingTotal);
                         m.setDebtPayments(debtPayments);
 
                         monthlyResults.add(m);
@@ -117,7 +116,7 @@ public class RepaymentPlanSimulator {
 
                 PlanResultDTO result = new PlanResultDTO();
 
-                result.setTotalMonths(month);
+                result.setEstimatedMonths(month);
                 result.setTotalInterest(totalInterest);
                 result.setTotalPaid(totalPaid);
                 result.setMonthlyResults(monthlyResults);

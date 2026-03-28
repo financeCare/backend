@@ -25,8 +25,11 @@ public class ReceiverMapping {
     private String receiverName;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "category_id", nullable = false)
+    @JoinColumn(name = "category_id", nullable = true)
     private Category category;
+
+    @Column(name = "debt_id")
+    private UUID debtId;
 
     @Builder.Default
     @Column(name = "created_at")

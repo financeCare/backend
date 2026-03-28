@@ -1,10 +1,11 @@
 package com.example.capstone.repository;
 
-import com.example.capstone.entity.Debt;
 import com.example.capstone.entity.DebtTransaction;
 import com.example.capstone.enums.DebtTxnType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import java.math.BigDecimal;
 
 import java.util.List;
 import java.util.UUID;
@@ -15,14 +16,14 @@ public interface DebtTransactionRepository extends JpaRepository<DebtTransaction
                         FROM DebtTransaction t
                         WHERE t.debt = :debt
                         AND t.txnType = :type
-                        AND FUNCTION('YEAR', t.txnDate) = :year
-                        AND FUNCTION('MONTH', t.txnDate) = :month
+                        AND YEAR(t.txnDate) = :year
+                        AND MONTH(t.txnDate) = :month
                         """)
         boolean existsByDebtAndTxnTypeAndYearAndMonth(
-                        Debt debt,
-                        DebtTxnType type,
-                        int year,
-                        int month);
+                        @Param("debt") com.example.capstone.entity.Debt debt,
+                        @Param("type") com.example.capstone.enums.DebtTxnType type,
+                        @Param("year") int year,
+                        @Param("month") int month);
 
         @Query("""
                         SELECT t FROM DebtTransaction t
@@ -34,4 +35,17 @@ public interface DebtTransactionRepository extends JpaRepository<DebtTransaction
         List<DebtTransaction> findOutstandingByType(
                         UUID debtId,
                         DebtTxnType type);
+
+        @Query("""
+                        SELECT COALESCE(SUM(t.amount), 0)
+                        FROM DebtTransaction t
+                        WHERE t.debt.userId = :userId
+                        AND t.txnType = 'PAYMENT'
+                        AND YEAR(t.txnDate) = :year
+                        AND MONTH(t.txnDate) = :month
+                        """)
+        BigDecimal sumPaymentsByUserIdAndMonth(
+                        @Param("userId") UUID userId,
+                        @Param("year") int year,
+                        @Param("month") int month);
 }

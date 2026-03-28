@@ -92,7 +92,7 @@ public class RepaymentPlanSimulatorTest {
         PlanResultDTO result = repaymentPlanSimulator.simulateCore(plan, debts, strategy);
 
         assertNotNull(result);
-        assertTrue(result.getTotalMonths() > 0);
+        assertTrue(result.getEstimatedMonths() > 0);
         assertNotNull(result.getMonthlyResults());
     }
 

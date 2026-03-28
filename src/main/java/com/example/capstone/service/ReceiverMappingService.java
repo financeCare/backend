@@ -27,22 +27,28 @@ public class ReceiverMappingService {
     }
 
     @Transactional
-    public ReceiverMapping createOrUpdateMapping(String token, String receiverName, Integer categoryId) {
+    public ReceiverMapping createOrUpdateMapping(String token, String receiverName, Integer categoryId, UUID debtId) {
         UUID userId = userService.extractUserIdFromToken(token);
-        Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+        
+        Category category = null;
+        if (categoryId != null) {
+            category = categoryRepository.findById(categoryId)
+                    .orElseThrow(() -> new RuntimeException("Category not found"));
+        }
 
         Optional<ReceiverMapping> existing = receiverMappingRepository.findByUserIdAndReceiverName(userId, receiverName);
         
         if (existing.isPresent()) {
             ReceiverMapping mapping = existing.get();
             mapping.setCategory(category);
+            mapping.setDebtId(debtId);
             return receiverMappingRepository.save(mapping);
         } else {
             ReceiverMapping mapping = ReceiverMapping.builder()
                     .userId(userId)
                     .receiverName(receiverName)
                     .category(category)
+                    .debtId(debtId)
                     .build();
             return receiverMappingRepository.save(mapping);
         }
@@ -67,10 +73,14 @@ public class ReceiverMappingService {
     }
 
     public Optional<Category> suggestCategory(UUID userId, String receiverName) {
+        return suggestMapping(userId, receiverName)
+                .map(ReceiverMapping::getCategory);
+    }
+
+    public Optional<ReceiverMapping> suggestMapping(UUID userId, String receiverName) {
         if (receiverName == null || receiverName.trim().isEmpty()) {
             return Optional.empty();
         }
-        return receiverMappingRepository.findByUserIdAndReceiverName(userId, receiverName)
-                .map(ReceiverMapping::getCategory);
+        return receiverMappingRepository.findByUserIdAndReceiverName(userId, receiverName);
     }
 }

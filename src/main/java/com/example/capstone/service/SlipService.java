@@ -84,8 +84,13 @@ public class SlipService {
             result.put("slip", savedSlip);
             
             String receiverName = data.path("receiver").asText(null);
-            receiverMappingService.suggestCategory(user.getUserId(), receiverName).ifPresent(category -> {
-                result.put("suggestedCategory", category);
+            receiverMappingService.suggestMapping(user.getUserId(), receiverName).ifPresent(mapping -> {
+                if (mapping.getCategory() != null) {
+                    result.put("suggestedCategory", mapping.getCategory());
+                }
+                if (mapping.getDebtId() != null) {
+                    result.put("suggestedDebtId", mapping.getDebtId());
+                }
             });
             
             results.add(result);

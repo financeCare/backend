@@ -25,10 +25,10 @@ import java.util.List;
 @Data
 public class MonthlyPlanResultDTO {
 
-    public int month;
-    public BigDecimal totalInterest;
-    public BigDecimal totalPaid;
-    public BigDecimal remainingTotal;
+    public int monthNo;
+    public BigDecimal monthInterest;
+    public BigDecimal paidThisMonth;
+    public BigDecimal remainingDebtTotal;
 
     public List<DebtPaymentDTO> debtPayments;
 }

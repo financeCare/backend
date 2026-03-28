@@ -3,6 +3,7 @@ package com.example.capstone.controller;
 import com.example.capstone.dto.RepaymentPlanDTO;
 import com.example.capstone.dto.RepaymentStrategyDTO;
 import com.example.capstone.dto.RepaymentStrategyDtoResponse;
+import com.example.capstone.dto.MonthlyStatusDTO;
 import com.example.capstone.service.RepaymentPlanService;
 import com.example.capstone.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +65,12 @@ public class RepaymentPlanController {
             @RequestParam(name = "strategyId") UUID strategyId) {
         String token = authorizationHeader.replace("Bearer ", "");
         return ResponseEntity.ok(repaymentPlanService.getPrioritySuggestions(token, strategyId));
+    }
+
+    @GetMapping("/monthly-status")
+    public ResponseEntity<MonthlyStatusDTO> getMonthlyStatus(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        return ResponseEntity.ok(repaymentPlanService.getMonthlyStatus(token));
     }
 
 }

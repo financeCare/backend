@@ -28,13 +28,14 @@ public class ReceiverMappingController {
         ReceiverMapping mapping = receiverMappingService.createOrUpdateMapping(
                 token, 
                 request.getReceiverName(), 
-                request.getCategoryId()
+                request.getCategoryId(),
+                request.getDebtId()
         );
         return ResponseEntity.ok(mapping);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteMapping(@RequestHeader("Authorization") String authorizationHeader,@PathVariable Long id) {
+    public ResponseEntity<?> deleteMapping(@RequestHeader("Authorization") String authorizationHeader,@PathVariable("id") Long id) {
         String token = authorizationHeader.replace("Bearer ", "");
         receiverMappingService.deleteMapping(id, token);
         return ResponseEntity.ok().build();
@@ -44,5 +45,6 @@ public class ReceiverMappingController {
     public static class MappingRequest {
         private String receiverName;
         private Integer categoryId;
+        private java.util.UUID debtId;
     }
 }

@@ -6,14 +6,14 @@ import com.example.capstone.repository.UserRepository;
 import com.example.capstone.service.SlipService;
 import com.example.capstone.service.UserService;
 
+import com.example.capstone.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.util.List;
 import java.util.UUID;
-
 @RestController
 @RequestMapping("/slips")
 @RequiredArgsConstructor
@@ -24,7 +24,10 @@ public class SlipController {
     private final UserRepository userRepository;
 
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadSlips(@RequestHeader("Authorization") String authorizationHeader,@RequestParam("files") List<MultipartFile> files) {
+    public ResponseEntity<?> uploadSlips(@RequestHeader("Authorization") String authorizationHeader, @RequestParam("files") List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            throw new BusinessException("No files uploaded", HttpStatus.BAD_REQUEST);
+        }
         String token = authorizationHeader.replace("Bearer ", "");
         UUID userId = userService.extractUserIdFromToken(token);
         User user = userRepository.findById(userId)

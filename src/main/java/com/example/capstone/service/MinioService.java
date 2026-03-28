@@ -5,6 +5,7 @@ import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,31 +16,23 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class MinioService {
 
-    private final String url = "http://10.4.88.37:9000";
-    private final String accessKey = "admin";
-    private final String secretKey = "password123";
     private final String bucketName = "slips";
-
-    private MinioClient minioClient;
+    private final MinioClient minioClient;
 
     @PostConstruct
     public void init() {
         try {
-            minioClient = MinioClient.builder()
-                    .endpoint(url)
-                    .credentials(accessKey, secretKey)
-                    .build();
-
             boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
             if (!exists) {
                 minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
                 log.info("Created bucket: {}", bucketName);
             }
         } catch (Exception e) {
-            log.error("Error initializing MinioClient: {}", e.getMessage());
+            log.error("Error checking/creating bucket '{}': {}", bucketName, e.getMessage());
         }
     }
 
