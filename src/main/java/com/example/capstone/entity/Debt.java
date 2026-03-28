@@ -1,6 +1,8 @@
     package com.example.capstone.entity;
 
     import com.example.capstone.enums.InterestCalculationType;
+    import com.example.capstone.enums.InterestInterval;
+    import com.example.capstone.enums.PaymentInterval;
     import jakarta.persistence.*;
     import lombok.AllArgsConstructor;
     import lombok.Getter;
@@ -84,4 +86,24 @@
 
         @Column(name = "is_informal")
         private Boolean isInformal = false;
+
+        @Enumerated(EnumType.STRING)
+        @Column(name = "interest_interval")
+        private InterestInterval interestInterval = InterestInterval.YEARLY;
+
+        @Enumerated(EnumType.STRING)
+        @Column(name = "payment_interval")
+        private PaymentInterval paymentInterval = PaymentInterval.MONTHLY;
+
+        @Column(name = "initial_interest_remaining", precision = 15, scale = 2)
+        private BigDecimal initialInterestRemaining = BigDecimal.ZERO;
+
+        @Column(name = "initial_late_fee_remaining", precision = 15, scale = 2)
+        private BigDecimal initialLateFeeRemaining = BigDecimal.ZERO;
+
+        @Column(name = "initial_penalty_remaining", precision = 15, scale = 2)
+        private BigDecimal initialPenaltyRemaining = BigDecimal.ZERO;
+
+        @Column(name = "total_interest_paid", precision = 15, scale = 2)
+        private BigDecimal totalInterestPaid = BigDecimal.ZERO;
     }

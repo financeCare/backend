@@ -2,19 +2,29 @@ package com.example.capstone.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+
 
 import java.math.BigDecimal;
 import java.util.Date;
 
 import com.example.capstone.enums.InterestCalculationType;
+import com.example.capstone.enums.InterestInterval;
+import com.example.capstone.enums.PaymentInterval;
 import jakarta.validation.constraints.*;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class DebtDTO {
 
     @NotNull(message = "Principal amount is required")
     @PositiveOrZero(message = "Principal amount must be zero or positive")
     private BigDecimal principalAmount;
+
+    @PositiveOrZero(message = "Principal outstanding must be zero or positive")
+    private BigDecimal principalOutstanding;
 
     @NotNull(message = "Interest rate is required")
     @PositiveOrZero(message = "Interest rate must be zero or positive")
@@ -26,6 +36,7 @@ public class DebtDTO {
     @NotNull(message = "Start date is required")
     private Date startDate;
 
+    @NotNull(message = "End date is required")
     private Date endDate;
 
     private boolean isActive;
@@ -61,4 +72,49 @@ public class DebtDTO {
 
     @NotNull(message = "Interest calculation type is required")
     private InterestCalculationType interestCalculationType;
+
+    private InterestInterval interestInterval;
+
+    private PaymentInterval paymentInterval;
+    
+    @PositiveOrZero(message = "Initial interest remaining must be zero or positive")
+    private BigDecimal initialInterestRemaining;
+
+    @PositiveOrZero(message = "Initial late fee remaining must be zero or positive")
+    private BigDecimal initialLateFeeRemaining;
+
+    @PositiveOrZero(message = "Initial penalty interest remaining must be zero or positive")
+    private BigDecimal initialPenaltyRemaining;
+
+    public BigDecimal getPrincipalOutstandingV2() {
+        return principalOutstanding;
+    }
+
+    public void setPrincipalOutstanding(BigDecimal principalOutstanding) {
+        this.principalOutstanding = principalOutstanding;
+    }
+
+    public Boolean getIsInformal() {
+        return isInformal;
+    }
+
+    public void setIsInformal(Boolean isInformal) {
+        this.isInformal = isInformal;
+    }
+
+    public InterestInterval getInterestInterval() {
+        return interestInterval;
+    }
+
+    public void setInterestInterval(InterestInterval interestInterval) {
+        this.interestInterval = interestInterval;
+    }
+
+    public PaymentInterval getPaymentInterval() {
+        return paymentInterval;
+    }
+
+    public void setPaymentInterval(PaymentInterval paymentInterval) {
+        this.paymentInterval = paymentInterval;
+    }
 }

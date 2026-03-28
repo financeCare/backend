@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -94,5 +95,43 @@ public class RepaymentServiceTest {
         repaymentService.accrueMonthlyCharges(debt, date);
 
         verify(debtTransactionRepository, atLeastOnce()).save(any());
+    }
+
+    @Test
+    void testPayDebt_SequentialMonthlyAllocation() {
+        UUID debtId = UUID.randomUUID();
+        DebtPaymentRequestDTO req = new DebtPaymentRequestDTO();
+        req.setDebtId(debtId);
+        req.setPaymentAmount(new BigDecimal("6000")); // Enough for 1 month but not quite 2
+        req.setPaymentDate(LocalDate.of(2023, 11, 1));
+
+        Debt debt = new Debt();
+        debt.setDebtId(debtId);
+        debt.setUserId(userId);
+        debt.setPrincipalOutstanding(new BigDecimal("10000"));
+        debt.setInterestRate(new BigDecimal("0.12"));
+        debt.setMinPayment(new BigDecimal("5000"));
+        
+        // Start date is one month ago
+        LocalDate startDate = LocalDate.of(2023, 10, 1);
+        debt.setStartDate(java.util.Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+
+        when(userService.extractUserIdFromToken(token)).thenReturn(userId);
+        when(debtRepository.findByDebtIdAndUserIdAndActiveTrue(debtId, userId)).thenReturn(Optional.of(debt));
+        
+        // No charges exist yet
+        when(debtTransactionRepository.existsByDebtAndTxnTypeAndYearAndMonth(eq(debt), any(), anyInt(), anyInt()))
+                .thenReturn(false);
+
+        repaymentService.payDebt(token, req);
+
+        // Verification logic:
+        // 1. Month 1 (Oct): Accrues Interest (100). Pays Interest 100. Pays Principal 4900 (Total 5000).
+        // 2. Month 2 (Nov): Accrues Interest (on remaining principal). Pays Interest. Pays rest to Principal.
+        
+        // Verify multiple saves to debtRepository (since principal is updated per month)
+        verify(debtRepository, atLeast(2)).save(debt);
+        // Verify multiple saves to debtTransactionRepository (PAYMENT, INTEREST_PAYMENT x2, PRINCIPAL_PAYMENT x2)
+        verify(debtTransactionRepository, atLeast(5)).save(any());
     }
 }

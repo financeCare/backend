@@ -16,8 +16,7 @@ public class DefaultBudgetAllocator {
     public Map<UUID, BigDecimal> allocate(
             BigDecimal monthlyBudget,
             List<DebtSim> debts,
-            DebtSim target
-    ) {
+            DebtSim target) {
         Map<UUID, BigDecimal> map = new HashMap<>();
         BigDecimal remaining = monthlyBudget;
 
@@ -31,14 +30,16 @@ public class DefaultBudgetAllocator {
             }
             remaining = remaining.subtract(totalMin);
         } else {
-            // เมื่อเงินไม่พอจ่ายขั้นต่ำ ให้จัดสรรเงินตามลำดับ Priority (ตัวเลขน้อยคือสำคัญมาก)
+            // เมื่อเงินไม่พอจ่ายขั้นต่ำ ให้จัดสรรเงินตามลำดับ Priority
+            // (ตัวเลขน้อยคือสำคัญมาก)
             List<DebtSim> prioritySorted = debts.stream()
                     .sorted(Comparator.comparingInt(DebtSim::getPriority))
                     .toList();
 
             for (DebtSim d : prioritySorted) {
-                if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
-                
+                if (remaining.compareTo(BigDecimal.ZERO) <= 0)
+                    break;
+
                 BigDecimal toOther = remaining.min(d.getMinPayment());
                 map.put(d.getDebtId(), toOther);
                 remaining = remaining.subtract(toOther);
@@ -47,21 +48,26 @@ public class DefaultBudgetAllocator {
         }
 
         if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-            // Sort debts by priority (1 is highest), then by whatever else if needed
-            List<DebtSim> prioritySorted = debts.stream()
-                    .sorted(Comparator.comparingInt(DebtSim::getPriority))
+            // Priority 1: High Priority (Value low) goes first
+            // Priority 2: Within same Priority, use Strategy Target
+            UUID targetId = (target != null) ? target.getDebtId() : null;
+
+            List<DebtSim> extraPrioritySorted = debts.stream()
+                    .sorted(Comparator.comparingInt(DebtSim::getPriority)
+                            .thenComparing((d1, d2) -> {
+                                if (targetId == null) return 0;
+                                boolean isD1Target = d1.getDebtId().equals(targetId);
+                                boolean isD2Target = d2.getDebtId().equals(targetId);
+                                if (isD1Target) return -1;
+                                if (isD2Target) return 1;
+                                return 0;
+                            }))
                     .toList();
 
-            for (DebtSim d : prioritySorted) {
+            for (DebtSim d : extraPrioritySorted) {
                 if (remaining.compareTo(BigDecimal.ZERO) <= 0) break;
-                
+
                 BigDecimal current = map.getOrDefault(d.getDebtId(), BigDecimal.ZERO);
-                // In a single month, we don't necessarily know the max it can take here without the engine
-                // but usually we just dump the remaining to the highest priority debt.
-                // If we want to be safe and distribute if one is 'full', it's complex because we haven't run the engine yet.
-                // However, the current simulator handles 'debts.removeIf(d -> d.getPrincipal() <= 0)' AFTER the month.
-                // So for a single month, we usually stick to one target for the 'extra'.
-                
                 map.put(d.getDebtId(), current.add(remaining));
                 remaining = BigDecimal.ZERO; 
             }

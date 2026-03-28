@@ -14,13 +14,13 @@ public interface DebtTransactionRepository extends JpaRepository<DebtTransaction
         @Query("""
                         SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END
                         FROM DebtTransaction t
-                        WHERE t.debt = :debt
+                        WHERE t.debt.debtId = :debtId
                         AND t.txnType = :type
                         AND YEAR(t.txnDate) = :year
                         AND MONTH(t.txnDate) = :month
                         """)
-        boolean existsByDebtAndTxnTypeAndYearAndMonth(
-                        @Param("debt") com.example.capstone.entity.Debt debt,
+        boolean existsByDebtIdAndTxnTypeAndYearAndMonth(
+                        @Param("debtId") UUID debtId,
                         @Param("type") com.example.capstone.enums.DebtTxnType type,
                         @Param("year") int year,
                         @Param("month") int month);
@@ -33,8 +33,34 @@ public interface DebtTransactionRepository extends JpaRepository<DebtTransaction
                         ORDER BY t.txnDate ASC
                         """)
         List<DebtTransaction> findOutstandingByType(
-                        UUID debtId,
-                        DebtTxnType type);
+                        @Param("debtId") UUID debtId,
+                        @Param("type") DebtTxnType type);
+
+        @Query("""
+                        SELECT COALESCE(SUM(t.amount), 0)
+                        FROM DebtTransaction t
+                        WHERE t.debt.debtId = :debtId
+                        AND t.txnType = :type
+                        AND t.amount > 0
+                        """)
+        BigDecimal sumOutstandingByType(
+                        @Param("debtId") UUID debtId,
+                        @Param("type") DebtTxnType type);
+
+        @Query("""
+                        SELECT COALESCE(SUM(t.amount), 0)
+                        FROM DebtTransaction t
+                        WHERE t.debt.debtId = :debtId
+                        AND t.txnType = :type
+                        AND t.amount > 0
+                        AND YEAR(t.txnDate) = :year
+                        AND MONTH(t.txnDate) = :month
+                        """)
+        BigDecimal sumMonthDebt(
+                        @Param("debtId") UUID debtId,
+                        @Param("type") DebtTxnType type,
+                        @Param("year") int year,
+                        @Param("month") int month);
 
         @Query("""
                         SELECT COALESCE(SUM(t.amount), 0)

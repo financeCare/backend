@@ -35,15 +35,41 @@ public class BulletEngine implements DebtMonthEngine {
         PenaltyLogic.LateResult lateResult = PenaltyLogic.checkAndCalculate(debt, principalStart, totalPlannedPayment);
         BigDecimal penalty = lateResult.getPenalty();
 
-        // Calculate max needed to clear the debt this month
-        BigDecimal maxNeeded = principalStart.add(interest).add(penalty);
+        // Calculate max needed to clear the debt this month (include outstanding charges)
+        BigDecimal outstandingCharges = debt.getInterestOutstanding()
+                .add(debt.getLateFeeOutstanding())
+                .add(debt.getPenaltyOutstanding());
+        
+        BigDecimal maxNeeded = principalStart.add(interest).add(penalty).add(outstandingCharges);
         BigDecimal actualTotalPayment = totalPlannedPayment.min(maxNeeded);
 
-        // Distribute actual payment back to min and extra for reporting
-        BigDecimal actualMinPaid = minPayment.min(actualTotalPayment);
-        BigDecimal actualExtraPaid = actualTotalPayment.subtract(actualMinPaid);
+        // Track how much is paid to each part
+        BigDecimal remainingToAllocate = actualTotalPayment;
 
-        BigDecimal principalPaid = actualTotalPayment.subtract(interest).subtract(penalty);
+        // 1. Pay outstanding charges first (Initial balances)
+        BigDecimal paidToOldCharges = remainingToAllocate.min(outstandingCharges);
+        remainingToAllocate = remainingToAllocate.subtract(paidToOldCharges);
+        
+        // Update outstanding charges for next month in simulation
+        BigDecimal p = debt.getPenaltyOutstanding();
+        BigDecimal pPaid = paidToOldCharges.min(p);
+        debt.setPenaltyOutstanding(p.subtract(pPaid));
+        
+        BigDecimal l = debt.getLateFeeOutstanding();
+        BigDecimal lPaid = (paidToOldCharges.subtract(pPaid)).min(l);
+        debt.setLateFeeOutstanding(l.subtract(lPaid));
+        
+        BigDecimal iIdx = debt.getInterestOutstanding();
+        BigDecimal iIdxPaid = (paidToOldCharges.subtract(pPaid).subtract(lPaid)).min(iIdx);
+        debt.setInterestOutstanding(iIdx.subtract(iIdxPaid));
+
+        // 2. Pay current month charges
+        BigDecimal currentMonthCharges = interest.add(penalty);
+        BigDecimal paidToCurrentCharges = remainingToAllocate.min(currentMonthCharges);
+        remainingToAllocate = remainingToAllocate.subtract(paidToCurrentCharges);
+
+        // 3. Pay principal
+        BigDecimal principalPaid = remainingToAllocate;
         BigDecimal principalEnd = principalStart.subtract(principalPaid);
 
         if (principalEnd.compareTo(BigDecimal.ZERO) < 0) {

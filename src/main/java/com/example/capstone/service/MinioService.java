@@ -4,6 +4,7 @@ import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +58,20 @@ public class MinioService {
                             .build()
             );
             return fullPath;
+        }
+    }
+
+    public void deleteFile(String path) {
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(path)
+                            .build()
+            );
+            log.info("Deleted file from Minio: {}", path);
+        } catch (Exception e) {
+            log.error("Failed to delete file from Minio {}: {}", path, e.getMessage());
         }
     }
 }

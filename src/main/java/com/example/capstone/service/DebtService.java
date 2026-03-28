@@ -2,6 +2,9 @@ package com.example.capstone.service;
 
 import com.example.capstone.dto.*;
 import com.example.capstone.entity.*;
+import com.example.capstone.enums.InterestInterval;
+import com.example.capstone.enums.PaymentInterval;
+import com.example.capstone.enums.DebtTxnType;
 
 import com.example.capstone.exception.BusinessException;
 import com.example.capstone.repository.*;
@@ -11,7 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 
 import java.util.List;
@@ -27,10 +32,17 @@ public class DebtService {
         private final BudgetService budgetService;
         private final CategoryRepository categoryRepository;
         private final NotificationService notificationService;
+        private final DebtTransactionRepository debtTransactionRepository;
 
-        public List<Debt> getOwnDebt(String token) {
+        public List<DebtResponseDTO> getOwnDebt(String token) {
                 UUID userId = userService.extractUserIdFromToken(token);
-                return debtRepository.findAllByUserId(userId);
+                List<Debt> debts = debtRepository.findAllByUserId(userId);
+                return debts.stream()
+                                .map(debt -> DebtResponseDTO.builder()
+                                                .debt(debt)
+                                                .summary(getDebtSummaryInternal(debt))
+                                                .build())
+                                .toList();
         }
 
         public Debt getDebtDetail(String token, UUID debtId) {
@@ -74,7 +86,7 @@ public class DebtService {
                 Debt debt = new Debt();
                 debt.setUserId(userId);
                 debt.setPrincipalAmount(debtDTO.getPrincipalAmount());
-                debt.setPrincipalOutstanding(debtDTO.getPrincipalAmount()); // Initialize outstanding balance
+                debt.setPrincipalOutstanding(debtDTO.getPrincipalOutstandingV2() != null ? debtDTO.getPrincipalOutstandingV2() : debtDTO.getPrincipalAmount()); // Initialize outstanding balance
                 debt.setInterestRate(debtDTO.getInterestRate());
                 debt.setRepaymentType(repaymentTypeRepository.findById(debtDTO.getRepaymentTypeId())
                                 .orElseThrow(() -> new BusinessException("invalid repayment type id",
@@ -95,10 +107,46 @@ public class DebtService {
                 debt.setDefaulted(debtDTO.isDefaulted());
                 debt.setIsInformal(debtDTO.getIsInformal() != null ? debtDTO.getIsInformal() : false);
                 debt.setInterestCalculationType(debtDTO.getInterestCalculationType());
+                debt.setInterestInterval(debtDTO.getInterestInterval() != null ? debtDTO.getInterestInterval() : InterestInterval.YEARLY);
+                debt.setPaymentInterval(debtDTO.getPaymentInterval() != null ? debtDTO.getPaymentInterval() : PaymentInterval.MONTHLY);
+                
+                // เก็บยอดเริ่มต้นไว้ใน Debt Entity
+                debt.setInitialInterestRemaining(debtDTO.getInitialInterestRemaining() != null ? debtDTO.getInitialInterestRemaining() : BigDecimal.ZERO);
+                debt.setInitialLateFeeRemaining(debtDTO.getInitialLateFeeRemaining() != null ? debtDTO.getInitialLateFeeRemaining() : BigDecimal.ZERO);
+                debt.setInitialPenaltyRemaining(debtDTO.getInitialPenaltyRemaining() != null ? debtDTO.getInitialPenaltyRemaining() : BigDecimal.ZERO);
+                
                 debtRepository.save(debt);
+
+                // สร้าง Transaction สำหรับยอดค้างชำระเริ่มต้น
+                createInitialBalanceTxns(debt);
+
                 notificationService.createNotificationRuleForDebt(userId, debt.getDebtName(), debt.getMinPayment(),
                                 debt.getDebtId());
                 return debt;
+        }
+
+        private void createInitialBalanceTxns(Debt debt) {
+                LocalDate txnDate = debt.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                
+                if (debt.getInitialInterestRemaining().compareTo(BigDecimal.ZERO) > 0) {
+                        saveInitialTxn(debt, DebtTxnType.INTEREST_CHARGE, debt.getInitialInterestRemaining(), txnDate);
+                }
+                if (debt.getInitialLateFeeRemaining().compareTo(BigDecimal.ZERO) > 0) {
+                        saveInitialTxn(debt, DebtTxnType.LATE_FEE_CHARGE, debt.getInitialLateFeeRemaining(), txnDate);
+                }
+                if (debt.getInitialPenaltyRemaining().compareTo(BigDecimal.ZERO) > 0) {
+                        saveInitialTxn(debt, DebtTxnType.PENALTY_INTEREST_CHARGE, debt.getInitialPenaltyRemaining(), txnDate);
+                }
+        }
+
+        private void saveInitialTxn(Debt debt, DebtTxnType type, BigDecimal amount, LocalDate date) {
+                DebtTransaction txn = DebtTransaction.builder()
+                                .debt(debt)
+                                .txnType(type)
+                                .amount(amount.setScale(2, RoundingMode.HALF_UP))
+                                .txnDate(date)
+                                .build();
+                debtTransactionRepository.save(txn);
         }
 
         public Debt updateDebt(String token, UUID debtId, DebtDTO debtDTO) {
@@ -120,8 +168,10 @@ public class DebtService {
                                                 HttpStatus.BAD_REQUEST));
 
                 existingDebt.setPrincipalAmount(debtDTO.getPrincipalAmount());
-                // Update outstanding balance only if debt is newly activated or requested
-                existingDebt.setPrincipalOutstanding(debtDTO.getPrincipalAmount());
+                // Update outstanding balance only if provided in DTO
+                if (debtDTO.getPrincipalOutstandingV2() != null) {
+                        existingDebt.setPrincipalOutstanding(debtDTO.getPrincipalOutstandingV2());
+                }
                 existingDebt.setInterestRate(debtDTO.getInterestRate());
                 existingDebt.setRepaymentType(repaymentType);
                 existingDebt.setStartDate(debtDTO.getStartDate());
@@ -138,6 +188,18 @@ public class DebtService {
                 existingDebt.setDefaulted(debtDTO.isDefaulted());
                 existingDebt.setIsInformal(debtDTO.getIsInformal() != null ? debtDTO.getIsInformal() : false);
                 existingDebt.setInterestCalculationType(debtDTO.getInterestCalculationType());
+                if (debtDTO.getInterestInterval() != null) {
+                        existingDebt.setInterestInterval(debtDTO.getInterestInterval());
+                }
+                if (debtDTO.getPaymentInterval() != null) {
+                        existingDebt.setPaymentInterval(debtDTO.getPaymentInterval());
+                }
+                
+                // อัปเดตยอดเริ่มต้น (หมายเหตุ: การแก้ตรงนี้จะแก้ไขเฉพาะในตัว Debt แต่ไม่ไปแก้ Transaction ที่ถูกสร้างไปแล้ว)
+                if (debtDTO.getInitialInterestRemaining() != null) existingDebt.setInitialInterestRemaining(debtDTO.getInitialInterestRemaining());
+                if (debtDTO.getInitialLateFeeRemaining() != null) existingDebt.setInitialLateFeeRemaining(debtDTO.getInitialLateFeeRemaining());
+                if (debtDTO.getInitialPenaltyRemaining() != null) existingDebt.setInitialPenaltyRemaining(debtDTO.getInitialPenaltyRemaining());
+
                 existingDebt.setActive(true);
                 return debtRepository.save(existingDebt);
         }
@@ -159,7 +221,8 @@ public class DebtService {
                                                 debt.getDebtId(),
                                                 debt.getDebtName(),
                                                 debt.getPriority() != null ? debt.getPriority() : 0,
-                                                debt.getPrincipalAmount()
+                                                debt.getPrincipalAmount(),
+                                                debt.getPrincipalOutstanding() != null ? debt.getPrincipalOutstanding() : debt.getPrincipalAmount()
                                 ))
                                 .sorted((d1, d2) -> Integer.compare(d1.getPriority(), d2.getPriority()))
                                 .toList();
@@ -177,6 +240,55 @@ public class DebtService {
                         debtsToUpdate.add(debt);
                 }
                 debtRepository.saveAll(debtsToUpdate);
+        }
+
+        public DebtSummaryDTO getDebtSummary(String token, UUID debtId) {
+                UUID userId = userService.extractUserIdFromToken(token);
+                Debt debt = debtRepository.findByDebtIdAndUserId(debtId, userId)
+                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user",
+                                                HttpStatus.NOT_FOUND));
+
+                return getDebtSummaryInternal(debt);
+        }
+
+        private DebtSummaryDTO getDebtSummaryInternal(Debt debt) {
+                UUID debtId = debt.getDebtId();
+                BigDecimal principal = debt.getPrincipalOutstanding() != null ? 
+                                debt.getPrincipalOutstanding() : debt.getPrincipalAmount();
+                if (principal == null) principal = BigDecimal.ZERO;
+                
+                // Total outstanding across all time
+                BigDecimal interest = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.INTEREST_CHARGE);
+                if (interest == null) interest = BigDecimal.ZERO;
+                BigDecimal lateFee = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.LATE_FEE_CHARGE);
+                if (lateFee == null) lateFee = BigDecimal.ZERO;
+                BigDecimal penalty = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.PENALTY_INTEREST_CHARGE);
+                if (penalty == null) penalty = BigDecimal.ZERO;
+                
+                // Current month outstanding
+                java.time.LocalDate now = java.time.LocalDate.now();
+                int year = now.getYear();
+                int month = now.getMonthValue();
+                
+                BigDecimal interestMonth = debtTransactionRepository.sumMonthDebt(debtId, DebtTxnType.INTEREST_CHARGE, year, month);
+                if (interestMonth == null) interestMonth = BigDecimal.ZERO;
+                BigDecimal lateFeeMonth = debtTransactionRepository.sumMonthDebt(debtId, DebtTxnType.LATE_FEE_CHARGE, year, month);
+                if (lateFeeMonth == null) lateFeeMonth = BigDecimal.ZERO;
+                BigDecimal penaltyMonth = debtTransactionRepository.sumMonthDebt(debtId, DebtTxnType.PENALTY_INTEREST_CHARGE, year, month);
+                if (penaltyMonth == null) penaltyMonth = BigDecimal.ZERO;
+
+                BigDecimal total = principal.add(interest).add(lateFee).add(penalty);
+
+                return DebtSummaryDTO.builder()
+                                .principalRemaining(principal)
+                                .interestRemaining(interest)
+                                .lateFeeRemaining(lateFee)
+                                .penaltyInterestRemaining(penalty)
+                                .interestRemainingMonth(interestMonth)
+                                .lateFeeRemainingMonth(lateFeeMonth)
+                                .penaltyInterestRemainingMonth(penaltyMonth)
+                                .totalRemaining(total)
+                                .build();
         }
 
 }

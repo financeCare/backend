@@ -5,6 +5,7 @@ import com.example.capstone.engineImp.calculator.PenaltyCalculator;
 import com.example.capstone.entity.Debt;
 import com.example.capstone.entity.DebtTransaction;
 import com.example.capstone.enums.DebtTxnType;
+import com.example.capstone.enums.InterestInterval;
 import com.example.capstone.exception.BusinessException;
 import com.example.capstone.repository.DebtRepository;
 import com.example.capstone.repository.DebtTransactionRepository;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -80,7 +82,17 @@ public class RepaymentService {
 
                         BigDecimal payAmount = remaining.min(chargeRemaining);
 
+                        chargeTxn.setAmount(chargeRemaining.subtract(payAmount));
                         debtTransactionRepository.save(chargeTxn);
+
+                        // สะสมยอดดอกเบี้ยที่จ่ายไปแล้ว
+                        if (paymentType == DebtTxnType.INTEREST_PAYMENT || 
+                            paymentType == DebtTxnType.PENALTY_INTEREST_PAYMENT) {
+                            BigDecimal currentTotal = debt.getTotalInterestPaid() != null ? 
+                                debt.getTotalInterestPaid() : BigDecimal.ZERO;
+                            debt.setTotalInterestPaid(currentTotal.add(payAmount));
+                            debtRepository.save(debt);
+                        }
 
                         createTxn(
                                         debt,
@@ -103,72 +115,70 @@ public class RepaymentService {
                         throw new BusinessException("Payment amount must be > 0", HttpStatus.BAD_REQUEST);
                 }
 
-                Debt debt = debtRepository.findByDebtIdAndUserIdAndActiveTrue(userId, debtPaymentRequestDTO.getDebtId())
+                Debt debt = debtRepository.findByDebtIdAndUserIdAndActiveTrue(debtPaymentRequestDTO.getDebtId(), userId)
                                 .orElseThrow(() -> new BusinessException("Debt not found", HttpStatus.NOT_FOUND));
 
                 BigDecimal remaining = debtPaymentRequestDTO.getPaymentAmount();
+                LocalDate paymentDate = debtPaymentRequestDTO.getPaymentDate();
 
-                createTxn(debt, DebtTxnType.PAYMENT, debtPaymentRequestDTO.getPaymentAmount(),
-                                debtPaymentRequestDTO.getPaymentDate(), null);
+                // 0. บันทึกยอดจ่ายรวมในระบบ
+                createTxn(debt, DebtTxnType.PAYMENT, remaining, paymentDate, null);
 
-                remaining = allocateChargePayment(
-                                debt,
-                                remaining,
-                                debtPaymentRequestDTO.getPaymentDate(),
-                                DebtTxnType.LATE_FEE_CHARGE,
-                                DebtTxnType.LATE_FEE_PAYMENT);
+                // เริ่มวนลูปรายเดือนตั้งแต่วันเริ่มต้นสัญญา (ปรับเป็นวันที่ 1 ของเดือนเพื่อให้เปรียบเทียบเดือนได้ถูกต้อง)
+                LocalDate currentMonth = debt.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().withDayOfMonth(1);
+                LocalDate targetMonth = paymentDate.withDayOfMonth(1);
 
-                remaining = allocateChargePayment(
-                                debt,
-                                remaining,
-                                debtPaymentRequestDTO.getPaymentDate(),
-                                DebtTxnType.PENALTY_INTEREST_CHARGE,
-                                DebtTxnType.PENALTY_INTEREST_PAYMENT);
+                while (!currentMonth.isAfter(targetMonth)) {
+                        // Step 1: คำนวณดอกเบี้ยของเดือนนี้ (ถ้ายังไม่มี)
+                        accrueMonthlyCharges(debt, currentMonth);
 
-                remaining = allocateChargePayment(
-                                debt,
-                                remaining,
-                                debtPaymentRequestDTO.getPaymentDate(),
-                                DebtTxnType.OVERPAYMENT_FEE_CHARGE,
-                                DebtTxnType.OVERPAYMENT_FEE_PAYMENT);
+                        // Step 2: จ่ายค่าธรรมเนียมและดอกเบี้ย (หักล้าง Charge ย้อนหลังทั้งหมดที่เจอ)
+                        BigDecimal beforeCharges = remaining;
+                        remaining = allocateChargePayment(debt, remaining, paymentDate,
+                                        DebtTxnType.LATE_FEE_CHARGE, DebtTxnType.LATE_FEE_PAYMENT);
+                        remaining = allocateChargePayment(debt, remaining, paymentDate,
+                                        DebtTxnType.PENALTY_INTEREST_CHARGE, DebtTxnType.PENALTY_INTEREST_PAYMENT);
+                        remaining = allocateChargePayment(debt, remaining, paymentDate,
+                                        DebtTxnType.OVERPAYMENT_FEE_CHARGE, DebtTxnType.OVERPAYMENT_FEE_PAYMENT);
+                        remaining = allocateChargePayment(debt, remaining, paymentDate,
+                                        DebtTxnType.INTEREST_CHARGE, DebtTxnType.INTEREST_PAYMENT);
 
-                remaining = allocateChargePayment(
-                                debt,
-                                remaining,
-                                debtPaymentRequestDTO.getPaymentDate(),
-                                DebtTxnType.INTEREST_CHARGE,
-                                DebtTxnType.INTEREST_PAYMENT);
+                        BigDecimal chargesPaidInThisMonthLoop = beforeCharges.subtract(remaining);
 
-                if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+                        // Step 3 & 4: จ่ายเงินต้น
+                        if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+                                BigDecimal principalOutstanding = debt.getPrincipalOutstanding();
+                                if (principalOutstanding != null && principalOutstanding.compareTo(BigDecimal.ZERO) > 0) {
 
-                        BigDecimal principalOutstanding = debt.getPrincipalOutstanding();
+                                        BigDecimal payToPrincipal;
+                                        if (currentMonth.isBefore(targetMonth)) {
+                                                // กรณีเดือนในอดีต: จ่ายให้ครบยอดขั้นต่ำ (minPayment) ของเดือนนั้น
+                                                BigDecimal minPayment = debt.getMinPayment() != null ? debt.getMinPayment()
+                                                                : BigDecimal.ZERO;
+                                                BigDecimal targetPrincipal = minPayment.subtract(chargesPaidInThisMonthLoop)
+                                                                .max(BigDecimal.ZERO);
+                                                payToPrincipal = remaining.min(targetPrincipal).min(principalOutstanding);
+                                        } else {
+                                                // กรณีเดือนสุดท้าย: จ่ายที่เหลือทั้งหมด
+                                                payToPrincipal = remaining.min(principalOutstanding);
+                                        }
 
-                        if (principalOutstanding.compareTo(BigDecimal.ZERO) > 0) {
+                                        if (payToPrincipal.compareTo(BigDecimal.ZERO) > 0) {
+                                                debt.setPrincipalOutstanding(principalOutstanding.subtract(payToPrincipal));
+                                                debtRepository.save(debt);
 
-                                BigDecimal payToPrincipal = remaining.min(principalOutstanding);
-
-                                debt.setPrincipalOutstanding(
-                                                principalOutstanding.subtract(payToPrincipal));
-
-                                debtRepository.save(debt);
-
-                                createTxn(debt,
-                                                DebtTxnType.PRINCIPAL_PAYMENT,
-                                                payToPrincipal,
-                                                debtPaymentRequestDTO.getPaymentDate(),
-                                                null);
-
-                                remaining = remaining.subtract(payToPrincipal);
+                                                createTxn(debt, DebtTxnType.PRINCIPAL_PAYMENT, payToPrincipal,
+                                                                paymentDate, null);
+                                                remaining = remaining.subtract(payToPrincipal);
+                                        }
+                                }
                         }
+                        currentMonth = currentMonth.plusMonths(1);
                 }
 
+                // หากมีเงินเหลือหลังจากหักทุกเดือนแล้ว ให้ลงเป็น Overpayment
                 if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-
-                        createTxn(debt,
-                                        DebtTxnType.OVERPAYMENT,
-                                        remaining,
-                                        debtPaymentRequestDTO.getPaymentDate(),
-                                        null);
+                        createTxn(debt, DebtTxnType.OVERPAYMENT, remaining, paymentDate, null);
                 }
         }
 
@@ -192,8 +202,8 @@ public class RepaymentService {
                 int year = processDate.getYear();
                 int month = processDate.getMonthValue();
 
-                boolean alreadyAccrued = debtTransactionRepository.existsByDebtAndTxnTypeAndYearAndMonth(
-                                debt,
+                boolean alreadyAccrued = debtTransactionRepository.existsByDebtIdAndTxnTypeAndYearAndMonth(
+                                debt.getDebtId(),
                                 DebtTxnType.INTEREST_CHARGE,
                                 year,
                                 month);
@@ -203,16 +213,30 @@ public class RepaymentService {
                 }
 
                 BigDecimal principal = debt.getPrincipalOutstanding();
-                BigDecimal annualRate = debt.getInterestRate();
+                BigDecimal rate = debt.getInterestRate();
 
-                if (annualRate == null || annualRate.compareTo(BigDecimal.ZERO) <= 0) {
+                if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0) {
                         return;
                 }
 
-                BigDecimal monthlyRate = annualRate.divide(
-                                BigDecimal.valueOf(12),
-                                10,
-                                RoundingMode.HALF_UP);
+                InterestInterval interval = debt.getInterestInterval() != null ? 
+                        debt.getInterestInterval() : InterestInterval.YEARLY;
+
+                BigDecimal monthlyRate;
+                switch (interval) {
+                        case DAILY:
+                                // คิดเป็นดอกเบี้ยต่อเดือน (คูณ 30 วันโดยประมาณ)
+                                monthlyRate = rate.multiply(BigDecimal.valueOf(30)).divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+                                break;
+                        case MONTHLY:
+                                // เรทที่กรอกมาคือต่อเดือนอยู่แล้ว (เช่น ร้อยละ 20 ต่อเดือน)
+                                monthlyRate = rate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+                                break;
+                        case YEARLY:
+                        default:
+                                monthlyRate = rate.divide(BigDecimal.valueOf(1200), 10, RoundingMode.HALF_UP);
+                                break;
+                }
 
                 BigDecimal interest = principal
                                 .multiply(monthlyRate)
@@ -228,16 +252,25 @@ public class RepaymentService {
                 }
 
                 LocalDate lastMonth = processDate.minusMonths(1);
-                int lastMonthYear = lastMonth.getYear();
                 int lastMonthValue = lastMonth.getMonthValue();
+                int lastMonthYear = lastMonth.getYear();
 
-                boolean penaltyAlreadyAccrued = debtTransactionRepository.existsByDebtAndTxnTypeAndYearAndMonth(
-                                debt,
+                LocalDate startDate = debt.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                LocalDate startMonth = startDate.withDayOfMonth(1);
+
+                boolean penaltyAlreadyAccrued = debtTransactionRepository.existsByDebtIdAndTxnTypeAndYearAndMonth(
+                                debt.getDebtId(),
                                 DebtTxnType.LATE_FEE_CHARGE,
                                 lastMonthYear,
                                 lastMonthValue);
 
-                if (!penaltyAlreadyAccrued && debt.getPrincipalOutstanding().compareTo(BigDecimal.ZERO) > 0) {
+                // Charge penalty only if:
+                // 1. Not already accrued for last month
+                // 2. Debt existed before this month (cannot be late before it started)
+                // 3. Outstanding principal > 0
+                if (!penaltyAlreadyAccrued && 
+                    processDate.isAfter(startMonth) && 
+                    debt.getPrincipalOutstanding().compareTo(BigDecimal.ZERO) > 0) {
                         BigDecimal penaltyRate = debt.getPenaltyAnnualRate();
                         if (penaltyRate != null && penaltyRate.compareTo(BigDecimal.ZERO) > 0) {
                                 BigDecimal lateFee = PenaltyCalculator.calculateMonthly(

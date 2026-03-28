@@ -6,6 +6,7 @@ import com.example.capstone.repository.SlipRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,8 +28,14 @@ public class SlipService {
     private final SlipRepository slipRepository;
     private final ReceiverMappingService receiverMappingService;
 
+    @Value("${app.slip.max-count:50}")
+    private int maxCount;
+
     @Transactional
     public List<Map<String, Object>> processSlips(List<MultipartFile> files, User user) {
+        // 0. Ensure limit (FIFO)
+        ensureLimit(user, files.size());
+
         // 1. Upload to MinIO
         Map<String, String> filenameToPathMap = new HashMap<>();
         for (MultipartFile file : files) {
@@ -116,6 +123,30 @@ public class SlipService {
         } catch (Exception e) {
             log.warn("Thai date parsing failed for '{}': {}", thaiDateStr, e.getMessage());
             return null;
+        }
+    }
+
+    private void ensureLimit(User user, int incomingCount) {
+        List<Slip> existingSlips = slipRepository.findByUserIdOrderByCreatedAtAsc(user.getUserId());
+        int currentCount = existingSlips.size();
+        int totalProjected = currentCount + incomingCount;
+
+        if (totalProjected > maxCount) {
+            int itemsToDelete = totalProjected - maxCount;
+            log.info("User {} has {} slips, uploading {}. Max is {}. Deleting {} oldest slips.",
+                    user.getUserId(), currentCount, incomingCount, maxCount, itemsToDelete);
+
+            for (int i = 0; i < Math.min(itemsToDelete, currentCount); i++) {
+                Slip slipToDelete = existingSlips.get(i);
+                try {
+                    // Delete from storage
+                    minioService.deleteFile(slipToDelete.getImagePath());
+                    // Delete from DB
+                    slipRepository.delete(slipToDelete);
+                } catch (Exception e) {
+                    log.error("Failed to delete old slip {}: {}", slipToDelete.getId(), e.getMessage());
+                }
+            }
         }
     }
 }

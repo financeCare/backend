@@ -30,6 +30,11 @@ public class DebtSim {
     private boolean isInformal;
     private int priority;
 
+    // ยอดค้างชำระเริ่มต้นสำหรับการทำ Simulation
+    private BigDecimal interestOutstanding = BigDecimal.ZERO;
+    private BigDecimal lateFeeOutstanding = BigDecimal.ZERO;
+    private BigDecimal penaltyOutstanding = BigDecimal.ZERO;
+
     // convenience function
     public boolean isPaidOff() {
         return principal != null && principal.compareTo(BigDecimal.ZERO) <= 0;

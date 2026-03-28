@@ -15,4 +15,5 @@ public class DebtPriorityResponseDTO {
     private String debtName;
     private int priority;
     private BigDecimal principalAmount;
+    private BigDecimal principalOutstanding;
 }

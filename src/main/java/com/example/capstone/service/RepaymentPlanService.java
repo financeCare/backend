@@ -197,6 +197,13 @@ public class RepaymentPlanService {
         debtSim.setInterestType(entity.getInterestCalculationType());
         debtSim.setMinPayment(entity.getMinPayment() != null ? entity.getMinPayment() : BigDecimal.ZERO);
         debtSim.setActive(entity.getActive());
+        
+        // ดึงยอดค้างชำระปัจจุบัน (รวมยอดเริ่มต้นที่เพิ่งเพิ่มเข้าไปด้วย)
+        DebtSummaryDTO summary = getDebtSummaryInternal(entity);
+        debtSim.setInterestOutstanding(summary.getInterestRemaining());
+        debtSim.setLateFeeOutstanding(summary.getLateFeeRemaining());
+        debtSim.setPenaltyOutstanding(summary.getPenaltyInterestRemaining());
+
         debtSim.setRepaymentType(RepaymentTypeEnum.fromString(entity.getRepaymentType().getRepaymentTypeName()));
 
         if (entity.getStartDate() != null) {
@@ -267,13 +274,15 @@ public class RepaymentPlanService {
         int month = now.getMonthValue();
 
         RepaymentPlan plan = repaymentPlanRepository.findByUserId(userId);
+        List<Debt> activeDebts = debtRepository.findByActiveAndUserId(true, userId);
         BigDecimal totalAmount;
 
-        if (plan != null && plan.getMonthlyBudget() != null && plan.getMonthlyBudget().compareTo(BigDecimal.ZERO) > 0) {
+        if (activeDebts.isEmpty()) {
+            totalAmount = BigDecimal.ZERO;
+        } else if (plan != null && plan.getMonthlyBudget() != null && plan.getMonthlyBudget().compareTo(BigDecimal.ZERO) > 0) {
             totalAmount = plan.getMonthlyBudget();
         } else {
-            List<Debt> debts = debtRepository.findByActiveAndUserId(true, userId);
-            totalAmount = debts.stream()
+            totalAmount = activeDebts.stream()
                     .map(d -> d.getMinPayment() != null ? d.getMinPayment() : BigDecimal.ZERO)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
         }

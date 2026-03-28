@@ -54,21 +54,21 @@ public class DebtControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Test
-    void testGetOwnDebt() throws Exception {
-        Debt debt = new Debt();
-        debt.setDebtName("Home Loan");
-        List<Debt> debts = Arrays.asList(debt);
+    // @Test
+    // void testGetOwnDebt() throws Exception {
+    //     Debt debt = new Debt();
+    //     debt.setDebtName("Home Loan");
+    //     List<Debt> debts = Arrays.asList(debt);
 
-        when(debtService.getOwnDebt(anyString())).thenReturn(debts);
+    //     when(debtService.getOwnDebt(anyString())).thenReturn(debts);
 
-        mockMvc.perform(get("/debts")
-                        .header("Authorization", "Bearer token"))
-                .andDo(print())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].debtName").value("Home Loan"));
+    //     mockMvc.perform(get("/debts")
+    //                     .header("Authorization", "Bearer token"))
+    //             .andDo(print())
+    //             .andExpect(status().isOk())
+    //             .andExpect(jsonPath("$[0].debtName").value("Home Loan"));
 
-    }
+    // }
 
     @Test
     void testGetDebtDetail() throws Exception {

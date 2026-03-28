@@ -63,7 +63,7 @@ public class GlobalExceptionHandler {
         logger.error("Internal Server Error: ", ex);
         ErrorResponse error = buildErrorResponse(
                 "INTERNAL_SERVER_ERROR",
-                "An unexpected error occurred. Please try again later.",
+                ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred.",
                 request
         );
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);

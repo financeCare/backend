@@ -23,9 +23,9 @@ public class DebtController {
     private final RepaymentService repaymentService;
 
     @GetMapping
-    public ResponseEntity<List<Debt>> getOwnDebt(@RequestHeader("Authorization") String authorizationHeader) {
+    public ResponseEntity<List<com.example.capstone.dto.DebtResponseDTO>> getOwnDebt(@RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.replace("Bearer ", "");
-        List<Debt> debt = debtService.getOwnDebt(token);
+        List<com.example.capstone.dto.DebtResponseDTO> debt = debtService.getOwnDebt(token);
         return ResponseEntity.ok(debt);
     }
 
@@ -84,6 +84,14 @@ public class DebtController {
         String token = authorizationHeader.replace("Bearer ", "");
         debtService.updateDebtPriorities(token, requests);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{debtId}/summary")
+    public ResponseEntity<com.example.capstone.dto.DebtSummaryDTO> getDebtSummary(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable(name = "debtId") String debtId) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        return ResponseEntity.ok(debtService.getDebtSummary(token, UUID.fromString(debtId)));
     }
 
 }

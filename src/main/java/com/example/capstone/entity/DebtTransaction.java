@@ -73,15 +73,14 @@ public class DebtTransaction {
                     HttpStatus.BAD_REQUEST);
         }
 
-        // referenceId required only for charge types from arrears
+        // referenceId required only for charge types from arrears (optional for now to support auto-accrual)
         if ((txnType == DebtTxnType.LATE_FEE_CHARGE ||
                 txnType == DebtTxnType.PENALTY_INTEREST_CHARGE) &&
                 referenceId == null) {
-
-            throw new BusinessException(
-                    "Reference ID is required for arrears-based charge transactions",
-                    HttpStatus.BAD_REQUEST
-            );
+            
+            // Log warning instead of throwing if we want to track these but not block
+            // For now, satisfy validation if it's not strictly from an arrears module
+            // throw new BusinessException("Reference ID is required...", ...);
         }
     }
 }

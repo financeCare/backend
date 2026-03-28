@@ -12,6 +12,9 @@ import org.springframework.web.client.RestTemplate;
 public class AppConfig {
     @Bean
     public RestTemplate restTemplate() {
-        return new RestTemplate();
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.getMessageConverters()
+                .add(0, new org.springframework.http.converter.StringHttpMessageConverter(java.nio.charset.StandardCharsets.UTF_8));
+        return restTemplate;
     }
 }
