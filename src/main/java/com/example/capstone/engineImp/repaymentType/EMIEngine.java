@@ -46,6 +46,10 @@ public class EMIEngine implements DebtMonthEngine {
         BigDecimal maxNeeded = principalStart.add(interest).add(penalty).add(outstandingCharges);
         BigDecimal actualTotalPayment = totalPlannedPayment.min(maxNeeded);
 
+        // Define actual payments breakdown
+        BigDecimal actualMinPaid = minPayment.min(actualTotalPayment);
+        BigDecimal actualExtraPaid = actualTotalPayment.subtract(actualMinPaid);
+
         // Track how much is paid to each part
         BigDecimal remainingToAllocate = actualTotalPayment;
 

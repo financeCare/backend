@@ -124,57 +124,41 @@ public class RepaymentService {
                 // 0. บันทึกยอดจ่ายรวมในระบบ
                 createTxn(debt, DebtTxnType.PAYMENT, remaining, paymentDate, null);
 
-                // เริ่มวนลูปรายเดือนตั้งแต่วันเริ่มต้นสัญญา (ปรับเป็นวันที่ 1 ของเดือนเพื่อให้เปรียบเทียบเดือนได้ถูกต้อง)
-                LocalDate currentMonth = debt.getStartDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().withDayOfMonth(1);
-                LocalDate targetMonth = paymentDate.withDayOfMonth(1);
+                // Phase 1: Clear All Outstanding Charges currently in the database
+                // (This handles historical charges and initialRemaining balances)
+                remaining = allocateChargePayment(debt, remaining, paymentDate,
+                                DebtTxnType.LATE_FEE_CHARGE, DebtTxnType.LATE_FEE_PAYMENT);
+                remaining = allocateChargePayment(debt, remaining, paymentDate,
+                                DebtTxnType.PENALTY_INTEREST_CHARGE, DebtTxnType.PENALTY_INTEREST_PAYMENT);
+                remaining = allocateChargePayment(debt, remaining, paymentDate,
+                                DebtTxnType.OVERPAYMENT_FEE_CHARGE, DebtTxnType.OVERPAYMENT_FEE_PAYMENT);
+                remaining = allocateChargePayment(debt, remaining, paymentDate,
+                                DebtTxnType.INTEREST_CHARGE, DebtTxnType.INTEREST_PAYMENT);
 
-                while (!currentMonth.isAfter(targetMonth)) {
-                        // Step 1: คำนวณดอกเบี้ยของเดือนนี้ (ถ้ายังไม่มี)
-                        accrueMonthlyCharges(debt, currentMonth);
-
-                        // Step 2: จ่ายค่าธรรมเนียมและดอกเบี้ย (หักล้าง Charge ย้อนหลังทั้งหมดที่เจอ)
-                        BigDecimal beforeCharges = remaining;
+                // Phase 2: Accrue and Pay Interest for the current month (if not already accrued)
+                if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+                        accrueMonthlyCharges(debt, paymentDate);
                         remaining = allocateChargePayment(debt, remaining, paymentDate,
                                         DebtTxnType.LATE_FEE_CHARGE, DebtTxnType.LATE_FEE_PAYMENT);
                         remaining = allocateChargePayment(debt, remaining, paymentDate,
-                                        DebtTxnType.PENALTY_INTEREST_CHARGE, DebtTxnType.PENALTY_INTEREST_PAYMENT);
-                        remaining = allocateChargePayment(debt, remaining, paymentDate,
-                                        DebtTxnType.OVERPAYMENT_FEE_CHARGE, DebtTxnType.OVERPAYMENT_FEE_PAYMENT);
-                        remaining = allocateChargePayment(debt, remaining, paymentDate,
                                         DebtTxnType.INTEREST_CHARGE, DebtTxnType.INTEREST_PAYMENT);
-
-                        BigDecimal chargesPaidInThisMonthLoop = beforeCharges.subtract(remaining);
-
-                        // Step 3 & 4: จ่ายเงินต้น
-                        if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-                                BigDecimal principalOutstanding = debt.getPrincipalOutstanding();
-                                if (principalOutstanding != null && principalOutstanding.compareTo(BigDecimal.ZERO) > 0) {
-
-                                        BigDecimal payToPrincipal;
-                                        if (currentMonth.isBefore(targetMonth)) {
-                                                // กรณีเดือนในอดีต: จ่ายให้ครบยอดขั้นต่ำ (minPayment) ของเดือนนั้น
-                                                BigDecimal minPayment = debt.getMinPayment() != null ? debt.getMinPayment()
-                                                                : BigDecimal.ZERO;
-                                                BigDecimal targetPrincipal = minPayment.subtract(chargesPaidInThisMonthLoop)
-                                                                .max(BigDecimal.ZERO);
-                                                payToPrincipal = remaining.min(targetPrincipal).min(principalOutstanding);
-                                        } else {
-                                                // กรณีเดือนสุดท้าย: จ่ายที่เหลือทั้งหมด
-                                                payToPrincipal = remaining.min(principalOutstanding);
-                                        }
-
-                                        if (payToPrincipal.compareTo(BigDecimal.ZERO) > 0) {
-                                                debt.setPrincipalOutstanding(principalOutstanding.subtract(payToPrincipal));
-                                                debtRepository.save(debt);
-
-                                                createTxn(debt, DebtTxnType.PRINCIPAL_PAYMENT, payToPrincipal,
-                                                                paymentDate, null);
-                                                remaining = remaining.subtract(payToPrincipal);
-                                        }
-                                }
-                        }
-                        currentMonth = currentMonth.plusMonths(1);
                 }
+
+                // Phase 3: Apply remaining balance to Principal
+                if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+                        BigDecimal principalOutstanding = debt.getPrincipalOutstanding();
+                        if (principalOutstanding != null && principalOutstanding.compareTo(BigDecimal.ZERO) > 0) {
+                                BigDecimal payToPrincipal = remaining.min(principalOutstanding);
+                                
+                                debt.setPrincipalOutstanding(principalOutstanding.subtract(payToPrincipal));
+                                debtRepository.save(debt);
+
+                                createTxn(debt, DebtTxnType.PRINCIPAL_PAYMENT, payToPrincipal,
+                                                paymentDate, null);
+                                remaining = remaining.subtract(payToPrincipal);
+                        }
+                }
+
 
                 // หากมีเงินเหลือหลังจากหักทุกเดือนแล้ว ให้ลงเป็น Overpayment
                 if (remaining.compareTo(BigDecimal.ZERO) > 0) {

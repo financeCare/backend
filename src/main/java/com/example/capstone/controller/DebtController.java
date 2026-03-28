@@ -21,6 +21,13 @@ public class DebtController {
 
     private final DebtService debtService;
     private final RepaymentService repaymentService;
+    private final com.example.capstone.service.RepaymentPlanService repaymentPlanService;
+
+    @GetMapping("/monthly-status")
+    public ResponseEntity<com.example.capstone.dto.MonthlyStatusDTO> getMonthlyStatus(@RequestHeader("Authorization") String authorizationHeader) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        return ResponseEntity.ok(repaymentPlanService.getMonthlyStatus(token));
+    }
 
     @GetMapping
     public ResponseEntity<List<com.example.capstone.dto.DebtResponseDTO>> getOwnDebt(@RequestHeader("Authorization") String authorizationHeader) {
@@ -29,7 +36,7 @@ public class DebtController {
         return ResponseEntity.ok(debt);
     }
 
-    @GetMapping("/{debtId}")
+    @GetMapping("/debtId/{debtId}")
     public ResponseEntity<Debt> getDebtDetail(@RequestHeader("Authorization") String authorizationHeader,@PathVariable(name = "debtId") String debtId){
         String token = authorizationHeader.replace("Bearer ", "");
         return ResponseEntity.ok(debtService.getDebtDetail(token, UUID.fromString(debtId)));
@@ -92,6 +99,14 @@ public class DebtController {
             @PathVariable(name = "debtId") String debtId) {
         String token = authorizationHeader.replace("Bearer ", "");
         return ResponseEntity.ok(debtService.getDebtSummary(token, UUID.fromString(debtId)));
+    }
+
+    @GetMapping("/{debtId}/history")
+    public ResponseEntity<List<com.example.capstone.dto.DebtTransactionResponseDTO>> getDebtHistory(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable(name = "debtId") String debtId) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        return ResponseEntity.ok(debtService.getDebtHistory(token, UUID.fromString(debtId)));
     }
 
 }

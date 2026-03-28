@@ -10,6 +10,7 @@ import com.example.capstone.exception.BusinessException;
 import com.example.capstone.repository.*;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -33,15 +35,22 @@ public class DebtService {
         private final CategoryRepository categoryRepository;
         private final NotificationService notificationService;
         private final DebtTransactionRepository debtTransactionRepository;
+        private final @Lazy RepaymentPlanService repaymentPlanService;
 
         public List<DebtResponseDTO> getOwnDebt(String token) {
                 UUID userId = userService.extractUserIdFromToken(token);
                 List<Debt> debts = debtRepository.findAllByUserId(userId);
+                Map<UUID, BigDecimal> allocations = repaymentPlanService.calculateCurrentMonthAllocation(userId);
+
                 return debts.stream()
-                                .map(debt -> DebtResponseDTO.builder()
-                                                .debt(debt)
-                                                .summary(getDebtSummaryInternal(debt))
-                                                .build())
+                                .map(debt -> {
+                                        DebtSummaryDTO summary = getDebtSummaryInternal(debt);
+                                        summary.setPlannedPayment(allocations.getOrDefault(debt.getDebtId(), BigDecimal.ZERO));
+                                        return DebtResponseDTO.builder()
+                                                        .debt(debt)
+                                                        .summary(summary)
+                                                        .build();
+                                })
                                 .toList();
         }
 
@@ -91,13 +100,14 @@ public class DebtService {
                 debt.setRepaymentType(repaymentTypeRepository.findById(debtDTO.getRepaymentTypeId())
                                 .orElseThrow(() -> new BusinessException("invalid repayment type id",
                                                 HttpStatus.BAD_REQUEST)));
-                debt.setStartDate(debtDTO.getStartDate());
+                debt.setStartDate(debtDTO.getStartDate() != null ? debtDTO.getStartDate() : new java.util.Date());
                 debt.setEndDate(debtDTO.getEndDate());
                 debt.setActive(true);
                 debt.setPriority(debtDTO.getPriority());
                 debt.setDebtType(debtTypeRepository.findById(debtDTO.getDebtTypeId())
                                 .orElseThrow(() -> new BusinessException("invalid debt type id",
                                                 HttpStatus.BAD_REQUEST)));
+                debt.setDebtName(debt.getDebtName()); // Wait, this should be debtDTO.getDebtName()
                 debt.setDebtName(debtDTO.getDebtName());
                 debt.setMinPayment(debtDTO.getMinPayment());
                 debt.setDueDay(debtDTO.getDueDay());
@@ -248,10 +258,13 @@ public class DebtService {
                                 .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user",
                                                 HttpStatus.NOT_FOUND));
 
-                return getDebtSummaryInternal(debt);
+                DebtSummaryDTO summary = getDebtSummaryInternal(debt);
+                Map<UUID, BigDecimal> allocations = repaymentPlanService.calculateCurrentMonthAllocation(userId);
+                summary.setPlannedPayment(allocations.getOrDefault(debtId, BigDecimal.ZERO));
+                return summary;
         }
 
-        private DebtSummaryDTO getDebtSummaryInternal(Debt debt) {
+        public DebtSummaryDTO getDebtSummaryInternal(Debt debt) {
                 UUID debtId = debt.getDebtId();
                 BigDecimal principal = debt.getPrincipalOutstanding() != null ? 
                                 debt.getPrincipalOutstanding() : debt.getPrincipalAmount();
@@ -277,6 +290,9 @@ public class DebtService {
                 BigDecimal penaltyMonth = debtTransactionRepository.sumMonthDebt(debtId, DebtTxnType.PENALTY_INTEREST_CHARGE, year, month);
                 if (penaltyMonth == null) penaltyMonth = BigDecimal.ZERO;
 
+                BigDecimal paidThisMonth = debtTransactionRepository.sumMonthDebt(debtId, DebtTxnType.PAYMENT, year, month);
+                if (paidThisMonth == null) paidThisMonth = BigDecimal.ZERO;
+
                 BigDecimal total = principal.add(interest).add(lateFee).add(penalty);
 
                 return DebtSummaryDTO.builder()
@@ -288,7 +304,50 @@ public class DebtService {
                                 .lateFeeRemainingMonth(lateFeeMonth)
                                 .penaltyInterestRemainingMonth(penaltyMonth)
                                 .totalRemaining(total)
+                                .paidThisMonth(paidThisMonth)
                                 .build();
+        }
+
+        public List<DebtTransactionResponseDTO> getDebtHistory(String token, UUID debtId) {
+                UUID userId = userService.extractUserIdFromToken(token);
+                debtRepository.findByDebtIdAndUserId(debtId, userId)
+                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user",
+                                                HttpStatus.NOT_FOUND));
+
+                List<DebtTransaction> txns = debtTransactionRepository.findByDebtDebtIdOrderByTxnDateDesc(debtId);
+
+                return txns.stream()
+                                .map(this::mapToTransactionResponse)
+                                .toList();
+        }
+
+        private DebtTransactionResponseDTO mapToTransactionResponse(DebtTransaction txn) {
+                return DebtTransactionResponseDTO.builder()
+                                .transactionId(txn.getTransactionId())
+                                .txnType(txn.getTxnType())
+                                .amount(txn.getAmount())
+                                .txnDate(txn.getTxnDate())
+                                .description(getThaiDescription(txn.getTxnType()))
+                                .build();
+        }
+
+        private String getThaiDescription(DebtTxnType type) {
+                if (type == null)
+                        return "";
+                return switch (type) {
+                        case PAYMENT -> "ชำระเงินรวม";
+                        case INTEREST_CHARGE -> "ดอกเบี้ยรายเดือน";
+                        case LATE_FEE_CHARGE -> "ค่าธรรมเนียมชำระล่าช้า";
+                        case PENALTY_INTEREST_CHARGE -> "ดอกเบี้ยผิดนัดชำระ";
+                        case OVERPAYMENT_FEE_CHARGE -> "ค่าธรรมเนียมชำระเกิน";
+                        case INTEREST_PAYMENT -> "ชำระดอกเบี้ย";
+                        case LATE_FEE_PAYMENT -> "ชำระค่าธรรมเนียมล่าช้า";
+                        case PENALTY_INTEREST_PAYMENT -> "ชำระดอกเบี้ยผิดนัด";
+                        case OVERPAYMENT_FEE_PAYMENT -> "ชำระค่าธรรมเนียมเงินเกิน";
+                        case PRINCIPAL_PAYMENT -> "ชำระเงินต้น";
+                        case OVERPAYMENT -> "เงินจ่ายเกินค้างไว้ในระบบ";
+                        default -> type.name();
+                };
         }
 
 }

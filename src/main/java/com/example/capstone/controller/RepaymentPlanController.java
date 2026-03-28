@@ -67,10 +67,4 @@ public class RepaymentPlanController {
         return ResponseEntity.ok(repaymentPlanService.getPrioritySuggestions(token, strategyId));
     }
 
-    @GetMapping("/monthly-status")
-    public ResponseEntity<MonthlyStatusDTO> getMonthlyStatus(@RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.replace("Bearer ", "");
-        return ResponseEntity.ok(repaymentPlanService.getMonthlyStatus(token));
-    }
-
 }

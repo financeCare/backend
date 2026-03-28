@@ -23,4 +23,7 @@ public class DebtSummaryDTO {
     private BigDecimal penaltyInterestRemainingMonth;
 
     private BigDecimal totalRemaining;
+
+    private BigDecimal plannedPayment;
+    private BigDecimal paidThisMonth;
 }

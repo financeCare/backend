@@ -74,4 +74,6 @@ public interface DebtTransactionRepository extends JpaRepository<DebtTransaction
                         @Param("userId") UUID userId,
                         @Param("year") int year,
                         @Param("month") int month);
+
+        List<DebtTransaction> findByDebtDebtIdOrderByTxnDateDesc(UUID debtId);
 }

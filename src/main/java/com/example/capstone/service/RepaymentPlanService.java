@@ -7,6 +7,7 @@ import com.example.capstone.entity.*;
 import com.example.capstone.entity.RepaymentPlan;
 import com.example.capstone.engineImp.calculator.InterestCalculator;
 import com.example.capstone.enums.StrategyType;
+import com.example.capstone.enums.DebtTxnType;
 import com.example.capstone.exception.BusinessException;
 import com.example.capstone.factory.StrategyFactory;
 import com.example.capstone.repository.*;
@@ -32,6 +33,7 @@ public class RepaymentPlanService {
     private final RepaymentPlanSimulator repaymentPlanSimulator;
     private final StrategyFactory strategyFactory;
     private final DebtTransactionRepository debtTransactionRepository;
+    private final com.example.capstone.allocation.DefaultBudgetAllocator allocator;
 
     public RepaymentStrategy createRepaymentStrategy(RepaymentStrategyDTO repaymentStrategyDTO) {
         RepaymentStrategy strategy = new RepaymentStrategy();
@@ -198,11 +200,15 @@ public class RepaymentPlanService {
         debtSim.setMinPayment(entity.getMinPayment() != null ? entity.getMinPayment() : BigDecimal.ZERO);
         debtSim.setActive(entity.getActive());
         
-        // ดึงยอดค้างชำระปัจจุบัน (รวมยอดเริ่มต้นที่เพิ่งเพิ่มเข้าไปด้วย)
-        DebtSummaryDTO summary = getDebtSummaryInternal(entity);
-        debtSim.setInterestOutstanding(summary.getInterestRemaining());
-        debtSim.setLateFeeOutstanding(summary.getLateFeeRemaining());
-        debtSim.setPenaltyOutstanding(summary.getPenaltyInterestRemaining());
+        // Calculate outstanding amounts directly to avoid circular dependency with DebtService
+        UUID debtId = entity.getDebtId();
+        BigDecimal interest = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.INTEREST_CHARGE);
+        BigDecimal lateFee = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.LATE_FEE_CHARGE);
+        BigDecimal penalty = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.PENALTY_INTEREST_CHARGE);
+        
+        debtSim.setInterestOutstanding(interest != null ? interest : BigDecimal.ZERO);
+        debtSim.setLateFeeOutstanding(lateFee != null ? lateFee : BigDecimal.ZERO);
+        debtSim.setPenaltyOutstanding(penalty != null ? penalty : BigDecimal.ZERO);
 
         debtSim.setRepaymentType(RepaymentTypeEnum.fromString(entity.getRepaymentType().getRepaymentTypeName()));
 
@@ -296,5 +302,24 @@ public class RepaymentPlanService {
         }
 
         return new MonthlyStatusDTO(totalAmount, paidAmount, remainingAmount);
+    }
+
+    public Map<UUID, BigDecimal> calculateCurrentMonthAllocation(UUID userId) {
+        RepaymentPlan planEntity = repaymentPlanRepository.findByUserId(userId);
+        if (planEntity == null || planEntity.getMonthlyBudget() == null || planEntity.getMonthlyBudget().compareTo(BigDecimal.ZERO) <= 0) {
+            return Collections.emptyMap();
+        }
+
+        List<Debt> debtEntities = debtRepository.findByActiveAndUserId(true, userId);
+        if (debtEntities.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        RepaymentPlanDtoV2 simPlan = mapToDomainPlan(planEntity);
+        List<DebtSim> simDebts = debtEntities.stream().map(this::mapToDomainDebt).toList();
+        RepaymentStrategyInterface strategy = strategyFactory.getStrategy(simPlan.getStrategyType());
+
+        DebtSim target = strategy.apply(simDebts);
+        return allocator.allocate(simPlan.getMonthlyBudget(), simDebts, target);
     }
 }
