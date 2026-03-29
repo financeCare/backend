@@ -81,6 +81,25 @@ public class ReceiverMappingService {
         if (receiverName == null || receiverName.trim().isEmpty()) {
             return Optional.empty();
         }
-        return receiverMappingRepository.findByUserIdAndReceiverName(userId, receiverName);
+        
+        String normalizedReceiver = receiverName.toLowerCase().trim();
+        List<ReceiverMapping> allMappings = receiverMappingRepository.findByUserId(userId);
+        
+        // Try exact match first for better precision
+        Optional<ReceiverMapping> exactMatch = allMappings.stream()
+                .filter(m -> m.getReceiverName().equalsIgnoreCase(receiverName.trim()))
+                .findFirst();
+        
+        if (exactMatch.isPresent()) {
+            return exactMatch;
+        }
+
+        // Fuzzy match: check if OCR name contains mapping name OR mapping name contains OCR name
+        return allMappings.stream()
+                .filter(m -> {
+                    String mappingName = m.getReceiverName().toLowerCase().trim();
+                    return normalizedReceiver.contains(mappingName) || mappingName.contains(normalizedReceiver);
+                })
+                .findFirst();
     }
 }
