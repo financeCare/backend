@@ -30,10 +30,16 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
      public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
          http
                  .csrf(AbstractHttpConfigurer::disable)
-                 .authorizeHttpRequests(auth -> auth
-                         .requestMatchers("/auth/**").permitAll()
-                         .anyRequest().authenticated()
-                 )
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/auth/**",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
                  .exceptionHandling(exception -> exception
                          .authenticationEntryPoint(customAuthenticationEntryPoint)
                          .accessDeniedHandler(customAccessDeniedHandler)
