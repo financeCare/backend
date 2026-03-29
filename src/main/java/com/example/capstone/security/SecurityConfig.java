@@ -34,6 +34,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
                         .requestMatchers(
                                 "/auth/**",
                                 "/swagger-ui/**",
+                                "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
                                 "/webjars/**"
