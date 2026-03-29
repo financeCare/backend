@@ -6,6 +6,7 @@ import com.example.capstone.entity.Slip;
 import com.example.capstone.entity.User;
 import com.example.capstone.repository.SlipRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

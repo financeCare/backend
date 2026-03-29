@@ -1,6 +1,7 @@
 package com.example.capstone.config;
 
 import io.minio.MinioClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -8,9 +9,12 @@ import org.springframework.context.annotation.Configuration;
 public class MinioConfig {
 
         //TODO change minio to public url for production
-    private final String url = "http://10.4.88.37:9000";
-    private final String accessKey = "admin";
-    private final String secretKey = "password123";
+    @Value("${app.minio.url}")
+    private String url;
+    @Value("${app.minio.access-key}")
+    private String accessKey;
+    @Value("${app.minio.secret-key}")
+    private String secretKey;
 
     @Bean
     public MinioClient minioClient() {

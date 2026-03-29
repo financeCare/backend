@@ -1,7 +1,9 @@
 package com.example.capstone.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.beans.factory.annotation.Value;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -25,7 +27,8 @@ import java.util.List;
 public class OcrService {
 
     //TODO change ip to container name for security
-    private final String ocrUrl = "http://10.4.88.37:8000/slip/verify";
+    @Value("${app.ocr.url}")
+    private String ocrUrl;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
