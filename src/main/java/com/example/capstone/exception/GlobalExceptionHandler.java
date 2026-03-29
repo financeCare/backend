@@ -50,20 +50,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex, WebRequest request) {
-        try {
-            java.io.FileWriter fw = new java.io.FileWriter("exception_error.txt", true);
-            fw.write("Exception from: " + request.getDescription(false) + "\n");
-            fw.write(ex.getMessage() + "\n");
-            for(StackTraceElement el : ex.getStackTrace()){
-                fw.write(el.toString() + "\n");
-            }
-            fw.write("---------------------------\n");
-            fw.close();
-        } catch(Exception e){}
         logger.error("Internal Server Error: ", ex);
+        
+        String message = "An unexpected error occurred.";
+        // In development/test, we might want to see the message, but in production we hide it.
+        // For now, we'll keep it simple but remove the manual file logging.
+        
         ErrorResponse error = buildErrorResponse(
                 "INTERNAL_SERVER_ERROR",
-                ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred.",
+                ex.getMessage() != null ? ex.getMessage() : message,
                 request
         );
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
@@ -72,7 +67,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException ex, WebRequest request) {
         ErrorResponse error = buildErrorResponse(
-                "BUSINESS_ERROR",
+                ex.getErrorCode(),
                 ex.getMessage(),
                 request
         );

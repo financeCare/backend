@@ -14,27 +14,37 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 
 @Configuration
-@EnableWebSecurity
-public class SecurityConfig {
-
-    @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(sess -> sess
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-        return http.build();
-    }
+ @EnableWebSecurity
+ public class SecurityConfig {
+ 
+     @Autowired
+     private JwtAuthenticationFilter jwtAuthenticationFilter;
+ 
+     @Autowired
+     private CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
+ 
+     @Autowired
+     private CustomAccessDeniedHandler customAccessDeniedHandler;
+ 
+     @Bean
+     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+         http
+                 .csrf(AbstractHttpConfigurer::disable)
+                 .authorizeHttpRequests(auth -> auth
+                         .requestMatchers("/auth/**").permitAll()
+                         .anyRequest().authenticated()
+                 )
+                 .exceptionHandling(exception -> exception
+                         .authenticationEntryPoint(customAuthenticationEntryPoint)
+                         .accessDeniedHandler(customAccessDeniedHandler)
+                 )
+                 .sessionManagement(sess -> sess
+                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                 )
+                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+ 
+         return http.build();
+     }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {

@@ -43,7 +43,7 @@ public class RepaymentPlanService {
         try {
             repaymentStrategyRepository.save(strategy);
         } catch (Exception e) {
-            throw new BusinessException(e.getMessage(), HttpStatus.NOT_FOUND);
+            throw new BusinessException(e.getMessage(), "STRATEGY_LOAD_FAILED", HttpStatus.NOT_FOUND);
         }
         return strategy;
     }
@@ -94,13 +94,13 @@ public class RepaymentPlanService {
         }
 
         RepaymentStrategy strategyEntity = repaymentStrategyRepository.findById(strategyId)
-                .orElseThrow(() -> new BusinessException("Strategy not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new BusinessException("Strategy not found", "STRATEGY_NOT_FOUND", HttpStatus.NOT_FOUND));
 
         StrategyType type;
         try {
             type = StrategyType.fromString(strategyEntity.getStrategyName());
         } catch (Exception e) {
-            throw new BusinessException("Unknown strategy type", HttpStatus.BAD_REQUEST);
+            throw new BusinessException("Unknown strategy type", "UNKNOWN_STRATEGY_TYPE", HttpStatus.BAD_REQUEST);
         }
 
         List<Debt> sortedDebts = new ArrayList<>(debts);
@@ -160,7 +160,7 @@ public class RepaymentPlanService {
         RepaymentPlan planEntity = repaymentPlanRepository.findByUserId(userId);
 
         if (planEntity == null) {
-            throw new BusinessException("Repayment plan not found", HttpStatus.NOT_FOUND);
+            throw new BusinessException("Repayment plan not found", "PLAN_NOT_FOUND", HttpStatus.NOT_FOUND);
         }
 
         List<Debt> debtEntities = debtRepository.findByActiveAndUserId(true, userId);
@@ -249,13 +249,13 @@ public class RepaymentPlanService {
         List<Debt> debts = debtRepository.findByActiveAndUserId(true, userId);
         
         RepaymentStrategy strategyEntity = repaymentStrategyRepository.findById(strategyId)
-                .orElseThrow(() -> new BusinessException("Strategy not found", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new BusinessException("Strategy not found", "STRATEGY_NOT_FOUND", HttpStatus.NOT_FOUND));
         
         StrategyType type;
         try {
             type = StrategyType.fromString(strategyEntity.getStrategyName());
         } catch (Exception e) {
-            throw new BusinessException("Unknown strategy type", HttpStatus.BAD_REQUEST);
+            throw new BusinessException("Unknown strategy type", "UNKNOWN_STRATEGY_TYPE", HttpStatus.BAD_REQUEST);
         }
 
         List<Debt> sortedDebts = new ArrayList<>(debts);

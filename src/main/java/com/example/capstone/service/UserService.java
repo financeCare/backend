@@ -151,7 +151,7 @@ public class UserService implements UserDetailsService {
             ).build();
             GoogleIdToken idToken = verifier.verify(idTokenString.getIdToken());
             if (idToken == null) {
-                throw new BusinessException("Invalid ID token", HttpStatus.UNAUTHORIZED);
+                throw new BusinessException("Invalid ID token", "INVALID_TOKEN", HttpStatus.UNAUTHORIZED);
             }
             GoogleIdToken.Payload payload = idToken.getPayload();
             String email = payload.getEmail();
@@ -253,7 +253,7 @@ public class UserService implements UserDetailsService {
                 .parseClaimsJws(token)
                 .getBody();
         if (user.getEmailConfirm() == false) {
-            throw new BusinessException("Email not verified", HttpStatus.FORBIDDEN);
+            throw new BusinessException("Email not verified", "EMAIL_NOT_VERIFIED", HttpStatus.FORBIDDEN);
         }if ("refresh".equals(claims.get("type"))) {
             throw new RuntimeException("Refresh token cannot be used to access resources");
         }
@@ -292,7 +292,7 @@ public class UserService implements UserDetailsService {
         }
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                            new BusinessException("User with email " + email + " not found",HttpStatus.NOT_FOUND)
+                            new BusinessException("User with email " + email + " not found", "USER_NOT_FOUND", HttpStatus.NOT_FOUND)
                 );
         user.setEmailConfirm(true);
         userRepository.save(user);
@@ -326,7 +326,7 @@ public class UserService implements UserDetailsService {
         UUID userId = extractUserIdFromToken(token);
         UserSetting userSetting = userSettingRepository.findByUserId(userId);
         if (userSetting == null) {
-            throw new BusinessException("User setting not found", HttpStatus.NOT_FOUND);
+            throw new BusinessException("User setting not found", "USER_SETTING_NOT_FOUND", HttpStatus.NOT_FOUND);
         }
         userSetting.setNotificationsEnabled(newSettings.isNotificationsEnabled());
         userSetting.setDefaultNotifyTime(newSettings.getDefaultNotifyTime());

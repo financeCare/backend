@@ -39,10 +39,6 @@ public class DebtDTO {
     @NotNull(message = "End date is required")
     private Date endDate;
 
-    private boolean isActive;
-
-    private int priority;
-
     @NotNull(message = "Debt type is required")
     private Integer debtTypeId;
 
@@ -69,6 +65,11 @@ public class DebtDTO {
     private boolean isDefaulted;
 
     private Boolean isInformal;
+
+    private boolean isActive;
+
+    private int priority;
+
 
     @NotNull(message = "Interest calculation type is required")
     private InterestCalculationType interestCalculationType;

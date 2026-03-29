@@ -73,7 +73,46 @@ public class RepaymentPlanServiceTest {
         RepaymentStrategyDtoResponse result = repaymentPlanService.getAllRepaymentStrategies(token);
 
         assertNotNull(result);
+        assertEquals(0.0, result.getActualMinSum());
+        assertEquals(0.0, result.getSafeMinSum());
         assertNotNull(result.getRepaymentStrategyList());
+    }
+
+    @Test
+    void testGetMonthlyDebtStatus_Insufficient() {
+        when(userService.extractUserIdFromToken(token)).thenReturn(userId);
+        
+        Debt debt = new Debt();
+        debt.setMinPayment(new BigDecimal("5000"));
+        debt.setPrincipalOutstanding(new BigDecimal("100000"));
+        debt.setInterestRate(new BigDecimal("12"));
+        debt.setActive(true);
+        when(debtRepository.findByActiveAndUserId(true, userId)).thenReturn(List.of(debt));
+        
+        RepaymentPlan plan = new RepaymentPlan();
+        plan.setMonthlyBudget(new BigDecimal("1000")); // Lower than interest
+        when(repaymentPlanRepository.findByUserId(userId)).thenReturn(plan);
+        
+        MonthlyStatusDTO result = repaymentPlanService.getMonthlyDebtStatus(token);
+        
+        assertTrue(result.isBudgetInsufficient());
+        assertEquals(new BigDecimal("5000"), result.getActualMinPayment());
+    }
+
+    @Test
+    void testCalculateSafeMinPayment_Rounding() {
+        Debt debt = new Debt();
+        debt.setPrincipalOutstanding(new BigDecimal("10000"));
+        debt.setInterestRate(new BigDecimal("12.5")); // Monthly int = 104.16...
+        debt.setInterestCalculationType(InterestCalculationType.THIRTY_360);
+        
+        BigDecimal result = repaymentPlanService.calculateSafeMinPayment(debt);
+        
+        // Int = 10000 * 12.5% / 12 = 10000 * 0.010416... = 104.166...
+        // 1% Prin = 10000 * 0.01 = 100
+        // SafeMin = 204.166...
+        // Scaled to 0 CEILING -> 205
+        assertEquals(new BigDecimal("205"), result);
     }
 
     @Test

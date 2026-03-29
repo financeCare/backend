@@ -57,7 +57,7 @@ public class DebtService {
         public Debt getDebtDetail(String token, UUID debtId) {
                 UUID userId = userService.extractUserIdFromToken(token);
                 return debtRepository.findByDebtIdAndUserId(debtId, userId)
-                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user",
+                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", "DEBT_NOT_FOUND",
                                                 HttpStatus.NOT_FOUND));
         }
 
@@ -98,14 +98,14 @@ public class DebtService {
                 debt.setPrincipalOutstanding(debtDTO.getPrincipalOutstandingV2() != null ? debtDTO.getPrincipalOutstandingV2() : debtDTO.getPrincipalAmount()); // Initialize outstanding balance
                 debt.setInterestRate(debtDTO.getInterestRate());
                 debt.setRepaymentType(repaymentTypeRepository.findById(debtDTO.getRepaymentTypeId())
-                                .orElseThrow(() -> new BusinessException("invalid repayment type id",
+                                .orElseThrow(() -> new BusinessException("invalid repayment type id", "INVALID_REPAYMENT_TYPE",
                                                 HttpStatus.BAD_REQUEST)));
                 debt.setStartDate(debtDTO.getStartDate() != null ? debtDTO.getStartDate() : new java.util.Date());
                 debt.setEndDate(debtDTO.getEndDate());
                 debt.setActive(true);
                 debt.setPriority(debtDTO.getPriority());
                 debt.setDebtType(debtTypeRepository.findById(debtDTO.getDebtTypeId())
-                                .orElseThrow(() -> new BusinessException("invalid debt type id",
+                                .orElseThrow(() -> new BusinessException("invalid debt type id", "INVALID_DEBT_TYPE",
                                                 HttpStatus.BAD_REQUEST)));
                 debt.setDebtName(debt.getDebtName()); // Wait, this should be debtDTO.getDebtName()
                 debt.setDebtName(debtDTO.getDebtName());
@@ -162,7 +162,7 @@ public class DebtService {
         public Debt updateDebt(String token, UUID debtId, DebtDTO debtDTO) {
                 UUID userId = userService.extractUserIdFromToken(token);
                 Debt existingDebt = debtRepository.findByDebtIdAndUserId(debtId, userId)
-                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user",
+                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", "DEBT_NOT_FOUND",
                                                 HttpStatus.NOT_FOUND));
 
                 if (debtDTO.getInterestRate().compareTo(BigDecimal.valueOf(100)) > 0 ||
@@ -171,10 +171,10 @@ public class DebtService {
                 }
 
                 RepaymentType repaymentType = repaymentTypeRepository.findById(debtDTO.getRepaymentTypeId())
-                                .orElseThrow(() -> new BusinessException("invalid repaymentType id",
+                                .orElseThrow(() -> new BusinessException("invalid repaymentType id", "INVALID_REPAYMENT_TYPE",
                                                 HttpStatus.BAD_REQUEST));
                 DebtType debtType = debtTypeRepository.findById(debtDTO.getDebtTypeId())
-                                .orElseThrow(() -> new BusinessException("invalid debtType id",
+                                .orElseThrow(() -> new BusinessException("invalid debtType id", "INVALID_DEBT_TYPE",
                                                 HttpStatus.BAD_REQUEST));
 
                 existingDebt.setPrincipalAmount(debtDTO.getPrincipalAmount());
@@ -217,7 +217,7 @@ public class DebtService {
         public Debt deleteDebt(String token, UUID debtId) {
                 UUID userId = userService.extractUserIdFromToken(token);
                 Debt debt = debtRepository.findByDebtIdAndUserId(debtId, userId)
-                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user",
+                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", "DEBT_NOT_FOUND",
                                                 HttpStatus.NOT_FOUND));
                 debtRepository.delete(debt);
                 return debt;
@@ -244,7 +244,7 @@ public class DebtService {
                 
                 for (DebtPriorityUpdateRequestDTO request : requests) {
                         Debt debt = debtRepository.findByDebtIdAndUserId(request.getDebtId(), userId)
-                                        .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", HttpStatus.NOT_FOUND));
+                                        .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", "DEBT_NOT_FOUND", HttpStatus.NOT_FOUND));
                         
                         debt.setPriority(request.getPriority());
                         debtsToUpdate.add(debt);
@@ -255,7 +255,7 @@ public class DebtService {
         public DebtSummaryDTO getDebtSummary(String token, UUID debtId) {
                 UUID userId = userService.extractUserIdFromToken(token);
                 Debt debt = debtRepository.findByDebtIdAndUserId(debtId, userId)
-                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user",
+                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", "DEBT_NOT_FOUND",
                                                 HttpStatus.NOT_FOUND));
 
                 DebtSummaryDTO summary = getDebtSummaryInternal(debt);
