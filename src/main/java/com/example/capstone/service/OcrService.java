@@ -24,6 +24,7 @@ import java.util.List;
 @Slf4j
 public class OcrService {
 
+    //TODO change ip to container name for security
     private final String ocrUrl = "http://10.4.88.37:8000/slip/verify";
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;

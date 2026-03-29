@@ -10,8 +10,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import com.example.capstone.dto.DebtPaymentRequestDTO;
+import com.example.capstone.dto.TransactionRequest;
+import java.io.InputStream;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.chrono.ThaiBuddhistDate;
 import java.time.format.DateTimeFormatter;
@@ -27,6 +31,8 @@ public class SlipService {
     private final OcrService ocrService;
     private final SlipRepository slipRepository;
     private final ReceiverMappingService receiverMappingService;
+    private final RepaymentService repaymentService;
+    private final TransactionService transactionService;
 
     @Value("${app.slip.max-count:50}")
     private int maxCount;
@@ -92,11 +98,40 @@ public class SlipService {
             
             String receiverName = data.path("receiver").asText(null);
             receiverMappingService.suggestMapping(user.getUserId(), receiverName).ifPresent(mapping -> {
-                if (mapping.getCategory() != null) {
+                if (mapping.getCategory() != null && savedSlip.getAmount() != null) {
                     result.put("suggestedCategory", mapping.getCategory());
+                    // Auto-create budget transaction
+                    try {
+                        TransactionRequest req = new TransactionRequest();
+                        req.setCategoryId(mapping.getCategory().getCategoryId());
+                        req.setAmount(savedSlip.getAmount().doubleValue());
+                        req.setTransactionDate(savedSlip.getTransferDate() != null ? savedSlip.getTransferDate() : LocalDateTime.now());
+                        req.setDescription("Auto-created from slip: " + savedSlip.getReceiverName());
+                        req.setReceiverName(savedSlip.getReceiverName());
+                        req.setSenderBank(savedSlip.getSenderBank());
+                        req.setSlipId(savedSlip.getId());
+                        transactionService.createTransaction(user.getUserId(), req);
+                        result.put("autoCreated", true);
+                        log.info("Auto-created budget transaction for user {} from slip {}", user.getUserId(), savedSlip.getId());
+                    } catch (Exception e) {
+                        log.error("Failed to auto-create budget transaction: {}", e.getMessage());
+                    }
                 }
-                if (mapping.getDebtId() != null) {
+                if (mapping.getDebtId() != null && savedSlip.getAmount() != null) {
                     result.put("suggestedDebtId", mapping.getDebtId());
+                    // Auto-create debt payment
+                    try {
+                        DebtPaymentRequestDTO req = new DebtPaymentRequestDTO();
+                        req.setDebtId(mapping.getDebtId());
+                        req.setPaymentAmount(savedSlip.getAmount());
+                        req.setPaymentDate(savedSlip.getTransferDate() != null ? savedSlip.getTransferDate().toLocalDate() : LocalDate.now());
+                        req.setSlipId(savedSlip.getId());
+                        repaymentService.payDebt(user.getUserId(), req);
+                        result.put("autoCreated", true);
+                        log.info("Auto-created debt payment for user {} from slip {}", user.getUserId(), savedSlip.getId());
+                    } catch (Exception e) {
+                        log.error("Failed to auto-create debt payment: {}", e.getMessage());
+                    }
                 }
             });
             
@@ -108,6 +143,15 @@ public class SlipService {
 
     public List<Slip> getSlipsByUser(User user) {
         return slipRepository.findByUserId(user.getUserId());
+    }
+
+    public Slip getSlipById(Long id) {
+        return slipRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Slip not found"));
+    }
+
+    public InputStream getSlipFile(String path) throws Exception {
+        return minioService.getFile(path);
     }
 
     private LocalDateTime parseThaiDate(String thaiDateStr) {

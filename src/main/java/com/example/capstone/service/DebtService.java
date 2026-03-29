@@ -328,6 +328,7 @@ public class DebtService {
                                 .amount(txn.getAmount())
                                 .txnDate(txn.getTxnDate())
                                 .description(getThaiDescription(txn.getTxnType()))
+                                .slipId(txn.getSlipId())
                                 .build();
         }
 

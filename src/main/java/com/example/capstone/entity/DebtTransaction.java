@@ -42,6 +42,9 @@ public class DebtTransaction {
     // link ไป arrears ถ้ารายการนี้เกิดจาก arrears record
     @Column(name = "reference_id")
     private UUID referenceId;
+    
+    @Column(name = "slip_id")
+    private Long slipId;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

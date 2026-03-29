@@ -19,4 +19,6 @@ public class DebtPaymentRequestDTO {
 
     @NotNull(message = "Payment date is required")
     private LocalDate paymentDate;
+
+    private Long slipId;
 }

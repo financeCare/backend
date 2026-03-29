@@ -86,6 +86,10 @@ public class TransactionService {
 
     public Transaction createTransaction(String token, TransactionRequest transactionRequest) {
         UUID userId = userService.extractUserIdFromToken(token);
+        return createTransaction(userId, transactionRequest);
+    }
+
+    public Transaction createTransaction(UUID userId, TransactionRequest transactionRequest) {
         Category category = categoryRepository
                 .findById(transactionRequest.getCategoryId())
                 .orElseThrow(() -> new BusinessException(

@@ -34,7 +34,8 @@ public class RepaymentService {
                         DebtTxnType type,
                         BigDecimal amount,
                         LocalDate txnDate,
-                        UUID referenceId) {
+                        UUID referenceId,
+                        Long slipId) {
 
                 if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
                         return;
@@ -46,6 +47,7 @@ public class RepaymentService {
                                 .amount(amount.setScale(2, RoundingMode.HALF_UP))
                                 .txnDate(txnDate)
                                 .referenceId(referenceId)
+                                .slipId(slipId)
                                 .build();
 
                 txn.validate();
@@ -99,7 +101,8 @@ public class RepaymentService {
                                         paymentType,
                                         payAmount,
                                         paymentDate,
-                                        chargeTxn.getTransactionId());
+                                        chargeTxn.getTransactionId(),
+                                        null);
 
                         remaining = remaining.subtract(payAmount);
                 }
@@ -110,6 +113,11 @@ public class RepaymentService {
         @Transactional
         public void payDebt(String token, DebtPaymentRequestDTO debtPaymentRequestDTO) {
                 UUID userId = userService.extractUserIdFromToken(token);
+                payDebt(userId, debtPaymentRequestDTO);
+        }
+
+        @Transactional
+        public void payDebt(UUID userId, DebtPaymentRequestDTO debtPaymentRequestDTO) {
                 if (debtPaymentRequestDTO.getPaymentAmount() == null
                                 || debtPaymentRequestDTO.getPaymentAmount().compareTo(BigDecimal.ZERO) <= 0) {
                         throw new BusinessException("Payment amount must be > 0", HttpStatus.BAD_REQUEST);
@@ -122,7 +130,7 @@ public class RepaymentService {
                 LocalDate paymentDate = debtPaymentRequestDTO.getPaymentDate();
 
                 // 0. บันทึกยอดจ่ายรวมในระบบ
-                createTxn(debt, DebtTxnType.PAYMENT, remaining, paymentDate, null);
+                createTxn(debt, DebtTxnType.PAYMENT, remaining, paymentDate, null, debtPaymentRequestDTO.getSlipId());
 
                 // Phase 1: Clear All Outstanding Charges currently in the database
                 // (This handles historical charges and initialRemaining balances)
@@ -154,7 +162,7 @@ public class RepaymentService {
                                 debtRepository.save(debt);
 
                                 createTxn(debt, DebtTxnType.PRINCIPAL_PAYMENT, payToPrincipal,
-                                                paymentDate, null);
+                                                paymentDate, null, null);
                                 remaining = remaining.subtract(payToPrincipal);
                         }
                 }
@@ -162,7 +170,7 @@ public class RepaymentService {
 
                 // หากมีเงินเหลือหลังจากหักทุกเดือนแล้ว ให้ลงเป็น Overpayment
                 if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-                        createTxn(debt, DebtTxnType.OVERPAYMENT, remaining, paymentDate, null);
+                        createTxn(debt, DebtTxnType.OVERPAYMENT, remaining, paymentDate, null, null);
                 }
         }
 
@@ -232,6 +240,7 @@ public class RepaymentService {
                                         DebtTxnType.INTEREST_CHARGE,
                                         interest,
                                         processDate,
+                                        null,
                                         null);
                 }
 
@@ -267,6 +276,7 @@ public class RepaymentService {
                                                         DebtTxnType.LATE_FEE_CHARGE,
                                                         lateFee,
                                                         processDate,
+                                                        null,
                                                         null);
                                 }
                         }

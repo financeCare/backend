@@ -74,4 +74,13 @@ public class MinioService {
             log.error("Failed to delete file from Minio {}: {}", path, e.getMessage());
         }
     }
+
+    public InputStream getFile(String path) throws Exception {
+        return minioClient.getObject(
+                io.minio.GetObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(path)
+                        .build()
+        );
+    }
 }

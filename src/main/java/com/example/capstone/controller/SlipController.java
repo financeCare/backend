@@ -12,6 +12,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
 @RestController
@@ -50,5 +54,26 @@ public class SlipController {
 
         List<Slip> results = slipService.getSlipsByUser(user);
         return ResponseEntity.ok(results);
+    }
+
+    @GetMapping("/{id}/image")
+    public ResponseEntity<Resource> getSlipImage(@PathVariable("id") Long id) {
+        Slip slip = slipService.getSlipById(id);
+        
+        try {
+            InputStream inputStream = slipService.getSlipFile(slip.getImagePath());
+            String contentType = "image/jpeg"; // Default
+            if (slip.getImagePath().toLowerCase().endsWith(".png")) {
+                contentType = "image/png";
+            } else if (slip.getImagePath().toLowerCase().endsWith(".webp")) {
+                contentType = "image/webp";
+            }
+            
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .body(new InputStreamResource(inputStream));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }
