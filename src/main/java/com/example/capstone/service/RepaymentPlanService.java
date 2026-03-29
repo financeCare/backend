@@ -51,10 +51,16 @@ public class RepaymentPlanService {
     public RepaymentStrategyDtoResponse getAllRepaymentStrategies(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
         List<Debt> debts = debtRepository.findByActiveAndUserId(true, userId);
-        BigDecimal minSum = debts.stream()
+        
+        BigDecimal actualMinSum = debts.stream()
+                .map(d -> d.getMinPayment() != null ? d.getMinPayment() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        BigDecimal safeMinSum = debts.stream()
                 .map(this::calculateSafeMinPayment)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return new RepaymentStrategyDtoResponse(minSum.doubleValue(), repaymentStrategyRepository.findAll());
+        
+        return new RepaymentStrategyDtoResponse(actualMinSum.doubleValue(), safeMinSum.doubleValue(), repaymentStrategyRepository.findAll());
     }
 
     public String deleteRepaymentStrategy(UUID strategyId) {
@@ -120,7 +126,7 @@ public class RepaymentPlanService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    private BigDecimal calculateSafeMinPayment(Debt debt) {
+    public BigDecimal calculateSafeMinPayment(Debt debt) {
         BigDecimal principal = debt.getPrincipalOutstanding() != null ? debt.getPrincipalOutstanding() : debt.getPrincipalAmount();
         if (principal == null || principal.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;
@@ -130,7 +136,7 @@ public class RepaymentPlanService {
         BigDecimal monthlyInterest = InterestCalculator.calculate(
                 principal,
                 annualRate,
-                debt.getInterestCalculationType()
+                debt.getInterestCalculationType() != null ? debt.getInterestCalculationType() : com.example.capstone.enums.InterestCalculationType.THIRTY_360
         );
 
         // Safe min = Interest + 1% of Principal to ensure principal decreases
@@ -145,7 +151,7 @@ public class RepaymentPlanService {
         if (debt.getMinPayment() != null && debt.getMinPayment().compareTo(safeMin) > 0) {
             return debt.getMinPayment();
         }
-        return safeMin.setScale(2, RoundingMode.HALF_UP);
+        return safeMin.setScale(0, RoundingMode.CEILING);
     }
 
     @Transactional(readOnly = true)
@@ -296,6 +302,10 @@ public class RepaymentPlanService {
         BigDecimal paidAmount = debtTransactionRepository.sumPaymentsByUserIdAndMonth(userId, year, month);
         if (paidAmount == null) paidAmount = BigDecimal.ZERO;
 
+        BigDecimal actualMinPayment = activeDebts.stream()
+                .map(d -> d.getMinPayment() != null ? d.getMinPayment() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
         BigDecimal requiredMinPayment = activeDebts.stream()
                 .map(this::calculateSafeMinPayment)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -312,7 +322,7 @@ public class RepaymentPlanService {
             remainingAmount = BigDecimal.ZERO;
         }
 
-        return new MonthlyStatusDTO(totalAmount, paidAmount, remainingAmount, requiredMinPayment, isBudgetInsufficient);
+        return new MonthlyStatusDTO(totalAmount, paidAmount, remainingAmount, actualMinPayment, requiredMinPayment, isBudgetInsufficient);
     }
 
     public Map<UUID, BigDecimal> calculateCurrentMonthAllocation(UUID userId) {

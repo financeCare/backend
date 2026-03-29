@@ -11,6 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RepaymentStrategyDtoResponse {
+    private double actualMinPayment;
     private double monthlyBudget;
     private List<RepaymentStrategy> repaymentStrategyList;
 }
