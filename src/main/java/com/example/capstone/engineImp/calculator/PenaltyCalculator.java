@@ -20,7 +20,7 @@ public class PenaltyCalculator {
             int days
     ) {
         return principal
-                .multiply(penaltyRate.divide(BigDecimal.valueOf(36000), 10, RoundingMode.HALF_UP))
+                .multiply(penaltyRate.divide(BigDecimal.valueOf(36500), 10, RoundingMode.HALF_UP))
                 .multiply(BigDecimal.valueOf(days))
                 .setScale(2, RoundingMode.HALF_UP);
     }

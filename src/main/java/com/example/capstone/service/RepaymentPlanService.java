@@ -8,6 +8,7 @@ import com.example.capstone.entity.RepaymentPlan;
 import com.example.capstone.engineImp.calculator.InterestCalculator;
 import com.example.capstone.enums.StrategyType;
 import com.example.capstone.enums.DebtTxnType;
+import com.example.capstone.enums.InterestInterval;
 import com.example.capstone.exception.BusinessException;
 import com.example.capstone.factory.StrategyFactory;
 import com.example.capstone.repository.*;
@@ -201,7 +202,7 @@ public class RepaymentPlanService {
         debtSim.setDebtId(entity.getDebtId());
         debtSim.setDebtName(entity.getDebtName());
         debtSim.setPrincipal(entity.getPrincipalOutstanding() != null ? entity.getPrincipalOutstanding() : entity.getPrincipalAmount());
-        debtSim.setAnnualInterestRate(normalizeRate(entity.getInterestRate()));
+        debtSim.setAnnualInterestRate(normalizeAnnualRate(entity.getInterestRate(), entity.getInterestInterval()));
         debtSim.setInterestType(entity.getInterestCalculationType());
         debtSim.setMinPayment(entity.getMinPayment() != null ? entity.getMinPayment() : BigDecimal.ZERO);
         debtSim.setActive(entity.getActive());
@@ -228,20 +229,36 @@ public class RepaymentPlanService {
         debtSim.setDueDay(entity.getDueDay());
         debtSim.setGracePeriodDays(entity.getGracePeriodDays());
         debtSim.setPenaltyTriggerDays(entity.getPenaltyTriggerDays());
-        debtSim.setPenaltyAnnualRate(normalizeRate(entity.getPenaltyAnnualRate()));
+        debtSim.setPriority(entity.getPriority() != null ? entity.getPriority() : 999);
+        
+        debtSim.setPenaltyAnnualRate(normalizeAnnualRate(entity.getPenaltyAnnualRate(), InterestInterval.YEARLY));
         debtSim.setDefaulted(entity.getDefaulted());
         debtSim.setInformal(entity.getIsInformal() != null ? entity.getIsInformal() : false);
-        debtSim.setPriority(entity.getPriority() != null ? entity.getPriority() : 999);
-
+        
         return debtSim;
     }
 
-    private BigDecimal normalizeRate(BigDecimal rate) {
+    private BigDecimal normalizeAnnualRate(BigDecimal rate, InterestInterval interval) {
         if (rate == null) return BigDecimal.ZERO;
-        if (rate.compareTo(BigDecimal.ONE) > 0) {
-            return rate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
+        
+        BigDecimal normalizedRate = rate;
+        // If rate is > 1 (e.g., 5.0 for 5%), normalize it to decimal (0.05)
+        if (normalizedRate.compareTo(BigDecimal.ONE) > 0) {
+            normalizedRate = normalizedRate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
         }
-        return rate;
+        
+        if (interval == null) interval = InterestInterval.YEARLY;
+        
+        return switch (interval) {
+            case DAILY -> normalizedRate.multiply(BigDecimal.valueOf(365));
+            case MONTHLY -> normalizedRate.multiply(BigDecimal.valueOf(12));
+            case YEARLY -> normalizedRate;
+            default -> normalizedRate;
+        };
+    }
+
+    private BigDecimal normalizeRate(BigDecimal rate) {
+        return normalizeAnnualRate(rate, InterestInterval.YEARLY);
     }
 
     public List<Map<String, Object>> getPrioritySuggestions(String token, UUID strategyId) {

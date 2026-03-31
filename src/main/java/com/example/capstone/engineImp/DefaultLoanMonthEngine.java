@@ -19,46 +19,44 @@ public class DefaultLoanMonthEngine implements LoanMonthEngine {
             DebtSim debt,
             BigDecimal extraPayment) {
 
-        LoanMonthResult loanMonthResult = new LoanMonthResult();
-        loanMonthResult.principalStart = debt.getPrincipal();
+        BigDecimal principalStart = debt.getPrincipal();
 
         BigDecimal interest = InterestCalculator.calculate(
-                debt.getPrincipal(),
+                principalStart,
                 debt.getAnnualInterestRate(),
                 debt.getInterestType());
 
-        BigDecimal principal = debt.getPrincipal();
-
-        if (debt.getInterestType() == InterestCalculationType.DAILY_COMPOUND) {
-            principal = principal.add(interest);
-        }
-
-        BigDecimal minPaid = debt.getMinPayment();
-        BigDecimal totalPaid = minPaid.add(extraPayment);
+        BigDecimal totalPaid = debt.getMinPayment().add(extraPayment);
 
         // Check for penalty using unified logic
-        PenaltyLogic.LateResult lateResult = PenaltyLogic.checkAndCalculate(debt, principal, totalPaid);
+        PenaltyLogic.LateResult lateResult = PenaltyLogic.checkAndCalculate(debt, principalStart, totalPaid);
         BigDecimal penalty = lateResult.getPenalty();
 
-        if (penalty.compareTo(BigDecimal.ZERO) > 0) {
-            if (debt.getInterestType() == InterestCalculationType.DAILY_COMPOUND) {
-                principal = principal.add(penalty);
-            }
+        // Target: Pay Interest and Penalty first (Waterfall)
+        BigDecimal currentCharges = interest.add(penalty);
+        BigDecimal remainingToPay = totalPaid;
+
+        // 1. Pay charges
+        BigDecimal paidToCharges = remainingToPay.min(currentCharges);
+        remainingToPay = remainingToPay.subtract(paidToCharges);
+
+        // 2. Pay principal with the rest
+        BigDecimal principalPaid = remainingToPay.min(principalStart);
+        BigDecimal principalEnd = principalStart.subtract(principalPaid);
+
+        if (principalEnd.compareTo(BigDecimal.ZERO) < 0) {
+            principalEnd = BigDecimal.ZERO;
         }
 
-        principal = principal.subtract(totalPaid);
+        debt.setPrincipal(principalEnd);
 
-        if (principal.compareTo(BigDecimal.ZERO) < 0) {
-            principal = BigDecimal.ZERO;
-        }
-
-        debt.setPrincipal(principal);
-
+        LoanMonthResult loanMonthResult = new LoanMonthResult();
         loanMonthResult.interest = interest;
         loanMonthResult.penaltyInterest = penalty;
-        loanMonthResult.minPaid = minPaid;
-        loanMonthResult.extraPaid = extraPayment;
-        loanMonthResult.principalEnd = principal;
+        loanMonthResult.minPaid = debt.getMinPayment().min(totalPaid);
+        loanMonthResult.extraPaid = totalPaid.subtract(loanMonthResult.minPaid);
+        loanMonthResult.principalEnd = principalEnd;
+        loanMonthResult.principalStart = principalStart;
         loanMonthResult.late = lateResult.isLate();
 
         return loanMonthResult;

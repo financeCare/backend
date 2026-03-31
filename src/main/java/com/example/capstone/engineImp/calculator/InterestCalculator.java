@@ -17,7 +17,7 @@ public class InterestCalculator {
                                         .multiply(annualRate.divide(BigDecimal.valueOf(12), 10, RoundingMode.HALF_UP))
                                         .setScale(2, RoundingMode.HALF_UP);
                         case DAILY_SIMPLE -> principal
-                                        .multiply(annualRate.divide(BigDecimal.valueOf(360), 10, RoundingMode.HALF_UP))
+                                        .multiply(annualRate.divide(BigDecimal.valueOf(365), 10, RoundingMode.HALF_UP))
                                         .multiply(BigDecimal.valueOf(30))
                                         .setScale(2, RoundingMode.HALF_UP);
                         case FLAT_RATE -> principal
