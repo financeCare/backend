@@ -31,11 +31,10 @@ public class RepaymentPlanSimulator {
 
                 List<DebtSim> debts = new ArrayList<>(originalDebts);
 
+                Map<UUID, Integer> consecutiveLateMonths = new HashMap<>();
                 int month = 0;
-
                 BigDecimal totalInterest = BigDecimal.ZERO;
                 BigDecimal totalPaid = BigDecimal.ZERO;
-
                 List<MonthlyPlanResultDTO> monthlyResults = new ArrayList<>();
 
                 while (!debts.isEmpty()) {
@@ -74,6 +73,20 @@ public class RepaymentPlanSimulator {
 
                                 LoanMonthResult r = engine.runMonth(d, minPaid, extra);
 
+                                // ตรวจสอบการค้างชำระ (NPL Detection)
+                                if (r.isLate()) {
+                                    int count = consecutiveLateMonths.getOrDefault(d.getDebtId(), 0) + 1;
+                                    consecutiveLateMonths.put(d.getDebtId(), count);
+                                    
+                                    // ถ้าค้างชำระติดต่อกัน 3 งวด (ประมาณ 90 วัน) ให้ถือเป็นหนี้เสีย (Defaulted)
+                                    if (count >= 3) {
+                                        d.setDefaulted(true);
+                                    }
+                                } else {
+                                    // ถ้าจ่ายครบในงวดนี้ ให้รีเซ็ตตัวนับการค้างชำระต่อเนื่อง
+                                    consecutiveLateMonths.put(d.getDebtId(), 0);
+                                }
+
                                 d.setPrincipal(r.getPrincipalEnd()); // Update current principal
                                 monthInterest = monthInterest.add(r.getInterest());
 
@@ -90,6 +103,8 @@ public class RepaymentPlanSimulator {
                                 dto.setMinPaid(r.getMinPaid());
                                 dto.setExtraPaid(r.getExtraPaid());
                                 dto.setAfterBalance(r.getPrincipalEnd());
+                                dto.setDefaulted(d.isDefaulted());
+                                dto.setNplRisk(consecutiveLateMonths.getOrDefault(d.getDebtId(), 0) >= 2);
 
                                 debtPayments.add(dto);
                         }

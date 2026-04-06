@@ -20,6 +20,7 @@ public class DebtSim {
     private RepaymentTypeEnum repaymentType;
     private InterestCalculationType interestType;
     private LocalDate startDate;
+    private LocalDate endDate;
     private LocalDate currentDate;
     private boolean defaulted;
     private boolean isActive;

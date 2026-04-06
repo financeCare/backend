@@ -106,12 +106,22 @@ public class RepaymentPlanService {
 
         List<Debt> sortedDebts = new ArrayList<>(debts);
 
+        // บังคับให้หนี้นอกระบบขึ้นเป็นอันดับแรกเสมอ
+        Comparator<Debt> finalComparator = Comparator.comparing(
+                (Debt d) -> d.getIsInformal() != null && d.getIsInformal(), 
+                Comparator.reverseOrder()
+        );
+
         if (type == StrategyType.SNOWBALL) {
-            sortedDebts.sort(Comparator.comparing(Debt::getPrincipalOutstanding, Comparator.nullsLast(Comparator.naturalOrder()))
-                    .thenComparing(Debt::getPrincipalAmount, Comparator.nullsLast(Comparator.naturalOrder())));
+            finalComparator = finalComparator
+                    .thenComparing(Debt::getPrincipalOutstanding, Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(Debt::getPrincipalAmount, Comparator.nullsLast(Comparator.naturalOrder()));
         } else if (type == StrategyType.AVALANCHE || type == StrategyType.OPTIMAL_COST) {
-            sortedDebts.sort(Comparator.comparing(Debt::getInterestRate, Comparator.nullsLast(Comparator.reverseOrder())));
+            finalComparator = finalComparator
+                    .thenComparing(Debt::getInterestRate, Comparator.nullsLast(Comparator.reverseOrder()));
         }
+
+        sortedDebts.sort(finalComparator);
 
         for (int i = 0; i < sortedDebts.size(); i++) {
             sortedDebts.get(i).setPriority(i + 1);
@@ -224,6 +234,11 @@ public class RepaymentPlanService {
             debtSim.setStartDate(localStartDate);
             debtSim.setCurrentDate(localStartDate);
         }
+        
+        if (entity.getEndDate() != null) {
+            LocalDate localEndDate = entity.getEndDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            debtSim.setEndDate(localEndDate);
+        }
 
         debtSim.setOriginalPrincipal(entity.getPrincipalAmount());
         debtSim.setDueDay(entity.getDueDay());
@@ -277,12 +292,22 @@ public class RepaymentPlanService {
 
         List<Debt> sortedDebts = new ArrayList<>(debts);
         
+        // บังคับให้หนี้นอกระบบขึ้นเป็นอันดับแรกเสมอในหน้าแนะนำ Priority (Step 2)
+        Comparator<Debt> finalComparator = Comparator.comparing(
+                (Debt d) -> d.getIsInformal() != null && d.getIsInformal(), 
+                Comparator.reverseOrder()
+        );
+
         if (type == StrategyType.SNOWBALL) {
-            sortedDebts.sort(Comparator.comparing(Debt::getPrincipalOutstanding, Comparator.nullsLast(Comparator.naturalOrder()))
-                    .thenComparing(Debt::getPrincipalAmount, Comparator.nullsLast(Comparator.naturalOrder())));
+            finalComparator = finalComparator
+                    .thenComparing(Debt::getPrincipalOutstanding, Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(Debt::getPrincipalAmount, Comparator.nullsLast(Comparator.naturalOrder()));
         } else if (type == StrategyType.AVALANCHE || type == StrategyType.OPTIMAL_COST) {
-            sortedDebts.sort(Comparator.comparing(Debt::getInterestRate, Comparator.nullsLast(Comparator.reverseOrder())));
+            finalComparator = finalComparator
+                    .thenComparing(Debt::getInterestRate, Comparator.nullsLast(Comparator.reverseOrder()));
         }
+
+        sortedDebts.sort(finalComparator);
 
         List<Map<String, Object>> suggestions = new ArrayList<>();
         for (int i = 0; i < sortedDebts.size(); i++) {
