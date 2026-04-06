@@ -38,33 +38,51 @@ public class JoobleService {
     private static final long CACHE_TTL_DAYS = 7;
 
     public List<JobSuggestionResponse> getSuggestedJobs(JobSuggestionRequest request) {
-        String cacheKey = REDIS_KEY_PREFIX + request.getKeywords() + ":" + request.getLocation();
+        String cacheKey = REDIS_KEY_PREFIX + 
+            (request.getKeywords() != null ? request.getKeywords() : "all") + ":" + 
+            (request.getLocation() != null ? request.getLocation() : "all") + ":" +
+            (request.getCurrentProfession() != null ? request.getCurrentProfession() : "none") + ":" +
+            (request.getSkills() != null ? String.join("-", request.getSkills()) : "none");
         
+        long startTime = System.currentTimeMillis();
+
+        // 1. Try Cache (Optional)
         try {
-            // 1. Try Cache
+            log.info("Checking Jooble cache for key: {}", cacheKey);
             String cachedData = redisTemplate.opsForValue().get(cacheKey);
             if (cachedData != null) {
                 log.info("Returning cached Jooble results for key: {}", cacheKey);
                 return Arrays.asList(objectMapper.readValue(cachedData, JobSuggestionResponse[].class));
             }
+        } catch (Exception e) {
+            log.warn("Redis Cache lookup failed (will fetch from API): {}", e.getMessage());
+            // Continue even if Redis fails
+        }
 
-            // 2. Call Jooble API
+        // 2. Call Jooble API (Primary)
+        try {
+            log.info("Calling Jooble API...");
             List<JobSuggestionResponse> jobs = callJoobleApi(request);
             
-            // 3. Fallback handle
             if (jobs.isEmpty()) {
-                log.warn("Jooble returned empty results, using fallback mock data.");
-                jobs = getMockFallbackJobs(request);
+                log.warn("Jooble returned empty results for key: {}", cacheKey);
+                return jobs; // Return empty list immediately if no jobs found from API
             }
 
-            // 4. Cache results
-            redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(jobs), CACHE_TTL_DAYS, TimeUnit.DAYS);
+            // 3. Cache results for next time (Optional)
+            try {
+                String jsonData = objectMapper.writeValueAsString(jobs);
+                redisTemplate.opsForValue().set(cacheKey, jsonData, CACHE_TTL_DAYS, TimeUnit.DAYS);
+                log.info("Result cached. Total time: {}ms", (System.currentTimeMillis() - startTime));
+            } catch (Exception e) {
+                log.warn("Failed to cache results to Redis: {}", e.getMessage());
+            }
             
             return jobs;
 
         } catch (Exception e) {
-            log.error("Jooble API Error: {}", e.getMessage());
-            return getMockFallbackJobs(request);
+            log.error("Fatal Jooble Service Error: {}", e.getMessage());
+            return Collections.emptyList();
         }
     }
 
@@ -72,32 +90,68 @@ public class JoobleService {
         try {
             String url = joobleUrl + apiKey;
             
+            // Enhance keywords with profession and skills for better Jooble search results
+            StringBuilder keywordsBuilder = new StringBuilder();
+            if (request.getKeywords() != null && !request.getKeywords().isEmpty()) {
+                keywordsBuilder.append(request.getKeywords());
+            } else {
+                keywordsBuilder.append("part-time");
+            }
+            
+            // Append profession to the search terms
+            if (request.getCurrentProfession() != null && !request.getCurrentProfession().isEmpty()) {
+                keywordsBuilder.append(" ").append(request.getCurrentProfession());
+            }
+            
+            // Append skills to the search terms
+            if (request.getSkills() != null && !request.getSkills().isEmpty()) {
+                for (String skill : request.getSkills()) {
+                    keywordsBuilder.append(" ").append(skill);
+                }
+            }
+
+            // Normalize location (prevent emulator "California" from breaking search results in Thailand)
+            String location = request.getLocation();
+            if (location == null || location.isEmpty() || location.equalsIgnoreCase("California") || location.equalsIgnoreCase("US")) {
+                location = "Thailand";
+            }
+
             Map<String, String> body = new HashMap<>();
-            body.put("keywords", request.getKeywords() != null ? request.getKeywords() : "part-time");
-            body.put("location", request.getLocation() != null ? request.getLocation() : "ประเทศไทย");
+            body.put("keywords", keywordsBuilder.toString().trim());
+            body.put("location", location);
+
+            String requestBodyJson = objectMapper.writeValueAsString(body);
+            log.info("Calling Jooble API with body: {}", requestBodyJson);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             
-            HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
+            HttpEntity<String> entity = new HttpEntity<>(requestBodyJson, headers);
             
-            JoobleApiResponse response = restTemplate.postForObject(url, entity, JoobleApiResponse.class);
+            String rawResponse = restTemplate.postForObject(url, entity, String.class);
+            log.info("Jooble API Raw Response: {}", rawResponse);
+
+            if (rawResponse == null) {
+                return Collections.emptyList();
+            }
+
+            JoobleApiResponse response = objectMapper.readValue(rawResponse, JoobleApiResponse.class);
             
             if (response == null || response.getJobs() == null) {
+                log.warn("Jooble response is empty or invalid.");
                 return Collections.emptyList();
             }
 
             return response.getJobs().stream()
-                    .map(this::mapToSuggestionResponse)
+                    .map(job -> mapToSuggestionResponse(job, request))
                     .collect(Collectors.toList());
-
         } catch (Exception e) {
             log.error("Failed to call Jooble API", e);
             return Collections.emptyList();
         }
     }
 
-    private JobSuggestionResponse mapToSuggestionResponse(JoobleJob job) {
+    private JobSuggestionResponse mapToSuggestionResponse(JoobleJob job, JobSuggestionRequest request) {
         JobSuggestionResponse resp = new JobSuggestionResponse();
         resp.setId(String.valueOf(job.getId()));
         resp.setTitle(job.getTitle());
@@ -109,37 +163,25 @@ public class JoobleService {
         Map<String, String> links = new HashMap<>();
         links.put("Jooble", job.getLink());
         resp.setPlatformLinks(links);
-        resp.setRecommended(false);
+        
+        // Basic Recommendation Logic: 
+        // 1. If any skill is mentioned in title/description
+        // 2. OR just mark the first 2 results for demonstration
+        boolean matchesSkill = false;
+        if (request.getSkills() != null) {
+            for (String skill : request.getSkills()) {
+                if (job.getTitle().toLowerCase().contains(skill.toLowerCase()) || 
+                    job.getSnippet().toLowerCase().contains(skill.toLowerCase())) {
+                    matchesSkill = true;
+                    break;
+                }
+            }
+        }
+        
+        resp.setRecommended(matchesSkill || job.getId() % 5 == 0); // Mix of match and random for now
         return resp;
     }
 
-    private List<JobSuggestionResponse> getMockFallbackJobs(JobSuggestionRequest request) {
-        List<JobSuggestionResponse> fallbacks = new ArrayList<>();
-        
-        JobSuggestionResponse job1 = new JobSuggestionResponse();
-        job1.setId("mock-1");
-        job1.setTitle("พนักงานส่งอาหาร (Delivery Rider)");
-        job1.setType("รายได้เสริม");
-        job1.setEstimatedIncome("500 - 1,000 บาท/วัน");
-        job1.setDescription("ขับรถส่งอาหารกับแพลตฟอร์มชั้นนำ เหมาะสำหรับคนมีมอเตอร์ไซค์ส่วนตัว");
-        job1.setRequirement("มีใบขับขี่, รถจักรยานยนต์");
-        job1.setPlatformLinks(Map.of("Grab", "https://grab.com", "Foodpanda", "https://foodpanda.com"));
-        job1.setRecommended(true);
-
-        JobSuggestionResponse job2 = new JobSuggestionResponse();
-        job2.setId("mock-2");
-        job2.setTitle("รับจ้างคีย์ข้อมูล (Data Entry)");
-        job2.setType("Work from Home");
-        job2.setEstimatedIncome("300 - 600 บาท/วัน");
-        job2.setDescription("งานพิมพ์เอกสาร คีย์ข้อมูลเข้าสู่ระบบ สามารถทำที่บ้านได้");
-        job2.setRequirement("คอมพิวเตอร์, อินเทอร์เน็ต");
-        job2.setPlatformLinks(Map.of("Fastwork", "https://fastwork.co"));
-        
-        fallbacks.add(job1);
-        fallbacks.add(job2);
-        
-        return fallbacks;
-    }
 
     @Data
     private static class JoobleApiResponse {

@@ -44,6 +44,12 @@ public class UserSetting {
     @Column(name = "timezone", nullable = false, length = 64)
     private String timezone = "Asia/Bangkok";
 
+    @Column(name = "current_profession")
+    private String currentProfession;
+
+    @Column(name = "skills")
+    private String skills; // Stored as comma-separated values
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

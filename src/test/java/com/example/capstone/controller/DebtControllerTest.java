@@ -4,9 +4,9 @@ import com.example.capstone.dto.DebtDTO;
 import com.example.capstone.dto.DebtPaymentRequestDTO;
 import com.example.capstone.entity.Debt;
 import com.example.capstone.enums.InterestCalculationType;
-import com.example.capstone.security.JwtUtil;
 import com.example.capstone.service.DebtService;
 import com.example.capstone.service.RepaymentService;
+import com.example.capstone.service.RepaymentPlanService;
 import com.example.capstone.service.UserService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,7 +45,7 @@ public class DebtControllerTest {
     private RepaymentService repaymentService;
 
     @MockitoBean
-    private JwtUtil jwtUtil;
+    private RepaymentPlanService repaymentPlanService;
 
     @MockitoBean
     private UserService userService;
@@ -79,7 +79,7 @@ public class DebtControllerTest {
 
         when(debtService.getDebtDetail(anyString(), any(UUID.class))).thenReturn(debt);
 
-        mockMvc.perform(get("/debts/" + debtId)
+        mockMvc.perform(get("/debts/debtId/" + debtId)
                         .header("Authorization", "Bearer token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.debtName").value("Home Loan"));

@@ -16,4 +16,7 @@ public class UserSettingDto {
     private double monthly_repayment_budget;
 
     private UUID default_strategy;
+
+    private String currentProfession;
+    private String skills;
 }
