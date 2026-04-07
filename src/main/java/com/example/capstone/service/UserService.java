@@ -331,7 +331,6 @@ public class UserService implements UserDetailsService {
         userSetting.setNotificationsEnabled(newSettings.isNotificationsEnabled());
         userSetting.setDefaultNotifyTime(newSettings.getDefaultNotifyTime());
         userSetting.setDefaultRemindDaysBefore(newSettings.getNotify_due_days_before());
-        userSetting.setCurrentProfession(newSettings.getCurrentProfession());
         userSetting.setSkills(newSettings.getSkills());
         RepaymentPlan repaymentPlan = repaymentPlanRepository.findByUserId(userId);
         if (repaymentPlan != null) {

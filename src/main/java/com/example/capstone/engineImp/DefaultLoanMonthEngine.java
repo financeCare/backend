@@ -29,7 +29,7 @@ public class DefaultLoanMonthEngine implements LoanMonthEngine {
         BigDecimal totalPaid = debt.getMinPayment().add(extraPayment);
 
         // Check for penalty using unified logic
-        PenaltyLogic.LateResult lateResult = PenaltyLogic.checkAndCalculate(debt, principalStart, totalPaid);
+        PenaltyLogic.LateResult lateResult = PenaltyLogic.checkAndCalculate(debt, totalPaid);
         BigDecimal penalty = lateResult.getPenalty();
 
         // Target: Pay Interest and Penalty first (Waterfall)

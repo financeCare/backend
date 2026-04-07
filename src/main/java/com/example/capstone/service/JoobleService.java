@@ -2,7 +2,6 @@ package com.example.capstone.service;
 
 import com.example.capstone.dto.JobSuggestionRequest;
 import com.example.capstone.dto.JobSuggestionResponse;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +11,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -38,15 +38,20 @@ public class JoobleService {
     private static final long CACHE_TTL_DAYS = 7;
 
     public List<JobSuggestionResponse> getSuggestedJobs(JobSuggestionRequest request) {
-        String cacheKey = REDIS_KEY_PREFIX + 
-            (request.getKeywords() != null ? request.getKeywords() : "all") + ":" + 
-            (request.getLocation() != null ? request.getLocation() : "all") + ":" +
-            (request.getCurrentProfession() != null ? request.getCurrentProfession() : "none") + ":" +
-            (request.getSkills() != null ? String.join("-", request.getSkills()) : "none");
-        
-        long startTime = System.currentTimeMillis();
+        // 1. Normalize Location early (for consistent cache keys)
+        String location = request.getLocation();
+        if (location == null || location.isEmpty() || location.equalsIgnoreCase("California") || location.equalsIgnoreCase("US") || location.equalsIgnoreCase("Thailand")) {
+            location = ""; // Empty location for th.jooble.org means search all of Thailand
+        }
 
-        // 1. Try Cache (Optional)
+        // 2. Build concise keywords
+        String searchKeywords = buildSearchKeywords(request);
+        
+        String cacheKey = REDIS_KEY_PREFIX + 
+            searchKeywords.replace(" ", "-") + ":" + 
+            location;
+        
+        // 3. Try Cache (Optional)
         try {
             log.info("Checking Jooble cache for key: {}", cacheKey);
             String cachedData = redisTemplate.opsForValue().get(cacheKey);
@@ -59,21 +64,21 @@ public class JoobleService {
             // Continue even if Redis fails
         }
 
-        // 2. Call Jooble API (Primary)
+        // 4. Call Jooble API (Primary)
         try {
             log.info("Calling Jooble API...");
-            List<JobSuggestionResponse> jobs = callJoobleApi(request);
+            List<JobSuggestionResponse> jobs = callJoobleApi(searchKeywords, location, request);
             
             if (jobs.isEmpty()) {
                 log.warn("Jooble returned empty results for key: {}", cacheKey);
-                return jobs; // Return empty list immediately if no jobs found from API
+                return Collections.emptyList(); 
             }
 
-            // 3. Cache results for next time (Optional)
+            // 5. Cache results for next time (Optional)
             try {
                 String jsonData = objectMapper.writeValueAsString(jobs);
                 redisTemplate.opsForValue().set(cacheKey, jsonData, CACHE_TTL_DAYS, TimeUnit.DAYS);
-                log.info("Result cached. Total time: {}ms", (System.currentTimeMillis() - startTime));
+                log.info("Result cached in Redis.");
             } catch (Exception e) {
                 log.warn("Failed to cache results to Redis: {}", e.getMessage());
             }
@@ -81,70 +86,69 @@ public class JoobleService {
             return jobs;
 
         } catch (Exception e) {
-            log.error("Fatal Jooble Service Error: {}", e.getMessage());
+            log.error("Jooble API Error: {}", e.getMessage());
             return Collections.emptyList();
         }
     }
 
-    private List<JobSuggestionResponse> callJoobleApi(JobSuggestionRequest request) {
-        try {
-            String url = joobleUrl + apiKey;
-            
-            // Enhance keywords with profession and skills for better Jooble search results
-            StringBuilder keywordsBuilder = new StringBuilder();
-            if (request.getKeywords() != null && !request.getKeywords().isEmpty()) {
-                keywordsBuilder.append(request.getKeywords());
-            } else {
-                keywordsBuilder.append("part-time");
-            }
-            
-            // Append profession to the search terms
-            if (request.getCurrentProfession() != null && !request.getCurrentProfession().isEmpty()) {
-                keywordsBuilder.append(" ").append(request.getCurrentProfession());
-            }
-            
-            // Append skills to the search terms
-            if (request.getSkills() != null && !request.getSkills().isEmpty()) {
-                for (String skill : request.getSkills()) {
-                    keywordsBuilder.append(" ").append(skill);
+    private String buildSearchKeywords(JobSuggestionRequest request) {
+        if (request.getKeywords() != null && !request.getKeywords().isEmpty()) {
+            return request.getKeywords();
+        }
+        
+        StringBuilder sb = new StringBuilder();
+        
+        if (request.getSkills() != null && !request.getSkills().isEmpty()) {
+            // Add skills to the search terms
+            for (String skill : request.getSkills()) {
+                if (sb.length() < 30) { // Limit length for Jooble
+                    if (sb.length() > 0) sb.append(" ");
+                    sb.append(skill);
                 }
             }
+        }
+        
+        return sb.length() > 0 ? sb.toString() : "part-time";
+    }
 
-            // Normalize location (prevent emulator "California" from breaking search results in Thailand)
-            String location = request.getLocation();
-            if (location == null || location.isEmpty() || location.equalsIgnoreCase("California") || location.equalsIgnoreCase("US")) {
-                location = "Thailand";
-            }
-
-            Map<String, String> body = new HashMap<>();
-            body.put("keywords", keywordsBuilder.toString().trim());
-            body.put("location", location);
-
-            String requestBodyJson = objectMapper.writeValueAsString(body);
-            log.info("Calling Jooble API with body: {}", requestBodyJson);
-
+    private List<JobSuggestionResponse> callJoobleApi(String searchKeywords, String location, JobSuggestionRequest originalRequest) {
+        try {
+            String cleanApiKey = apiKey.trim();
+            String maskedKey = cleanApiKey.substring(0, 4) + "****" + cleanApiKey.substring(cleanApiKey.length() - 4);
+            String url = joobleUrl + cleanApiKey;
+            
+            log.info("Requesting Jooble API: {} (Masked: {}api/{})", url.replace(cleanApiKey, maskedKey), joobleUrl, maskedKey);
+            
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+            headers.add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
             
-            HttpEntity<String> entity = new HttpEntity<>(requestBodyJson, headers);
-            
-            String rawResponse = restTemplate.postForObject(url, entity, String.class);
-            log.info("Jooble API Raw Response: {}", rawResponse);
+            Map<String, Object> body = new HashMap<>(); 
+            body.put("keywords", searchKeywords);
+            body.put("location", location);
+            body.put("searchMode", 0); // 0 = Broad match (Mimics web search)
 
-            if (rawResponse == null) {
-                return Collections.emptyList();
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+            log.info("Calling Jooble API with body: {}", objectMapper.writeValueAsString(body));
+
+            ResponseEntity<JoobleApiResponse> response = restTemplate.postForEntity(url, entity, JoobleApiResponse.class);
+            
+            log.info("Jooble API Response Status: {}", response.getStatusCode());
+            
+            JoobleApiResponse joobleResponse = response.getBody();
+            if (joobleResponse != null) {
+                log.info("Jooble API Raw Response: Total={}, Jobs={}", 
+                    joobleResponse.getTotalCount(), 
+                    joobleResponse.getJobs() != null ? joobleResponse.getJobs().size() : 0);
+                
+                if (joobleResponse.getJobs() != null) {
+                    return joobleResponse.getJobs().stream()
+                        .map(job -> mapToSuggestionResponse(job, originalRequest)).collect(Collectors.toList());
+                }
             }
+            return Collections.emptyList();
 
-            JoobleApiResponse response = objectMapper.readValue(rawResponse, JoobleApiResponse.class);
-            
-            if (response == null || response.getJobs() == null) {
-                log.warn("Jooble response is empty or invalid.");
-                return Collections.emptyList();
-            }
-
-            return response.getJobs().stream()
-                    .map(job -> mapToSuggestionResponse(job, request))
-                    .collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Failed to call Jooble API", e);
             return Collections.emptyList();

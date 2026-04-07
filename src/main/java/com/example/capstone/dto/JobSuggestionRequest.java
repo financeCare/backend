@@ -13,6 +13,5 @@ public class JobSuggestionRequest {
 
     private String location;
 
-    private String currentProfession;
     private List<String> skills;
 }

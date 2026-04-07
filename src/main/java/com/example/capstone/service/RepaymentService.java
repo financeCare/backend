@@ -126,14 +126,37 @@ public class RepaymentService {
                 Debt debt = debtRepository.findByDebtIdAndUserIdAndActiveTrue(debtPaymentRequestDTO.getDebtId(), userId)
                                 .orElseThrow(() -> new BusinessException("Debt not found", HttpStatus.NOT_FOUND));
 
-                BigDecimal remaining = debtPaymentRequestDTO.getPaymentAmount();
                 LocalDate paymentDate = debtPaymentRequestDTO.getPaymentDate();
 
-                // 0. บันทึกยอดจ่ายรวมในระบบ
+                // 1. Accrue Charges for the current month first to ensure base calculations are correct
+                accrueMonthlyCharges(debt, paymentDate);
+
+                // 2. Calculate Total Actual Balance (Principal + Outstanding Charges)
+                BigDecimal principal = debt.getPrincipalOutstanding() != null ? debt.getPrincipalOutstanding() : BigDecimal.ZERO;
+                BigDecimal interest = debtTransactionRepository.sumOutstandingByType(debt.getDebtId(), DebtTxnType.INTEREST_CHARGE);
+                BigDecimal lateFee = debtTransactionRepository.sumOutstandingByType(debt.getDebtId(), DebtTxnType.LATE_FEE_CHARGE);
+                BigDecimal penalty = debtTransactionRepository.sumOutstandingByType(debt.getDebtId(), DebtTxnType.PENALTY_INTEREST_CHARGE);
+                
+                BigDecimal totalBalance = principal
+                        .add(interest != null ? interest : BigDecimal.ZERO)
+                        .add(lateFee != null ? lateFee : BigDecimal.ZERO)
+                        .add(penalty != null ? penalty : BigDecimal.ZERO);
+
+                BigDecimal remaining = debtPaymentRequestDTO.getPaymentAmount();
+
+                // Validate if user pays more than total balance
+                if (remaining.compareTo(totalBalance.add(BigDecimal.valueOf(0.01))) > 0) {
+                        throw new BusinessException(
+                                "ยอดชำระ (" + remaining + ") เกินยอดคงเหลือทั้งหมด (" + totalBalance + ")", 
+                                HttpStatus.BAD_REQUEST
+                        );
+                }
+
+                // 3. บันทึกยอดจ่ายรวมในระบบ
                 createTxn(debt, DebtTxnType.PAYMENT, remaining, paymentDate, null, debtPaymentRequestDTO.getSlipId());
 
                 // Phase 1: Clear All Outstanding Charges currently in the database
-                // (This handles historical charges and initialRemaining balances)
+                // Since we accrued current month at start, this now handles EVERYTHING.
                 remaining = allocateChargePayment(debt, remaining, paymentDate,
                                 DebtTxnType.LATE_FEE_CHARGE, DebtTxnType.LATE_FEE_PAYMENT);
                 remaining = allocateChargePayment(debt, remaining, paymentDate,
@@ -142,15 +165,6 @@ public class RepaymentService {
                                 DebtTxnType.OVERPAYMENT_FEE_CHARGE, DebtTxnType.OVERPAYMENT_FEE_PAYMENT);
                 remaining = allocateChargePayment(debt, remaining, paymentDate,
                                 DebtTxnType.INTEREST_CHARGE, DebtTxnType.INTEREST_PAYMENT);
-
-                // Phase 2: Accrue and Pay Interest for the current month (if not already accrued)
-                if (remaining.compareTo(BigDecimal.ZERO) > 0) {
-                        accrueMonthlyCharges(debt, paymentDate);
-                        remaining = allocateChargePayment(debt, remaining, paymentDate,
-                                        DebtTxnType.LATE_FEE_CHARGE, DebtTxnType.LATE_FEE_PAYMENT);
-                        remaining = allocateChargePayment(debt, remaining, paymentDate,
-                                        DebtTxnType.INTEREST_CHARGE, DebtTxnType.INTEREST_PAYMENT);
-                }
 
                 // Phase 3: Apply remaining balance to Principal
                 if (remaining.compareTo(BigDecimal.ZERO) > 0) {

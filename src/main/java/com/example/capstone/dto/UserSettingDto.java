@@ -17,6 +17,5 @@ public class UserSettingDto {
 
     private UUID default_strategy;
 
-    private String currentProfession;
     private String skills;
 }
