@@ -108,7 +108,10 @@ public class JoobleService {
             }
         }
         
-        return sb.length() > 0 ? sb.toString() : "part-time";
+        String searchKeywords = sb.length() > 0 ? sb.toString() : "งานเสริม";
+        
+        // Append negative keywords to exclude full-time jobs
+        return searchKeywords + " -เต็มเวลา -งานประจำ";
     }
 
     private List<JobSuggestionResponse> callJoobleApi(String searchKeywords, String location, JobSuggestionRequest originalRequest) {
@@ -159,9 +162,9 @@ public class JoobleService {
         JobSuggestionResponse resp = new JobSuggestionResponse();
         resp.setId(String.valueOf(job.getId()));
         resp.setTitle(job.getTitle());
-        resp.setType(job.getType() != null ? job.getType() : "งานแนะนำ");
-        resp.setEstimatedIncome(job.getSalary() != null ? job.getSalary() : "ตามตกลง");
-        resp.setDescription(job.getSnippet() != null ? job.getSnippet().replaceAll("<[^>]*>", "") : "");
+        resp.setType(job.getType() != null && !job.getType().isEmpty() ? job.getType() : "งานแนะนำ");
+        resp.setEstimatedIncome(calculateDailyIncome(job.getSalary()));
+        resp.setDescription(cleanSnippet(job.getSnippet()));
         resp.setRequirement("สมัครผ่านแพลตฟอร์มต้นทาง");
         
         Map<String, String> links = new HashMap<>();
@@ -184,6 +187,70 @@ public class JoobleService {
         
         resp.setRecommended(matchesSkill || job.getId() % 5 == 0); // Mix of match and random for now
         return resp;
+    }
+
+    private String cleanSnippet(String snippet) {
+        if (snippet == null) return "";
+        return snippet.replaceAll("<[^>]*>", "")
+                .replaceAll("&nbsp;", " ")
+                .replaceAll("&amp;", "&")
+                .replaceAll("&quot;", "\"")
+                .replaceAll("&lt;", "<")
+                .replaceAll("&gt;", ">")
+                .replaceAll("&#39;", "'")
+                .replaceAll("(?i)<br\\s*/?>", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+
+    private String calculateDailyIncome(String rawSalary) {
+        if (rawSalary == null || rawSalary.isEmpty() || rawSalary.toLowerCase().contains("ตามตกลง")) {
+            return "ไม่ระบุ (ตามตกลง)";
+        }
+
+        try {
+            // Clean up comma and handle range marks
+            String cleanSalary = rawSalary.replace(",", "");
+            
+            // Extract numbers
+            List<Double> numbers = new ArrayList<>();
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\d+").matcher(cleanSalary);
+            while (m.find()) {
+                numbers.add(Double.parseDouble(m.group()));
+            }
+
+            if (numbers.isEmpty()) return rawSalary;
+
+            // Detection logic: Threshold for monthly is 4000
+            boolean isMonthly = rawSalary.contains("เดือน") || rawSalary.contains("month") || numbers.get(0) >= 4000;
+            boolean isHourly = rawSalary.contains("ชั่วโมง") || rawSalary.contains("hour") || rawSalary.contains("ชม.");
+            boolean isDaily = rawSalary.contains("วัน") || rawSalary.contains("day");
+
+            if (isDaily && !isMonthly) return rawSalary; // Already daily
+
+            StringBuilder result = new StringBuilder();
+            for (int i = 0; i < numbers.size(); i++) {
+                double val = numbers.get(i);
+                double daily;
+                
+                if (isMonthly) {
+                    daily = val / 30.0;
+                } else if (isHourly) {
+                    daily = val * 8.0;
+                } else {
+                    daily = val; 
+                }
+
+                // Round to nice numbers (nearest 5)
+                long rounded = Math.round(daily / 5.0) * 5; 
+                result.append(rounded);
+                if (i < numbers.size() - 1 && numbers.size() > 1) result.append(" - ");
+            }
+
+            return result.toString();
+        } catch (Exception e) {
+            return rawSalary;
+        }
     }
 
 
