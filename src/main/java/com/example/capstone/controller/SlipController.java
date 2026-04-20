@@ -8,6 +8,7 @@ import com.example.capstone.service.UserService;
 
 import com.example.capstone.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -41,6 +42,7 @@ public class SlipController {
             List<?> results = slipService.processSlips(files, user);
             return ResponseEntity.ok(results);
         } catch (Exception e) {
+            e.printStackTrace(); // เพิ่ม log ในคอนโซล
             return ResponseEntity.badRequest().body("Processing failed: " + e.getMessage());
         }
     }
