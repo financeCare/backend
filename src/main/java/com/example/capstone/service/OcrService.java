@@ -36,12 +36,21 @@ public class OcrService {
         try {
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             for (MultipartFile file : files) {
-                body.add("files", new ByteArrayResource(file.getBytes()) {
+                HttpHeaders fileHeaders = new HttpHeaders();
+                String contentType = file.getContentType();
+                if (contentType == null || contentType.isEmpty()) {
+                    contentType = MediaType.IMAGE_JPEG_VALUE; // Default to JPEG
+                }
+                fileHeaders.setContentType(MediaType.parseMediaType(contentType));
+
+                HttpEntity<ByteArrayResource> filePart = new HttpEntity<>(new ByteArrayResource(file.getBytes()) {
                     @Override
                     public String getFilename() {
                         return file.getOriginalFilename();
                     }
-                });
+                }, fileHeaders);
+
+                body.add("files", filePart);
             }
 
             HttpHeaders headers = new HttpHeaders();
