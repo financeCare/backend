@@ -335,15 +335,15 @@ public class UserService implements UserDetailsService {
         RepaymentPlan repaymentPlan = repaymentPlanRepository.findByUserId(userId);
         if (repaymentPlan != null) {
             repaymentPlan.setMonthlyBudget(BigDecimal.valueOf(newSettings.getMonthly_repayment_budget()));
-            repaymentPlan.setStrategyId(repaymentPlanRepository.findByUserId(userId).getStrategyId());
-             repaymentPlanRepository.save(repaymentPlan);
-        }else{
+            // ไม่ต้อง find ซ้ำ ใช้ของเดิมที่มีได้เลย
+            repaymentPlanRepository.save(repaymentPlan);
+        } else {
             RepaymentPlan plan = new RepaymentPlan();
             plan.setPlanId(UUID.randomUUID());
             plan.setUserId(userId);
             plan.setMonthlyBudget(BigDecimal.valueOf(newSettings.getMonthly_repayment_budget()));
-            plan.setStrategyId(repaymentPlanRepository.findByUserId(userId).getStrategyId());
-             repaymentPlanRepository.save(plan);
+            // สำหรับผู้ใช้ใหม่ จะยังไม่มี StrategyId ดังนั้นต้องข้ามไปก่อน หรือ set เป็น null
+            repaymentPlanRepository.save(plan);
         }
         userSettingRepository.save(userSetting);
         return userSetting;
