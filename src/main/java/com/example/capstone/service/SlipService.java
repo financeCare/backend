@@ -63,79 +63,94 @@ public class SlipService {
         // For simplicity, we'll try to parse or keep as null if failed.
 
         for (OcrService.OcrResponse ocrResp : ocrResults) {
-            String imagePath = filenameToPathMap.get(ocrResp.getFilename());
-            if (imagePath == null) continue;
-
-            JsonNode data = ocrResp.getData();
-            Slip slip = Slip.builder()
-                    .userId(user.getUserId())
-                    .senderBank(data.path("bank").asText(null))
-                    .receiverName(data.path("receiver").asText(null))
-                    .amount(data.has("amount") ? new BigDecimal(data.path("amount").asText()) : null)
-                    .memo(data.path("memo").asText(null))
-                    .imagePath(imagePath)
-                    .qrData(data.path("qr_raw").asText(null))
-                    .rawTexts(data.toString()) // Save the whole data node as raw_texts
-                    .status("processed")
-                    .createdAt(LocalDateTime.now())
-                    .build();
-
-            // Handle date parsing (Thai month names: 28 ก.พ. 2569 16:50)
             try {
-                String dateStr = data.path("date").asText(null);
-                if (dateStr != null) {
-                    slip.setTransferDate(parseThaiDate(dateStr));
+                if (!"success".equalsIgnoreCase(ocrResp.getStatus())) {
+                    log.warn("Skipping slip {} due to OCR error status: {}", ocrResp.getFilename(), ocrResp.getStatus());
+                    continue;
                 }
-            } catch (Exception e) {
-                log.warn("Failed to parse date '{}' for slip: {}", data.path("date").asText(), e.getMessage());
-            }
 
-            Slip savedSlip = slipRepository.save(slip);
-            
-            // 4. Look up for suggested category
-            Map<String, Object> result = new HashMap<>();
-            result.put("slip", savedSlip);
-            
-            String receiverName = data.path("receiver").asText(null);
-            receiverMappingService.suggestMapping(user.getUserId(), receiverName).ifPresent(mapping -> {
-                if (mapping.getCategory() != null && savedSlip.getAmount() != null) {
-                    result.put("suggestedCategory", mapping.getCategory());
-                    // Auto-create budget transaction
-                    try {
-                        TransactionRequest req = new TransactionRequest();
-                        req.setCategoryId(mapping.getCategory().getCategoryId());
-                        req.setAmount(savedSlip.getAmount().doubleValue());
-                        req.setTransactionDate(savedSlip.getTransferDate() != null ? savedSlip.getTransferDate() : LocalDateTime.now());
-                        req.setDescription("Auto-created from slip: " + savedSlip.getReceiverName());
-                        req.setReceiverName(savedSlip.getReceiverName());
-                        req.setSenderBank(savedSlip.getSenderBank());
-                        req.setSlipId(savedSlip.getId());
-                        transactionService.createTransaction(user.getUserId(), req);
-                        result.put("autoCreated", true);
-                        log.info("Auto-created budget transaction for user {} from slip {}", user.getUserId(), savedSlip.getId());
-                    } catch (Exception e) {
-                        log.error("Failed to auto-create budget transaction: {}", e.getMessage());
-                    }
+                String imagePath = filenameToPathMap.get(ocrResp.getFilename());
+                if (imagePath == null) continue;
+
+                JsonNode data = ocrResp.getData();
+                if (data == null || data.isMissingNode()) {
+                    log.warn("OCR data is missing for file: {}", ocrResp.getFilename());
+                    continue;
                 }
-                if (mapping.getDebtId() != null && savedSlip.getAmount() != null) {
-                    result.put("suggestedDebtId", mapping.getDebtId());
-                    // Auto-create debt payment
-                    try {
-                        DebtPaymentRequestDTO req = new DebtPaymentRequestDTO();
-                        req.setDebtId(mapping.getDebtId());
-                        req.setPaymentAmount(savedSlip.getAmount());
-                        req.setPaymentDate(savedSlip.getTransferDate() != null ? savedSlip.getTransferDate().toLocalDate() : LocalDate.now());
-                        req.setSlipId(savedSlip.getId());
-                        repaymentService.payDebt(user.getUserId(), req);
-                        result.put("autoCreated", true);
-                        log.info("Auto-created debt payment for user {} from slip {}", user.getUserId(), savedSlip.getId());
-                    } catch (Exception e) {
-                        log.error("Failed to auto-create debt payment: {}", e.getMessage());
+
+                Slip slip = Slip.builder()
+                        .userId(user.getUserId())
+                        .senderBank(data.path("bank").asText(null))
+                        .receiverName(data.path("receiver").asText(null))
+                        .amount(parseSafeBigDecimal(data.path("amount").asText(null)))
+                        .memo(data.path("memo").asText(null))
+                        .imagePath(imagePath)
+                        .qrData(data.path("qr_raw").asText(null))
+                        .rawTexts(data.toString())
+                        .status("processed")
+                        .createdAt(LocalDateTime.now())
+                        .build();
+
+                // Handle date parsing (Thai month names: 28 ก.พ. 2569 16:50)
+                try {
+                    String dateStr = data.path("date").asText(null);
+                    if (dateStr != null && !dateStr.isEmpty()) {
+                        slip.setTransferDate(parseThaiDate(dateStr));
                     }
+                } catch (Exception e) {
+                    log.warn("Failed to parse date '{}' for slip: {}", data.path("date").asText(), e.getMessage());
                 }
-            });
-            
-            results.add(result);
+
+                Slip savedSlip = slipRepository.save(slip);
+                
+                // 4. Look up for suggested category
+                Map<String, Object> result = new HashMap<>();
+                result.put("slip", savedSlip);
+                
+                String receiverName = data.path("receiver").asText(null);
+                receiverMappingService.suggestMapping(user.getUserId(), receiverName).ifPresent(mapping -> {
+                    if (mapping.getCategory() != null && savedSlip.getAmount() != null) {
+                        result.put("suggestedCategory", mapping.getCategory());
+                        // Auto-create budget transaction
+                        try {
+                            TransactionRequest req = new TransactionRequest();
+                            req.setCategoryId(mapping.getCategory().getCategoryId());
+                            req.setAmount(savedSlip.getAmount().doubleValue());
+                            req.setTransactionDate(savedSlip.getTransferDate() != null ? savedSlip.getTransferDate() : LocalDateTime.now());
+                            req.setDescription("Auto-created from slip: " + savedSlip.getReceiverName());
+                            req.setReceiverName(savedSlip.getReceiverName());
+                            req.setSenderBank(savedSlip.getSenderBank());
+                            req.setSlipId(savedSlip.getId());
+                            transactionService.createTransaction(user.getUserId(), req);
+                            result.put("autoCreated", true);
+                            log.info("Auto-created budget transaction for user {} from slip {}", user.getUserId(), savedSlip.getId());
+                        } catch (Exception e) {
+                            log.error("Failed to auto-create budget transaction: {}", e.getMessage());
+                        }
+                    }
+                    if (mapping.getDebtId() != null && savedSlip.getAmount() != null) {
+                        result.put("suggestedDebtId", mapping.getDebtId());
+                        // Auto-create debt payment
+                        try {
+                            DebtPaymentRequestDTO req = new DebtPaymentRequestDTO();
+                            req.setDebtId(mapping.getDebtId());
+                            req.setPaymentAmount(savedSlip.getAmount());
+                            req.setPaymentDate(savedSlip.getTransferDate() != null ? savedSlip.getTransferDate().toLocalDate() : LocalDate.now());
+                            req.setSlipId(savedSlip.getId());
+                            repaymentService.payDebt(user.getUserId(), req);
+                            result.put("autoCreated", true);
+                            log.info("Auto-created debt payment for user {} from slip {}", user.getUserId(), savedSlip.getId());
+                        } catch (Exception e) {
+                            log.error("Failed to auto-create debt payment: {}", e.getMessage());
+                        }
+                    }
+                });
+                
+                results.add(result);
+            } catch (Exception e) {
+                log.error("Failed to process individual slip {}: {}", ocrResp.getFilename(), e.getMessage());
+                // Continue to next slip instead of failing whole batch
+            }
         }
 
         return results;
@@ -152,6 +167,18 @@ public class SlipService {
 
     public InputStream getSlipFile(String path) throws Exception {
         return minioService.getFile(path);
+    }
+
+    private BigDecimal parseSafeBigDecimal(String value) {
+        if (value == null || value.trim().isEmpty() || "null".equalsIgnoreCase(value.trim())) {
+            return null;
+        }
+        try {
+            return new BigDecimal(value.trim());
+        } catch (Exception e) {
+            log.warn("Failed to parse BigDecimal from value '{}': {}", value, e.getMessage());
+            return null;
+        }
     }
 
     private LocalDateTime parseThaiDate(String thaiDateStr) {

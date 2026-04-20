@@ -76,6 +76,9 @@ public class OcrService {
             }
             return results;
 
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            log.error("OCR Service returned error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw new RuntimeException("OCR Service failed with status " + e.getStatusCode() + ": " + e.getResponseBodyAsString());
         } catch (Exception e) {
             log.error("Error calling OCR Service: {}", e.getMessage());
             throw new RuntimeException("OCR Service failed: " + e.getMessage());
