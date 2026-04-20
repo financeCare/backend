@@ -13,8 +13,8 @@ public class AppConfig {
     @Bean
     public RestTemplate restTemplate() {
         org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(3000); // 3 seconds
-        factory.setReadTimeout(5000);    // 5 seconds
+        factory.setConnectTimeout(10000); // 10 seconds
+        factory.setReadTimeout(60000);    // 60 seconds (for heavy OCR)
         
         RestTemplate restTemplate = new RestTemplate(factory);
         restTemplate.getMessageConverters()
