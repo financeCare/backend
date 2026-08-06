@@ -1,0 +1,223 @@
+package com.example.capstone.service;
+
+import com.example.capstone.entity.Slip;
+import com.example.capstone.entity.User;
+import com.example.capstone.repository.SlipRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import com.example.capstone.dto.DebtPaymentRequestDTO;
+import com.example.capstone.dto.TransactionRequest;
+import java.io.InputStream;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.chrono.ThaiBuddhistDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.util.*;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class SlipService {
+
+    private final MinioService minioService;
+    private final OcrService ocrService;
+    private final SlipRepository slipRepository;
+    private final ReceiverMappingService receiverMappingService;
+    private final RepaymentService repaymentService;
+    private final TransactionService transactionService;
+
+    @Value("${app.slip.max-count:50}")
+    private int maxCount;
+
+    @Transactional
+    public List<Map<String, Object>> processSlips(List<MultipartFile> files, User user) {
+        // 0. Ensure limit (FIFO)
+        ensureLimit(user, files.size());
+
+        // 1. Upload to MinIO
+        Map<String, String> filenameToPathMap = new HashMap<>();
+        for (MultipartFile file : files) {
+            try {
+                String path = minioService.uploadFile(file);
+                filenameToPathMap.put(file.getOriginalFilename(), path);
+            } catch (Exception e) {
+                log.error("Failed to upload file {}: {}", file.getOriginalFilename(), e.getMessage());
+            }
+        }
+
+        // 2. Call OCR Service
+        List<OcrService.OcrResponse> ocrResults = ocrService.verifySlips(files);
+
+        // 3. Save to DB and Prepare Response with Suggestions
+        List<Map<String, Object>> results = new ArrayList<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d MMM yyyy HH:mm");
+        // Note: Thai dates like "28 ก.พ. 2569 16:50" might need a custom parser if not handled by standard formatters
+        // For simplicity, we'll try to parse or keep as null if failed.
+
+        for (OcrService.OcrResponse ocrResp : ocrResults) {
+            try {
+                if (!"success".equalsIgnoreCase(ocrResp.getStatus())) {
+                    log.warn("Skipping slip {} due to OCR error status: {}", ocrResp.getFilename(), ocrResp.getStatus());
+                    continue;
+                }
+
+                String imagePath = filenameToPathMap.get(ocrResp.getFilename());
+                if (imagePath == null) continue;
+
+                JsonNode data = ocrResp.getData();
+                if (data == null || data.isMissingNode()) {
+                    log.warn("OCR data is missing for file: {}", ocrResp.getFilename());
+                    continue;
+                }
+
+                Slip slip = Slip.builder()
+                        .userId(user.getUserId())
+                        .senderBank(data.path("bank").asText(null))
+                        .receiverName(data.path("receiver").asText(null))
+                        .amount(parseSafeBigDecimal(data.path("amount").asText(null)))
+                        .memo(data.path("memo").asText(null))
+                        .imagePath(imagePath)
+                        .qrData(data.path("qr_raw").asText(null))
+                        .rawTexts(data.toString())
+                        .status("processed")
+                        .createdAt(LocalDateTime.now())
+                        .build();
+
+                // Handle date parsing (Thai month names: 28 ก.พ. 2569 16:50)
+                try {
+                    String dateStr = data.path("date").asText(null);
+                    if (dateStr != null && !dateStr.isEmpty()) {
+                        slip.setTransferDate(parseThaiDate(dateStr));
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to parse date '{}' for slip: {}", data.path("date").asText(), e.getMessage());
+                }
+
+                Slip savedSlip = slipRepository.save(slip);
+                
+                // 4. Look up for suggested category
+                Map<String, Object> result = new HashMap<>();
+                result.put("slip", savedSlip);
+                
+                String receiverName = data.path("receiver").asText(null);
+                receiverMappingService.suggestMapping(user.getUserId(), receiverName).ifPresent(mapping -> {
+                    if (mapping.getCategory() != null && savedSlip.getAmount() != null) {
+                        result.put("suggestedCategory", mapping.getCategory());
+                        // Auto-create budget transaction
+                        try {
+                            TransactionRequest req = new TransactionRequest();
+                            req.setCategoryId(mapping.getCategory().getCategoryId());
+                            req.setAmount(savedSlip.getAmount().doubleValue());
+                            req.setTransactionDate(savedSlip.getTransferDate() != null ? savedSlip.getTransferDate() : LocalDateTime.now());
+                            req.setDescription("Auto-created from slip: " + savedSlip.getReceiverName());
+                            req.setReceiverName(savedSlip.getReceiverName());
+                            req.setSenderBank(savedSlip.getSenderBank());
+                            req.setSlipId(savedSlip.getId());
+                            transactionService.createTransaction(user.getUserId(), req);
+                            result.put("autoCreated", true);
+                            log.info("Auto-created budget transaction for user {} from slip {}", user.getUserId(), savedSlip.getId());
+                        } catch (Exception e) {
+                            log.error("Failed to auto-create budget transaction: {}", e.getMessage());
+                        }
+                    }
+                    if (mapping.getDebtId() != null && savedSlip.getAmount() != null) {
+                        result.put("suggestedDebtId", mapping.getDebtId());
+                        // Auto-create debt payment
+                        try {
+                            DebtPaymentRequestDTO req = new DebtPaymentRequestDTO();
+                            req.setDebtId(mapping.getDebtId());
+                            req.setPaymentAmount(savedSlip.getAmount());
+                            req.setPaymentDate(savedSlip.getTransferDate() != null ? savedSlip.getTransferDate().toLocalDate() : LocalDate.now());
+                            req.setSlipId(savedSlip.getId());
+                            repaymentService.payDebt(user.getUserId(), req);
+                            result.put("autoCreated", true);
+                            log.info("Auto-created debt payment for user {} from slip {}", user.getUserId(), savedSlip.getId());
+                        } catch (Exception e) {
+                            log.error("Failed to auto-create debt payment: {}", e.getMessage());
+                        }
+                    }
+                });
+                
+                results.add(result);
+            } catch (Exception e) {
+                log.error("Failed to process individual slip {}: {}", ocrResp.getFilename(), e.getMessage());
+                // Continue to next slip instead of failing whole batch
+            }
+        }
+
+        return results;
+    }
+
+    public List<Slip> getSlipsByUser(User user) {
+        return slipRepository.findByUserId(user.getUserId());
+    }
+
+    public Slip getSlipById(Long id) {
+        return slipRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Slip not found"));
+    }
+
+    public InputStream getSlipFile(String path) throws Exception {
+        return minioService.getFile(path);
+    }
+
+    private BigDecimal parseSafeBigDecimal(String value) {
+        if (value == null || value.trim().isEmpty() || "null".equalsIgnoreCase(value.trim())) {
+            return null;
+        }
+        try {
+            return new BigDecimal(value.trim());
+        } catch (Exception e) {
+            log.warn("Failed to parse BigDecimal from value '{}': {}", value, e.getMessage());
+            return null;
+        }
+    }
+
+    private LocalDateTime parseThaiDate(String thaiDateStr) {
+        try {
+            // Example: "28 ก.พ. 2569 16:50"
+            DateTimeFormatter formatter = new DateTimeFormatterBuilder()
+                    .appendPattern("d MMM ")
+                    .appendPattern("yyyy")
+                    .appendPattern(" HH:mm")
+                    .toFormatter(new Locale("th", "TH"));
+            
+            return LocalDateTime.parse(thaiDateStr, formatter);
+        } catch (Exception e) {
+            log.warn("Thai date parsing failed for '{}': {}", thaiDateStr, e.getMessage());
+            return null;
+        }
+    }
+
+    private void ensureLimit(User user, int incomingCount) {
+        List<Slip> existingSlips = slipRepository.findByUserIdOrderByCreatedAtAsc(user.getUserId());
+        int currentCount = existingSlips.size();
+        int totalProjected = currentCount + incomingCount;
+
+        if (totalProjected > maxCount) {
+            int itemsToDelete = totalProjected - maxCount;
+            log.info("User {} has {} slips, uploading {}. Max is {}. Deleting {} oldest slips.",
+                    user.getUserId(), currentCount, incomingCount, maxCount, itemsToDelete);
+
+            for (int i = 0; i < Math.min(itemsToDelete, currentCount); i++) {
+                Slip slipToDelete = existingSlips.get(i);
+                try {
+                    // Delete from storage
+                    minioService.deleteFile(slipToDelete.getImagePath());
+                    // Delete from DB
+                    slipRepository.delete(slipToDelete);
+                } catch (Exception e) {
+                    log.error("Failed to delete old slip {}: {}", slipToDelete.getId(), e.getMessage());
+                }
+            }
+        }
+    }
+}

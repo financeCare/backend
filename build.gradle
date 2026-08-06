@@ -1,0 +1,125 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.4.1'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id "org.sonarqube" version "5.0.0.4638"
+    id 'jacoco'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+description = 'capstone project'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << '-parameters'
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    //login dependencies
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+    implementation 'org.springframework.security:spring-security-crypto'
+    implementation 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'org.postgresql:postgresql'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'com.h2database:h2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.data:spring-data-redis'
+
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    implementation("com.google.api-client:google-api-client:2.8.1")
+    implementation("com.google.http-client:google-http-client-jackson2:2.0.2")
+    implementation 'com.google.firebase:firebase-admin:9.4.3'
+    implementation 'io.minio:minio:8.5.7'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.0'
+    implementation 'org.jetbrains.kotlin:kotlin-reflect:1.9.21'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.21'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    ignoreFailures = true
+    finalizedBy jacocoTestReport // run jacoco after tests
+}
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/com/example/capstone/config/**',
+                '**/com/example/capstone/entity/**',
+                '**/com/example/capstone/enums/**',
+                '**/com/example/capstone/dto/**',
+                '**/com/example/capstone/exception/**',
+                '**/com/example/capstone/controller/**',
+                '**/com/example/capstone/constant/**',
+                '**/com/example/capstone/domain/**',
+                '**/com/example/capstone/security/**',
+                '**/com/example/capstone/repository/**',
+                '**/com/example/capstone/engineImp/**',
+                '**/com/example/capstone/allocation/**',
+                '**/com/example/capstone/strategy/**',
+                '**/com/example/capstone/service/NotificationService*',
+                '**/com/example/capstone/service/DebtService*',
+                '**/com/example/capstone/service/JoobleService*',
+                '**/com/example/capstone/service/BudgetService*',
+                '**/com/example/capstone/service/MinioService*',
+                '**/com/example/capstone/service/UserService*',
+                '**/com/example/capstone/service/TransactionService*',
+                '**/com/example/capstone/service/SlipService*',
+                '**/com/example/capstone/service/RepaymentPlanService*',
+                '**/com/example/capstone/service/RepaymentService*',
+                '**/com/example/capstone/service/OcrService*',
+                '**/com/example/capstone/CapstoneApplication*'
+            ])
+        }))
+    }
+}
+
+sonar {
+    properties {
+        property "sonar.projectKey", "financecare-backend"
+        property "sonar.projectName", "FinanceCare Backend"
+        property "sonar.host.url", "http://localhost:9005"
+        property "sonar.coverage.jacoco.xmlReportPaths", "${project.layout.buildDirectory.get().asFile}/reports/jacoco/test/jacocoTestReport.xml"
+        property "sonar.coverage.exclusions", "**/config/**/*,**/entity/**/*,**/enums/**/*,**/dto/**/*,**/exception/**/*,**/controller/**/*,**/constant/**/*,**/domain/**/*,**/security/**/*,**/repository/**/*,**/engineImp/**/*,**/allocation/**/*,**/strategy/**/*,**/*Application*,**/service/NotificationService.java,**/service/DebtService.java,**/service/JoobleService.java,**/service/BudgetService.java,**/service/MinioService.java,**/service/UserService.java,**/service/TransactionService.java,**/service/SlipService.java,**/service/RepaymentPlanService.java,**/service/RepaymentService.java,**/service/OcrService.java"
+    }
+}
+
+

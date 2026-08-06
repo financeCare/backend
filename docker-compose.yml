@@ -1,0 +1,72 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: spring-app
+    ports:
+      # ถ้าคุณจะใช้ Nginx/Proxy มาขวาง ให้เปลี่ยนเป็น "127.0.0.1:8080:8080"
+      - "127.0.0.1:8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/financeCare_DB
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: password123
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      APP_OCR_URL: http://easyocr-service:8000/slip/verify
+      APP_MINIO_URL: http://minio-service:9000
+      # ... (environment อื่นๆ คงเดิม)
+    networks:
+      - finance-net
+    restart: always
+    depends_on:
+      - redis
+      - easyocr
+      - minio
+
+  redis:
+    image: redis:7.2
+    container_name: redis
+    # ลบ ports: - "6379:6379" ออกไปเลย
+    # เพราะ spring-app คุยผ่านชื่อ "redis" ใน finance-net ได้อยู่แล้ว
+    networks:
+      - finance-net
+    restart: always
+
+  easyocr:
+    build:
+      context: ../../ocr/easyOcr
+    container_name: easyocr-service
+    # ลบ ports: - "8000:8000" ออก
+    # เพราะ spring-app คุยผ่าน http://easyocr-service:8000 ภายในเครือข่ายได้
+    volumes:
+      - easyocr_data:/root/.EasyOCR
+    networks:
+      - finance-net
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio
+    container_name: minio-service
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password123
+      # ... (environment อื่นๆ คงเดิม)
+    ports:
+      # ถ้าต้องเข้าหน้า Console จากข้างนอก ให้เปิดไว้ หรือใช้ Proxy ขวาง
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - finance-net
+    restart: unless-stopped
+
+networks:
+  finance-net:
+    external: true
+
+volumes:
+  easyocr_data:
+  minio_data:
