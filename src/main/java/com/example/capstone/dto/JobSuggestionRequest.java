@@ -14,4 +14,6 @@ public class JobSuggestionRequest {
     private String location;
 
     private List<String> skills;
+
+    private Double extraIncomeNeeded;
 }

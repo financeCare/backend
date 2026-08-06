@@ -17,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.concurrent.TimeUnit;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -35,6 +38,8 @@ public class RepaymentPlanService {
     private final StrategyFactory strategyFactory;
     private final DebtTransactionRepository debtTransactionRepository;
     private final com.example.capstone.allocation.DefaultBudgetAllocator allocator;
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
 
     public RepaymentStrategy createRepaymentStrategy(RepaymentStrategyDTO repaymentStrategyDTO) {
         RepaymentStrategy strategy = new RepaymentStrategy();
@@ -51,6 +56,16 @@ public class RepaymentPlanService {
 
     public RepaymentStrategyDtoResponse getAllRepaymentStrategies(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
+        String cacheKey = "plans:strategies:" + userId;
+        try {
+            String cachedData = redisTemplate.opsForValue().get(cacheKey);
+            if (cachedData != null) {
+                return objectMapper.readValue(cachedData, RepaymentStrategyDtoResponse.class);
+            }
+        } catch (Exception e) {
+            // Fallback
+        }
+
         List<Debt> debts = debtRepository.findByActiveAndUserId(true, userId);
         
         BigDecimal actualMinSum = debts.stream()
@@ -61,7 +76,14 @@ public class RepaymentPlanService {
                 .map(this::calculateSafeMinPayment)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         
-        return new RepaymentStrategyDtoResponse(actualMinSum.doubleValue(), safeMinSum.doubleValue(), repaymentStrategyRepository.findAll());
+        RepaymentStrategyDtoResponse response = new RepaymentStrategyDtoResponse(actualMinSum.doubleValue(), safeMinSum.doubleValue(), repaymentStrategyRepository.findAll());
+        try {
+            String jsonData = objectMapper.writeValueAsString(response);
+            redisTemplate.opsForValue().set(cacheKey, jsonData, 7, TimeUnit.DAYS);
+        } catch (Exception e) {
+            // Fallback
+        }
+        return response;
     }
 
     public String deleteRepaymentStrategy(UUID strategyId) {
@@ -85,6 +107,7 @@ public class RepaymentPlanService {
             savedPlan = repaymentPlanRepository.save(plan);
         }
         applyStrategyPriority(userId, strategyId);
+        evictUserCache(userId);
         return savedPlan;
     }
 
@@ -323,6 +346,16 @@ public class RepaymentPlanService {
 
     public MonthlyStatusDTO getMonthlyStatus(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
+        String cacheKey = "plans:monthly-status:" + userId;
+        try {
+            String cachedData = redisTemplate.opsForValue().get(cacheKey);
+            if (cachedData != null) {
+                return objectMapper.readValue(cachedData, MonthlyStatusDTO.class);
+            }
+        } catch (Exception e) {
+            // Fallback
+        }
+
         LocalDate now = LocalDate.now();
         int year = now.getYear();
         int month = now.getMonthValue();
@@ -364,7 +397,14 @@ public class RepaymentPlanService {
             remainingAmount = BigDecimal.ZERO;
         }
 
-        return new MonthlyStatusDTO(totalAmount, paidAmount, remainingAmount, actualMinPayment, requiredMinPayment, isBudgetInsufficient);
+        MonthlyStatusDTO response = new MonthlyStatusDTO(totalAmount, paidAmount, remainingAmount, actualMinPayment, requiredMinPayment, isBudgetInsufficient);
+        try {
+            String jsonData = objectMapper.writeValueAsString(response);
+            redisTemplate.opsForValue().set(cacheKey, jsonData, 5, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            // Fallback
+        }
+        return response;
     }
 
     public Map<UUID, BigDecimal> calculateCurrentMonthAllocation(UUID userId) {
@@ -384,5 +424,14 @@ public class RepaymentPlanService {
 
         DebtSim target = strategy.apply(simDebts);
         return allocator.allocate(simPlan.getMonthlyBudget(), simDebts, target);
+    }
+
+    public void evictUserCache(UUID userId) {
+        try {
+            redisTemplate.delete("plans:strategies:" + userId);
+            redisTemplate.delete("plans:monthly-status:" + userId);
+        } catch (Exception e) {
+            // Fallback
+        }
     }
 }

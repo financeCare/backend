@@ -19,6 +19,7 @@ import org.springframework.http.MediaType;
 import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
+
 @RestController
 @RequestMapping("/slips")
 @RequiredArgsConstructor
@@ -29,7 +30,8 @@ public class SlipController {
     private final UserRepository userRepository;
 
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadSlips(@RequestHeader("Authorization") String authorizationHeader, @RequestParam("files") List<MultipartFile> files) {
+    public ResponseEntity<?> uploadSlips(@RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam("files") List<MultipartFile> files) {
         if (files == null || files.isEmpty()) {
             throw new BusinessException("No files uploaded", HttpStatus.BAD_REQUEST);
         }
@@ -61,7 +63,7 @@ public class SlipController {
     @GetMapping("/{id}/image")
     public ResponseEntity<Resource> getSlipImage(@PathVariable("id") Long id) {
         Slip slip = slipService.getSlipById(id);
-        
+
         try {
             InputStream inputStream = slipService.getSlipFile(slip.getImagePath());
             String contentType = "image/jpeg"; // Default
@@ -70,7 +72,7 @@ public class SlipController {
             } else if (slip.getImagePath().toLowerCase().endsWith(".webp")) {
                 contentType = "image/webp";
             }
-            
+
             return ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(contentType))
                     .body(new InputStreamResource(inputStream));

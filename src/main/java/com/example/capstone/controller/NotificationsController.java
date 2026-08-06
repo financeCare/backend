@@ -60,6 +60,16 @@ public class NotificationsController {
         notificationsService.markAllNotificationsAsRead(token);
     }
 
+    @GetMapping("/logs/{logId}/clicked")
+    public void markAsClicked(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable("logId") UUID logId
+    ) {
+        String token = authorizationHeader.replace("Bearer ", "");
+        notificationsService.markNotificationAsClicked(token, logId);
+    }
+
+
     @GetMapping("/devices/my-devices")
     public List<DeviceListDto> getMyDevices(@RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.replace("Bearer ", "");

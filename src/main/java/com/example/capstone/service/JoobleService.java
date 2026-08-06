@@ -35,7 +35,7 @@ public class JoobleService {
     private final StringRedisTemplate redisTemplate;
 
     private static final String REDIS_KEY_PREFIX = "jooble:jobs:";
-    private static final long CACHE_TTL_DAYS = 7;
+    private static final long CACHE_TTL_HOURS = 6;
 
     public List<JobSuggestionResponse> getSuggestedJobs(JobSuggestionRequest request) {
         // 1. Normalize Location early (for consistent cache keys)
@@ -77,7 +77,7 @@ public class JoobleService {
             // 5. Cache results for next time (Optional)
             try {
                 String jsonData = objectMapper.writeValueAsString(jobs);
-                redisTemplate.opsForValue().set(cacheKey, jsonData, CACHE_TTL_DAYS, TimeUnit.DAYS);
+                redisTemplate.opsForValue().set(cacheKey, jsonData, CACHE_TTL_HOURS, TimeUnit.HOURS);
                 log.info("Result cached in Redis.");
             } catch (Exception e) {
                 log.warn("Failed to cache results to Redis: {}", e.getMessage());

@@ -132,6 +132,7 @@ public class DebtService {
 
                 notificationService.createNotificationRuleForDebt(userId, debt.getDebtName(), debt.getMinPayment(),
                                 debt.getDebtId());
+                repaymentPlanService.evictUserCache(userId);
                 return debt;
         }
 
@@ -211,7 +212,9 @@ public class DebtService {
                 if (debtDTO.getInitialPenaltyRemaining() != null) existingDebt.setInitialPenaltyRemaining(debtDTO.getInitialPenaltyRemaining());
 
                 existingDebt.setActive(true);
-                return debtRepository.save(existingDebt);
+                Debt savedDebt = debtRepository.save(existingDebt);
+                repaymentPlanService.evictUserCache(userId);
+                return savedDebt;
         }
 
         public Debt deleteDebt(String token, UUID debtId) {
@@ -220,6 +223,7 @@ public class DebtService {
                                 .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", "DEBT_NOT_FOUND",
                                                 HttpStatus.NOT_FOUND));
                 debtRepository.delete(debt);
+                repaymentPlanService.evictUserCache(userId);
                 return debt;
         }
         public List<DebtPriorityResponseDTO> getDebtPriorities(String token) {
@@ -250,6 +254,7 @@ public class DebtService {
                         debtsToUpdate.add(debt);
                 }
                 debtRepository.saveAll(debtsToUpdate);
+                repaymentPlanService.evictUserCache(userId);
         }
 
         public DebtSummaryDTO getDebtSummary(String token, UUID debtId) {

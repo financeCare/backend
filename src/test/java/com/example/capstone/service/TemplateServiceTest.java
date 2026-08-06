@@ -14,6 +14,10 @@ public class TemplateServiceTest {
             templateService.loadTemplate("non-existent-path.html");
         });
     }
-    
 
+    @Test
+    void testLoadTemplate_Success() throws IOException {
+        String result = templateService.loadTemplate("test-template.html");
+        assertEquals("Hello World!\n", result.replace("\r", ""));
+    }
 }

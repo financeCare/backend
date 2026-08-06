@@ -124,7 +124,7 @@ public class RepaymentPlanControllerTest {
         s2.setStrategyName("SNOWBALL");
 
         List<RepaymentStrategy> strategies = Arrays.asList(s1, s2);
-        RepaymentStrategyDtoResponse response = new RepaymentStrategyDtoResponse(5000.0, strategies);
+        RepaymentStrategyDtoResponse response = new RepaymentStrategyDtoResponse(5000.0, 5000.0, strategies);
 
         when(repaymentPlanService.getAllRepaymentStrategies(anyString())).thenReturn(response);
 
@@ -132,7 +132,8 @@ public class RepaymentPlanControllerTest {
                         .header("Authorization", "Bearer test-token"))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.monthlyBudget").value(5000.0))
+                .andExpect(jsonPath("$.actualMinSum").value(5000.0))
+                .andExpect(jsonPath("$.safeMinSum").value(5000.0))
                 .andExpect(jsonPath("$.repaymentStrategyList").isArray())
                 .andExpect(jsonPath("$.repaymentStrategyList.length()").value(2))
                 .andExpect(jsonPath("$.repaymentStrategyList[0].strategyName").value("AVALANCHE"))
@@ -143,7 +144,7 @@ public class RepaymentPlanControllerTest {
 
     @Test
     void testGetAllRepaymentStrategies_EmptyList() throws Exception {
-        RepaymentStrategyDtoResponse response = new RepaymentStrategyDtoResponse(0.0, List.of());
+        RepaymentStrategyDtoResponse response = new RepaymentStrategyDtoResponse(0.0, 0.0, List.of());
 
         when(repaymentPlanService.getAllRepaymentStrategies(anyString())).thenReturn(response);
 
@@ -151,7 +152,8 @@ public class RepaymentPlanControllerTest {
                         .header("Authorization", "Bearer test-token"))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.monthlyBudget").value(0.0))
+                .andExpect(jsonPath("$.actualMinSum").value(0.0))
+                .andExpect(jsonPath("$.safeMinSum").value(0.0))
                 .andExpect(jsonPath("$.repaymentStrategyList").isArray())
                 .andExpect(jsonPath("$.repaymentStrategyList.length()").value(0));
     }

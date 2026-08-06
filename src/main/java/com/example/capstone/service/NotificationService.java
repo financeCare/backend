@@ -235,6 +235,18 @@ public class NotificationService {
         notificationLogRepository.saveAll(logs);
     }
 
+    public void markNotificationAsClicked(String token, UUID logId) {
+        UUID userId = userService.extractUserIdFromToken(token);
+        NotificationLog log = notificationLogRepository.findById(logId)
+                .orElseThrow(() -> new BusinessException("Notification log not found", HttpStatus.NOT_FOUND));
+        if (!log.getUserId().equals(userId)) {
+            throw new BusinessException("Forbidden", HttpStatus.FORBIDDEN);
+        }
+        log.setStatus(NotificationStatus.CLICKED);
+        notificationLogRepository.save(log);
+    }
+
+
     @Scheduled(cron = "0 * * * * *")
     public void runNotificationScheduler() {
         List<NotificationRule> rules = notificationRuleRepository.findAllByActive(true);

@@ -1,17 +1,34 @@
 package com.example.capstone.service;
 
 import com.example.capstone.dto.OccupationResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class OccupationDiscoveryService {
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
+    private static final String CACHE_KEY = "occupations:recommended";
 
     public List<OccupationResponse> getRecommendedOccupations() {
+        try {
+            String cachedData = redisTemplate.opsForValue().get(CACHE_KEY);
+            if (cachedData != null) {
+                return List.of(objectMapper.readValue(cachedData, OccupationResponse[].class));
+            }
+        } catch (Exception e) {
+            // Fallback and execute method body
+        }
+
         List<InternalOccupation> occupations = new ArrayList<>();
 
         // --- กลุ่มงานขนส่งและเดินทาง ---
@@ -125,7 +142,14 @@ public class OccupationDiscoveryService {
                 "ดูแลผู้สูงอายุ พยาบาล เฝ้าไข้ออนไลน์ ผู้ช่วยพยาบาล", "https://healthathome.in.th/", "Health at Home",
                 15000.0, 30000.0));
 
-        return occupations.stream().map(this::mapToResponseRaw).collect(Collectors.toList());
+        List<OccupationResponse> result = occupations.stream().map(this::mapToResponseRaw).collect(Collectors.toList());
+        try {
+            String jsonData = objectMapper.writeValueAsString(result);
+            redisTemplate.opsForValue().set(CACHE_KEY, jsonData, 30, TimeUnit.DAYS);
+        } catch (Exception e) {
+            // Fallback
+        }
+        return result;
     }
 
     private InternalOccupation createOccupation(String title, String desc, String income, String icon,
