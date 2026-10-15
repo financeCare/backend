@@ -10,11 +10,16 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/financeCare_DB
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: password123
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
       APP_OCR_URL: http://easyocr-service:8000/slip/verify
       APP_MINIO_URL: http://minio-service:9000
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      MAIL_USERNAME: ${MAIL_USERNAME:?set MAIL_USERNAME in .env}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?set MAIL_PASSWORD in .env}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY in .env}
+      JOOBLE_API_KEY: ${JOOBLE_API_KEY:?set JOOBLE_API_KEY in .env}
       # ... (environment อื่นๆ คงเดิม)
     networks:
       - finance-net
@@ -50,7 +55,7 @@ services:
     container_name: minio-service
     environment:
       MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: password123
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY in .env}
       # ... (environment อื่นๆ คงเดิม)
     ports:
       # ถ้าต้องเข้าหน้า Console จากข้างนอก ให้เปิดไว้ หรือใช้ Proxy ขวาง

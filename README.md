@@ -81,7 +81,7 @@
 3. **การเข้าใช้งานบริการต่างๆ:**
    * **Backend REST API:** `http://localhost:8080/api`
    * **Swagger UI (API Docs):** `http://localhost:8080/api/swagger-ui/index.html`
-   * **MinIO Object Console:** `http://localhost:9001` (Username: `admin` / Password: `password123`)
+   * **MinIO Object Console:** `http://localhost:9001` (Username: `admin` / Password: the `MINIO_SECRET_KEY` value from your `.env`)
 
 ---
 
