@@ -10,6 +10,7 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -25,6 +26,8 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final String BAD_REQUEST_ERR = "BAD_REQUEST";
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Bangkok");
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleEmailExistsException(EmailAlreadyExistsException ex, WebRequest request) {
@@ -40,7 +43,7 @@ public class GlobalExceptionHandler {
         String path = ((ServletWebRequest) request).getRequest().getRequestURI();
 
         return ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
+                .timestamp(LocalDateTime.now(DEFAULT_ZONE))
                 .error(error)
                 .message(message)
                 .details(request.getDescription(false))
@@ -53,8 +56,6 @@ public class GlobalExceptionHandler {
         logger.error("Internal Server Error: ", ex);
         
         String message = "An unexpected error occurred.";
-        // In development/test, we might want to see the message, but in production we hide it.
-        // For now, we'll keep it simple but remove the manual file logging.
         
         ErrorResponse error = buildErrorResponse(
                 "INTERNAL_SERVER_ERROR",
@@ -95,7 +96,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex, WebRequest request) {
         ErrorResponse error = buildErrorResponse(
-                "BAD_REQUEST",
+                BAD_REQUEST_ERR,
                 "Malformed JSON request or invalid data format",
                 request
         );
@@ -105,7 +106,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
         ErrorResponse error = buildErrorResponse(
-                "BAD_REQUEST",
+                BAD_REQUEST_ERR,
                 "Invalid argument: " + ex.getMessage(),
                 request
         );
@@ -125,7 +126,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MissingServletRequestPartException.class)
     public ResponseEntity<ErrorResponse> handleMissingServletRequestPartException(MissingServletRequestPartException ex, WebRequest request) {
         ErrorResponse error = buildErrorResponse(
-                "BAD_REQUEST",
+                BAD_REQUEST_ERR,
                 "Required part is missing: " + ex.getRequestPartName(),
                 request
         );
@@ -135,7 +136,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MultipartException.class)
     public ResponseEntity<ErrorResponse> handleMultipartException(MultipartException ex, WebRequest request) {
         ErrorResponse error = buildErrorResponse(
-                "BAD_REQUEST",
+                BAD_REQUEST_ERR,
                 "Multipart request is invalid: " + ex.getMessage(),
                 request
         );

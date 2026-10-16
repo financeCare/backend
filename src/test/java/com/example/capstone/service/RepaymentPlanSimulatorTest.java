@@ -24,13 +24,13 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.example.capstone.allocation.DefaultBudgetAllocator;
-import com.example.capstone.engineInterface.LoanMonthEngine;
+import com.example.capstone.engine.interfaces.LoanMonthEngine;
 import com.example.capstone.factory.DebtEngineFactory;
 
 
 
 @ExtendWith(MockitoExtension.class)
-public class RepaymentPlanSimulatorTest {
+class RepaymentPlanSimulatorTest {
 
     @InjectMocks
     private RepaymentPlanSimulator repaymentPlanSimulator;
@@ -48,7 +48,7 @@ public class RepaymentPlanSimulatorTest {
     private DebtEngineFactory debtEngineFactory;
 
     @Mock
-    private com.example.capstone.engineInterface.DebtMonthEngine debtMonthEngine;
+    private com.example.capstone.engine.interfaces.DebtMonthEngine debtMonthEngine;
 
     private RepaymentPlanDtoV2 plan;
     private List<DebtSim> debts;

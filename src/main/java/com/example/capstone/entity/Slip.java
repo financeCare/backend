@@ -7,6 +7,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 @Entity
@@ -49,16 +50,18 @@ public class Slip {
     @Column(name = "raw_texts", columnDefinition = "jsonb")
     private String rawTexts;
 
+    @Builder.Default
     @Column(name = "status", length = 20)
     private String status = "processed";
 
+    @Builder.Default
     @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now(ZoneId.of("Asia/Bangkok"));
 
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = LocalDateTime.now(ZoneId.of("Asia/Bangkok"));
         }
         if (status == null) {
             status = "processed";

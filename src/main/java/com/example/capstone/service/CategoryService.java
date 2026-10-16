@@ -20,18 +20,19 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CategoryService {
 
+    private static final double DEFAULT_BUDGETS = 1000;
+    private static final String CATEGORY_NOT_FOUND_MSG = "Category not found or not owned by this user";
+
     private final CategoryRepository categoryRepository;
     private final BudgetService budgetService;
     private final BudgetRepository budgetRepository;
     private final UserService userService;
     private final TransactionRepository transactionRepository;
 
-    private final double defaultBudgets = 1000;
-
     public Category getCategoryById(String token, Integer categoryId) {
         UUID userId = userService.extractUserIdFromToken(token);
         return categoryRepository.findByCategoryIdAndUserId(categoryId, userId)
-                .orElseThrow(() -> new RuntimeException("Category not found or not owned by this user"));
+                .orElseThrow(() -> new BusinessException(CATEGORY_NOT_FOUND_MSG, HttpStatus.NOT_FOUND));
     }
 
     public List<Category> getCategoriesByUserId(String token) {
@@ -45,7 +46,7 @@ public class CategoryService {
         Category category = new Category();
         budget.setUserId(userId);
         budget.setAmount(0.0);
-        budget.setLimitBudget(defaultBudgets);
+        budget.setLimitBudget(DEFAULT_BUDGETS);
         budgetService.createBudget(budget);
         category.setUserId(userId);
         category.setCategoryName(categoryDTO.getCategoryName());
@@ -57,8 +58,7 @@ public class CategoryService {
     public Category updateCategory(String token, Integer categoryId, CategoryDTO categoryDTO) {
         UUID userId = userService.extractUserIdFromToken(token);
         Category category = categoryRepository.findByCategoryIdAndUserId(categoryId, userId)
-                .orElseThrow(() -> new BusinessException("Category not found or not owned by this user",
-                        HttpStatus.BAD_REQUEST));
+                .orElseThrow(() -> new BusinessException(CATEGORY_NOT_FOUND_MSG, HttpStatus.BAD_REQUEST));
         category.setCategoryName(categoryDTO.getCategoryName());
         category.setType(categoryDTO.getType());
         return categoryRepository.save(category);
@@ -68,9 +68,9 @@ public class CategoryService {
     public void deleteCategory(String token, Integer categoryId) {
         UUID userId = userService.extractUserIdFromToken(token);
         Category category = categoryRepository.findByCategoryIdAndUserId(categoryId, userId)
-                .orElseThrow(() -> new RuntimeException("Category not found or not owned by this user"));
+                .orElseThrow(() -> new BusinessException(CATEGORY_NOT_FOUND_MSG, HttpStatus.NOT_FOUND));
         Budget budget = budgetRepository.findById(category.getBudgetId())
-                .orElseThrow(() -> new RuntimeException("Budget not found for this category"));
+                .orElseThrow(() -> new BusinessException("Budget not found for this category", HttpStatus.NOT_FOUND));
         transactionRepository.deleteByCategory_CategoryId(categoryId);
         categoryRepository.delete(category);
         budgetRepository.delete(budget);

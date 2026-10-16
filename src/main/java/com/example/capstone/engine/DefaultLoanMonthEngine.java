@@ -1,12 +1,10 @@
-package com.example.capstone.engineImp;
+package com.example.capstone.engine;
 
 import com.example.capstone.domain.DebtSim;
 import com.example.capstone.domain.LoanMonthResult;
-import com.example.capstone.engineImp.calculator.InterestCalculator;
-import com.example.capstone.engineInterface.LoanMonthEngine;
+import com.example.capstone.engine.calculator.InterestCalculator;
+import com.example.capstone.engine.interfaces.LoanMonthEngine;
 import com.example.capstone.util.PenaltyLogic;
-import com.example.capstone.enums.InterestCalculationType;
-
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;

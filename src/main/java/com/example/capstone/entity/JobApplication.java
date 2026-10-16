@@ -27,7 +27,7 @@ public class JobApplication {
     private String jobId;
 
     @Column(name = "job_title", nullable = false)
-    private String job_title;
+    private String jobTitle;
 
     @Column(name = "platform", nullable = false)
     private String platform;

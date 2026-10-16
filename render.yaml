@@ -1,0 +1,44 @@
+# Render Blueprint: backend (Spring Boot, Docker). Deploy from the backend repo root,
+# so copy this file to backend/render.yaml before pushing.
+services:
+  - type: web
+    name: financecare-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/swagger-ui/index.html
+    envVars:
+      - key: JAVA_TOOL_OPTIONS
+        value: -Xmx380m -XX:+UseSerialGC
+      - key: SPRING_DATASOURCE_URL      # jdbc:postgresql://aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: SPRING_DATA_REDIS_HOST
+        sync: false
+      - key: SPRING_DATA_REDIS_PORT
+        value: "6379"
+      - key: SPRING_DATA_REDIS_PASSWORD
+        sync: false
+      - key: SPRING_DATA_REDIS_SSL_ENABLED
+        value: "true"
+      - key: APP_OCR_URL                # https://<user>-<space>.hf.space/slip/verify
+        sync: false
+      - key: APP_MINIO_URL              # https://neghpatpcfkodedbupmi.storage.supabase.co/storage/v1/s3
+        sync: false
+      - key: APP_MINIO_REGION
+        value: ap-northeast-1
+      - key: APP_MINIO_ACCESS_KEY
+        sync: false
+      - key: APP_MINIO_SECRET_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SPRING_MAIL_PASSWORD
+        sync: false
+      - key: APP_JOOBLE_API_KEY
+        sync: false
+      - key: DEMO_SEED_ENABLED          # true = เปิดปุ่ม Demo (POST /auth/demo-login) สร้างข้อมูลตัวอย่างตอนกดครั้งแรก
+        value: "false"

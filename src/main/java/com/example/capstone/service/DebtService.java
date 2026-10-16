@@ -27,6 +27,10 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class DebtService {
+        private static final String DEBT_NOT_FOUND_MSG = "Debt not found or not owned by this user";
+        private static final String DEBT_NOT_FOUND_CODE = "DEBT_NOT_FOUND";
+        private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Bangkok");
+
         private final DebtTypeRepository debtTypeRepository;
         private final DebtRepository debtRepository;
         private final RepaymentTypeRepository repaymentTypeRepository;
@@ -57,7 +61,7 @@ public class DebtService {
         public Debt getDebtDetail(String token, UUID debtId) {
                 UUID userId = userService.extractUserIdFromToken(token);
                 return debtRepository.findByDebtIdAndUserId(debtId, userId)
-                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", "DEBT_NOT_FOUND",
+                                .orElseThrow(() -> new BusinessException(DEBT_NOT_FOUND_MSG, DEBT_NOT_FOUND_CODE,
                                                 HttpStatus.NOT_FOUND));
         }
 
@@ -95,7 +99,7 @@ public class DebtService {
                 Debt debt = new Debt();
                 debt.setUserId(userId);
                 debt.setPrincipalAmount(debtDTO.getPrincipalAmount());
-                debt.setPrincipalOutstanding(debtDTO.getPrincipalOutstandingV2() != null ? debtDTO.getPrincipalOutstandingV2() : debtDTO.getPrincipalAmount()); // Initialize outstanding balance
+                debt.setPrincipalOutstanding(debtDTO.getPrincipalOutstandingV2() != null ? debtDTO.getPrincipalOutstandingV2() : debtDTO.getPrincipalAmount());
                 debt.setInterestRate(debtDTO.getInterestRate());
                 debt.setRepaymentType(repaymentTypeRepository.findById(debtDTO.getRepaymentTypeId())
                                 .orElseThrow(() -> new BusinessException("invalid repayment type id", "INVALID_REPAYMENT_TYPE",
@@ -107,7 +111,6 @@ public class DebtService {
                 debt.setDebtType(debtTypeRepository.findById(debtDTO.getDebtTypeId())
                                 .orElseThrow(() -> new BusinessException("invalid debt type id", "INVALID_DEBT_TYPE",
                                                 HttpStatus.BAD_REQUEST)));
-                debt.setDebtName(debt.getDebtName()); // Wait, this should be debtDTO.getDebtName()
                 debt.setDebtName(debtDTO.getDebtName());
                 debt.setMinPayment(debtDTO.getMinPayment());
                 debt.setDueDay(debtDTO.getDueDay());
@@ -115,19 +118,17 @@ public class DebtService {
                 debt.setGracePeriodDays(debtDTO.getGracePeriodDays());
                 debt.setPenaltyTriggerDays(debtDTO.getPenaltyTriggerDays());
                 debt.setDefaulted(debtDTO.isDefaulted());
-                debt.setIsInformal(debtDTO.getIsInformal() != null ? debtDTO.getIsInformal() : false);
+                debt.setIsInformal(Boolean.TRUE.equals(debtDTO.getIsInformal()));
                 debt.setInterestCalculationType(debtDTO.getInterestCalculationType());
                 debt.setInterestInterval(debtDTO.getInterestInterval() != null ? debtDTO.getInterestInterval() : InterestInterval.YEARLY);
                 debt.setPaymentInterval(debtDTO.getPaymentInterval() != null ? debtDTO.getPaymentInterval() : PaymentInterval.MONTHLY);
                 
-                // เก็บยอดเริ่มต้นไว้ใน Debt Entity
                 debt.setInitialInterestRemaining(debtDTO.getInitialInterestRemaining() != null ? debtDTO.getInitialInterestRemaining() : BigDecimal.ZERO);
                 debt.setInitialLateFeeRemaining(debtDTO.getInitialLateFeeRemaining() != null ? debtDTO.getInitialLateFeeRemaining() : BigDecimal.ZERO);
                 debt.setInitialPenaltyRemaining(debtDTO.getInitialPenaltyRemaining() != null ? debtDTO.getInitialPenaltyRemaining() : BigDecimal.ZERO);
                 
                 debtRepository.save(debt);
 
-                // สร้าง Transaction สำหรับยอดค้างชำระเริ่มต้น
                 createInitialBalanceTxns(debt);
 
                 notificationService.createNotificationRuleForDebt(userId, debt.getDebtName(), debt.getMinPayment(),
@@ -163,7 +164,7 @@ public class DebtService {
         public Debt updateDebt(String token, UUID debtId, DebtDTO debtDTO) {
                 UUID userId = userService.extractUserIdFromToken(token);
                 Debt existingDebt = debtRepository.findByDebtIdAndUserId(debtId, userId)
-                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", "DEBT_NOT_FOUND",
+                                .orElseThrow(() -> new BusinessException(DEBT_NOT_FOUND_MSG, DEBT_NOT_FOUND_CODE,
                                                 HttpStatus.NOT_FOUND));
 
                 if (debtDTO.getInterestRate().compareTo(BigDecimal.valueOf(100)) > 0 ||
@@ -179,7 +180,6 @@ public class DebtService {
                                                 HttpStatus.BAD_REQUEST));
 
                 existingDebt.setPrincipalAmount(debtDTO.getPrincipalAmount());
-                // Update outstanding balance only if provided in DTO
                 if (debtDTO.getPrincipalOutstandingV2() != null) {
                         existingDebt.setPrincipalOutstanding(debtDTO.getPrincipalOutstandingV2());
                 }
@@ -197,7 +197,7 @@ public class DebtService {
                 existingDebt.setGracePeriodDays(debtDTO.getGracePeriodDays());
                 existingDebt.setPenaltyTriggerDays(debtDTO.getPenaltyTriggerDays());
                 existingDebt.setDefaulted(debtDTO.isDefaulted());
-                existingDebt.setIsInformal(debtDTO.getIsInformal() != null ? debtDTO.getIsInformal() : false);
+                existingDebt.setIsInformal(Boolean.TRUE.equals(debtDTO.getIsInformal()));
                 existingDebt.setInterestCalculationType(debtDTO.getInterestCalculationType());
                 if (debtDTO.getInterestInterval() != null) {
                         existingDebt.setInterestInterval(debtDTO.getInterestInterval());
@@ -206,7 +206,6 @@ public class DebtService {
                         existingDebt.setPaymentInterval(debtDTO.getPaymentInterval());
                 }
                 
-                // อัปเดตยอดเริ่มต้น (หมายเหตุ: การแก้ตรงนี้จะแก้ไขเฉพาะในตัว Debt แต่ไม่ไปแก้ Transaction ที่ถูกสร้างไปแล้ว)
                 if (debtDTO.getInitialInterestRemaining() != null) existingDebt.setInitialInterestRemaining(debtDTO.getInitialInterestRemaining());
                 if (debtDTO.getInitialLateFeeRemaining() != null) existingDebt.setInitialLateFeeRemaining(debtDTO.getInitialLateFeeRemaining());
                 if (debtDTO.getInitialPenaltyRemaining() != null) existingDebt.setInitialPenaltyRemaining(debtDTO.getInitialPenaltyRemaining());
@@ -220,12 +219,13 @@ public class DebtService {
         public Debt deleteDebt(String token, UUID debtId) {
                 UUID userId = userService.extractUserIdFromToken(token);
                 Debt debt = debtRepository.findByDebtIdAndUserId(debtId, userId)
-                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", "DEBT_NOT_FOUND",
+                                .orElseThrow(() -> new BusinessException(DEBT_NOT_FOUND_MSG, DEBT_NOT_FOUND_CODE,
                                                 HttpStatus.NOT_FOUND));
                 debtRepository.delete(debt);
                 repaymentPlanService.evictUserCache(userId);
                 return debt;
         }
+
         public List<DebtPriorityResponseDTO> getDebtPriorities(String token) {
                 UUID userId = userService.extractUserIdFromToken(token);
                 List<Debt> debts = debtRepository.findAllByUserId(userId);
@@ -248,7 +248,7 @@ public class DebtService {
                 
                 for (DebtPriorityUpdateRequestDTO request : requests) {
                         Debt debt = debtRepository.findByDebtIdAndUserId(request.getDebtId(), userId)
-                                        .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", "DEBT_NOT_FOUND", HttpStatus.NOT_FOUND));
+                                        .orElseThrow(() -> new BusinessException(DEBT_NOT_FOUND_MSG, DEBT_NOT_FOUND_CODE, HttpStatus.NOT_FOUND));
                         
                         debt.setPriority(request.getPriority());
                         debtsToUpdate.add(debt);
@@ -260,7 +260,7 @@ public class DebtService {
         public DebtSummaryDTO getDebtSummary(String token, UUID debtId) {
                 UUID userId = userService.extractUserIdFromToken(token);
                 Debt debt = debtRepository.findByDebtIdAndUserId(debtId, userId)
-                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user", "DEBT_NOT_FOUND",
+                                .orElseThrow(() -> new BusinessException(DEBT_NOT_FOUND_MSG, DEBT_NOT_FOUND_CODE,
                                                 HttpStatus.NOT_FOUND));
 
                 DebtSummaryDTO summary = getDebtSummaryInternal(debt);
@@ -275,7 +275,6 @@ public class DebtService {
                                 debt.getPrincipalOutstanding() : debt.getPrincipalAmount();
                 if (principal == null) principal = BigDecimal.ZERO;
                 
-                // Total outstanding across all time
                 BigDecimal interest = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.INTEREST_CHARGE);
                 if (interest == null) interest = BigDecimal.ZERO;
                 BigDecimal lateFee = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.LATE_FEE_CHARGE);
@@ -283,8 +282,7 @@ public class DebtService {
                 BigDecimal penalty = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.PENALTY_INTEREST_CHARGE);
                 if (penalty == null) penalty = BigDecimal.ZERO;
                 
-                // Current month outstanding
-                java.time.LocalDate now = java.time.LocalDate.now();
+                LocalDate now = LocalDate.now(DEFAULT_ZONE);
                 int year = now.getYear();
                 int month = now.getMonthValue();
                 
@@ -316,8 +314,7 @@ public class DebtService {
         public List<DebtTransactionResponseDTO> getDebtHistory(String token, UUID debtId) {
                 UUID userId = userService.extractUserIdFromToken(token);
                 debtRepository.findByDebtIdAndUserId(debtId, userId)
-                                .orElseThrow(() -> new BusinessException("Debt not found or not owned by this user",
-                                                HttpStatus.NOT_FOUND));
+                                .orElseThrow(() -> new BusinessException(DEBT_NOT_FOUND_MSG, HttpStatus.NOT_FOUND));
 
                 List<DebtTransaction> txns = debtTransactionRepository.findByDebtDebtIdOrderByTxnDateDesc(debtId);
 

@@ -1,4 +1,4 @@
-package com.example.capstone.engineImp;
+package com.example.capstone.engine;
 
 import com.example.capstone.domain.PaymentAllocationResult;
 import org.springframework.stereotype.Component;

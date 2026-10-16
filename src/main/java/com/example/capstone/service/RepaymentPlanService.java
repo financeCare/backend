@@ -5,7 +5,7 @@ import com.example.capstone.dto.*;
 import com.example.capstone.enums.RepaymentTypeEnum;
 import com.example.capstone.entity.*;
 import com.example.capstone.entity.RepaymentPlan;
-import com.example.capstone.engineImp.calculator.InterestCalculator;
+import com.example.capstone.engine.calculator.InterestCalculator;
 import com.example.capstone.enums.StrategyType;
 import com.example.capstone.enums.DebtTxnType;
 import com.example.capstone.enums.InterestInterval;
@@ -30,6 +30,14 @@ import java.util.*;
 @Service
 @AllArgsConstructor
 public class RepaymentPlanService {
+    private static final String STRATEGY_NOT_FOUND_MSG = "Strategy not found";
+    private static final String STRATEGY_NOT_FOUND_CODE = "STRATEGY_NOT_FOUND";
+    private static final String UNKNOWN_STRATEGY_TYPE_MSG = "Unknown strategy type";
+    private static final String UNKNOWN_STRATEGY_TYPE_CODE = "UNKNOWN_STRATEGY_TYPE";
+    private static final String STRATEGIES_CACHE_PREFIX = "plans:strategies:";
+    private static final String MONTHLY_STATUS_CACHE_PREFIX = "plans:monthly-status:";
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Bangkok");
+
     private final RepaymentPlanRepository repaymentPlanRepository;
     private final DebtRepository debtRepository;
     private final RepaymentStrategyRepository repaymentStrategyRepository;
@@ -56,7 +64,7 @@ public class RepaymentPlanService {
 
     public RepaymentStrategyDtoResponse getAllRepaymentStrategies(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
-        String cacheKey = "plans:strategies:" + userId;
+        String cacheKey = STRATEGIES_CACHE_PREFIX + userId;
         try {
             String cachedData = redisTemplate.opsForValue().get(cacheKey);
             if (cachedData != null) {
@@ -118,38 +126,39 @@ public class RepaymentPlanService {
         }
 
         RepaymentStrategy strategyEntity = repaymentStrategyRepository.findById(strategyId)
-                .orElseThrow(() -> new BusinessException("Strategy not found", "STRATEGY_NOT_FOUND", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(STRATEGY_NOT_FOUND_MSG, STRATEGY_NOT_FOUND_CODE, HttpStatus.NOT_FOUND));
 
         StrategyType type;
         try {
             type = StrategyType.fromString(strategyEntity.getStrategyName());
         } catch (Exception e) {
-            throw new BusinessException("Unknown strategy type", "UNKNOWN_STRATEGY_TYPE", HttpStatus.BAD_REQUEST);
+            throw new BusinessException(UNKNOWN_STRATEGY_TYPE_MSG, UNKNOWN_STRATEGY_TYPE_CODE, HttpStatus.BAD_REQUEST);
         }
 
         List<Debt> sortedDebts = new ArrayList<>(debts);
-
-        // บังคับให้หนี้นอกระบบขึ้นเป็นอันดับแรกเสมอ
-        Comparator<Debt> finalComparator = Comparator.comparing(
-                (Debt d) -> d.getIsInformal() != null && d.getIsInformal(), 
-                Comparator.reverseOrder()
-        );
-
-        if (type == StrategyType.SNOWBALL) {
-            finalComparator = finalComparator
-                    .thenComparing(Debt::getPrincipalOutstanding, Comparator.nullsLast(Comparator.naturalOrder()))
-                    .thenComparing(Debt::getPrincipalAmount, Comparator.nullsLast(Comparator.naturalOrder()));
-        } else if (type == StrategyType.AVALANCHE || type == StrategyType.OPTIMAL_COST) {
-            finalComparator = finalComparator
-                    .thenComparing(Debt::getInterestRate, Comparator.nullsLast(Comparator.reverseOrder()));
-        }
-
-        sortedDebts.sort(finalComparator);
+        sortedDebts.sort(getStrategyComparator(type));
 
         for (int i = 0; i < sortedDebts.size(); i++) {
             sortedDebts.get(i).setPriority(i + 1);
         }
         debtRepository.saveAll(sortedDebts);
+    }
+
+    private Comparator<Debt> getStrategyComparator(StrategyType type) {
+        Comparator<Debt> comparator = Comparator.comparing(
+                (Debt d) -> Boolean.TRUE.equals(d.getIsInformal()),
+                Comparator.reverseOrder()
+        );
+
+        if (type == StrategyType.SNOWBALL) {
+            return comparator
+                    .thenComparing(Debt::getPrincipalOutstanding, Comparator.nullsLast(Comparator.naturalOrder()))
+                    .thenComparing(Debt::getPrincipalAmount, Comparator.nullsLast(Comparator.naturalOrder()));
+        } else if (type == StrategyType.AVALANCHE || type == StrategyType.OPTIMAL_COST) {
+            return comparator
+                    .thenComparing(Debt::getInterestRate, Comparator.nullsLast(Comparator.reverseOrder()));
+        }
+        return comparator;
     }
 
     public BigDecimal getTotalMinPayment(String token) {
@@ -217,7 +226,7 @@ public class RepaymentPlanService {
         plan.setMonthlyBudget(entity.getMonthlyBudget() != null ? entity.getMonthlyBudget() : BigDecimal.ZERO);
 
         String strategyName = repaymentStrategyRepository.findById(entity.getStrategyId())
-                .orElseThrow(() -> new IllegalArgumentException("Strategy not found")).getStrategyName();
+                .orElseThrow(() -> new IllegalArgumentException(STRATEGY_NOT_FOUND_MSG)).getStrategyName();
 
         try {
             plan.setStrategyType(StrategyType.fromString(strategyName));
@@ -271,7 +280,7 @@ public class RepaymentPlanService {
         
         debtSim.setPenaltyAnnualRate(normalizeAnnualRate(entity.getPenaltyAnnualRate(), InterestInterval.YEARLY));
         debtSim.setDefaulted(entity.getDefaulted());
-        debtSim.setInformal(entity.getIsInformal() != null ? entity.getIsInformal() : false);
+        debtSim.setInformal(Boolean.TRUE.equals(entity.getIsInformal()));
         
         return debtSim;
     }
@@ -280,7 +289,6 @@ public class RepaymentPlanService {
         if (rate == null) return BigDecimal.ZERO;
         
         BigDecimal normalizedRate = rate;
-        // If rate is > 1 (e.g., 5.0 for 5%), normalize it to decimal (0.05)
         if (normalizedRate.compareTo(BigDecimal.ONE) > 0) {
             normalizedRate = normalizedRate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
         }
@@ -304,39 +312,27 @@ public class RepaymentPlanService {
         List<Debt> debts = debtRepository.findByActiveAndUserId(true, userId);
         
         RepaymentStrategy strategyEntity = repaymentStrategyRepository.findById(strategyId)
-                .orElseThrow(() -> new BusinessException("Strategy not found", "STRATEGY_NOT_FOUND", HttpStatus.NOT_FOUND));
+                .orElseThrow(() -> new BusinessException(STRATEGY_NOT_FOUND_MSG, STRATEGY_NOT_FOUND_CODE, HttpStatus.NOT_FOUND));
         
         StrategyType type;
         try {
             type = StrategyType.fromString(strategyEntity.getStrategyName());
         } catch (Exception e) {
-            throw new BusinessException("Unknown strategy type", "UNKNOWN_STRATEGY_TYPE", HttpStatus.BAD_REQUEST);
+            throw new BusinessException(UNKNOWN_STRATEGY_TYPE_MSG, UNKNOWN_STRATEGY_TYPE_CODE, HttpStatus.BAD_REQUEST);
         }
 
         List<Debt> sortedDebts = new ArrayList<>(debts);
-        
-        // บังคับให้หนี้นอกระบบขึ้นเป็นอันดับแรกเสมอในหน้าแนะนำ Priority (Step 2)
-        Comparator<Debt> finalComparator = Comparator.comparing(
-                (Debt d) -> d.getIsInformal() != null && d.getIsInformal(), 
-                Comparator.reverseOrder()
-        );
-
-        if (type == StrategyType.SNOWBALL) {
-            finalComparator = finalComparator
-                    .thenComparing(Debt::getPrincipalOutstanding, Comparator.nullsLast(Comparator.naturalOrder()))
-                    .thenComparing(Debt::getPrincipalAmount, Comparator.nullsLast(Comparator.naturalOrder()));
-        } else if (type == StrategyType.AVALANCHE || type == StrategyType.OPTIMAL_COST) {
-            finalComparator = finalComparator
-                    .thenComparing(Debt::getInterestRate, Comparator.nullsLast(Comparator.reverseOrder()));
-        }
-
-        sortedDebts.sort(finalComparator);
+        sortedDebts.sort(getStrategyComparator(type));
 
         List<Map<String, Object>> suggestions = new ArrayList<>();
         for (int i = 0; i < sortedDebts.size(); i++) {
             Map<String, Object> suggestion = new HashMap<>();
             suggestion.put("debtId", sortedDebts.get(i).getDebtId());
             suggestion.put("debtName", sortedDebts.get(i).getDebtName());
+            suggestion.put("principalOutstanding", sortedDebts.get(i).getPrincipalOutstanding() != null ? sortedDebts.get(i).getPrincipalOutstanding() : sortedDebts.get(i).getPrincipalAmount());
+            suggestion.put("interestRate", sortedDebts.get(i).getInterestRate());
+            suggestion.put("isInformal", sortedDebts.get(i).getIsInformal());
+            suggestion.put("currentPriority", sortedDebts.get(i).getPriority() != null ? sortedDebts.get(i).getPriority() : 0);
             suggestion.put("suggestedPriority", i + 1);
             suggestions.add(suggestion);
         }
@@ -346,7 +342,7 @@ public class RepaymentPlanService {
 
     public MonthlyStatusDTO getMonthlyStatus(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
-        String cacheKey = "plans:monthly-status:" + userId;
+        String cacheKey = MONTHLY_STATUS_CACHE_PREFIX + userId;
         try {
             String cachedData = redisTemplate.opsForValue().get(cacheKey);
             if (cachedData != null) {
@@ -356,7 +352,7 @@ public class RepaymentPlanService {
             // Fallback
         }
 
-        LocalDate now = LocalDate.now();
+        LocalDate now = LocalDate.now(DEFAULT_ZONE);
         int year = now.getYear();
         int month = now.getMonthValue();
 
@@ -385,12 +381,9 @@ public class RepaymentPlanService {
                 .map(this::calculateSafeMinPayment)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        boolean isBudgetInsufficient = false;
-        if (plan != null && plan.getMonthlyBudget() != null && plan.getMonthlyBudget().compareTo(BigDecimal.ZERO) > 0) {
-            if (plan.getMonthlyBudget().compareTo(requiredMinPayment) < 0) {
-                isBudgetInsufficient = true;
-            }
-        }
+        boolean isBudgetInsufficient = plan != null && plan.getMonthlyBudget() != null 
+                && plan.getMonthlyBudget().compareTo(BigDecimal.ZERO) > 0 
+                && plan.getMonthlyBudget().compareTo(requiredMinPayment) < 0;
 
         BigDecimal remainingAmount = totalAmount.subtract(paidAmount);
         if (remainingAmount.compareTo(BigDecimal.ZERO) < 0) {
@@ -428,8 +421,8 @@ public class RepaymentPlanService {
 
     public void evictUserCache(UUID userId) {
         try {
-            redisTemplate.delete("plans:strategies:" + userId);
-            redisTemplate.delete("plans:monthly-status:" + userId);
+            redisTemplate.delete(STRATEGIES_CACHE_PREFIX + userId);
+            redisTemplate.delete(MONTHLY_STATUS_CACHE_PREFIX + userId);
         } catch (Exception e) {
             // Fallback
         }

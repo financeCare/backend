@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 @Entity
@@ -51,7 +52,7 @@ public class DebtTransaction {
 
     @PrePersist
     void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now(ZoneId.of("Asia/Bangkok"));
     }
 
     public void validate() {
@@ -74,16 +75,6 @@ public class DebtTransaction {
         if (txnDate == null) {
             throw new BusinessException("Transaction date is required",
                     HttpStatus.BAD_REQUEST);
-        }
-
-        // referenceId required only for charge types from arrears (optional for now to support auto-accrual)
-        if ((txnType == DebtTxnType.LATE_FEE_CHARGE ||
-                txnType == DebtTxnType.PENALTY_INTEREST_CHARGE) &&
-                referenceId == null) {
-            
-            // Log warning instead of throwing if we want to track these but not block
-            // For now, satisfy validation if it's not strictly from an arrears module
-            // throw new BusinessException("Reference ID is required...", ...);
         }
     }
 }

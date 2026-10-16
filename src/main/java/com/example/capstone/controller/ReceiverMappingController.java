@@ -13,18 +13,19 @@ import java.util.List;
 @RequestMapping("/receiver-mappings")
 @RequiredArgsConstructor
 public class ReceiverMappingController {
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final ReceiverMappingService receiverMappingService;
 
     @GetMapping
     public ResponseEntity<List<ReceiverMapping>> getMyMappings(@RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         return ResponseEntity.ok(receiverMappingService.getMappingsByUser(token));
     }
 
     @PostMapping
-    public ResponseEntity<ReceiverMapping> saveMapping(@RequestHeader("Authorization") String authorizationHeader,@RequestBody MappingRequest request) {
-        String token = authorizationHeader.replace("Bearer ", "");
+    public ResponseEntity<ReceiverMapping> saveMapping(@RequestHeader("Authorization") String authorizationHeader, @RequestBody MappingRequest request) {
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         ReceiverMapping mapping = receiverMappingService.createOrUpdateMapping(
                 token, 
                 request.getReceiverName(), 
@@ -35,8 +36,8 @@ public class ReceiverMappingController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteMapping(@RequestHeader("Authorization") String authorizationHeader,@PathVariable("id") Long id) {
-        String token = authorizationHeader.replace("Bearer ", "");
+    public ResponseEntity<Void> deleteMapping(@RequestHeader("Authorization") String authorizationHeader, @PathVariable("id") Long id) {
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         receiverMappingService.deleteMapping(id, token);
         return ResponseEntity.ok().build();
     }

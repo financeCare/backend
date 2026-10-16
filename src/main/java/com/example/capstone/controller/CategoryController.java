@@ -13,35 +13,37 @@ import java.util.List;
 @RequestMapping("/categories")
 @RequiredArgsConstructor
 public class CategoryController {
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final CategoryService categoryService;
+
     @GetMapping
     public List<Category> getCategories(@RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         return categoryService.getCategoriesByUserId(token);
     }
 
     @GetMapping("/{categoryId}")
-    public Category getCategoryById(@RequestHeader("Authorization") String authorizationHeader,@PathVariable(name = "categoryId") Integer categoryId) {
-        String token = authorizationHeader.replace("Bearer ", "");
-        return categoryService.getCategoryById(token,categoryId);
+    public Category getCategoryById(@RequestHeader("Authorization") String authorizationHeader, @PathVariable(name = "categoryId") Integer categoryId) {
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
+        return categoryService.getCategoryById(token, categoryId);
     }
 
     @PostMapping
-    public Category createCategory(@RequestHeader("Authorization") String authorizationHeader,@Valid @RequestBody CategoryDTO category) {
-        String token = authorizationHeader.replace("Bearer ", "");
-        return categoryService.createCategory(token,category);
+    public Category createCategory(@RequestHeader("Authorization") String authorizationHeader, @Valid @RequestBody CategoryDTO category) {
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
+        return categoryService.createCategory(token, category);
     }
 
     @PutMapping("/{categoryId}")
-    public Category updateCategory(@RequestHeader("Authorization") String authorizationHeader,@PathVariable(name = "categoryId") Integer categoryId,@Valid @RequestBody CategoryDTO category) {
-        String token = authorizationHeader.replace("Bearer ", "");
-        return categoryService.updateCategory(token,categoryId, category);
+    public Category updateCategory(@RequestHeader("Authorization") String authorizationHeader, @PathVariable(name = "categoryId") Integer categoryId, @Valid @RequestBody CategoryDTO category) {
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
+        return categoryService.updateCategory(token, categoryId, category);
     }
 
     @DeleteMapping("/{categoryId}")
-    public void deleteCategory(@RequestHeader("Authorization") String authorizationHeader,@PathVariable(name = "categoryId") Integer categoryId) {
-        String token = authorizationHeader.replace("Bearer ", "");
-        categoryService.deleteCategory(token,categoryId);
+    public void deleteCategory(@RequestHeader("Authorization") String authorizationHeader, @PathVariable(name = "categoryId") Integer categoryId) {
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
+        categoryService.deleteCategory(token, categoryId);
     }
 }

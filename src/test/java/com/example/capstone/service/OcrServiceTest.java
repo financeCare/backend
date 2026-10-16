@@ -23,7 +23,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class OcrServiceTest {
+class OcrServiceTest {
 
     @Mock
     private RestTemplate restTemplate;

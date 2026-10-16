@@ -1,5 +1,6 @@
 package com.example.capstone.service;
 
+import com.example.capstone.exception.BusinessException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -26,7 +28,6 @@ import java.util.List;
 @Slf4j
 public class OcrService {
 
-    //TODO change ip to container name for security
     @Value("${app.ocr.url}")
     private String ocrUrl;
     private final RestTemplate restTemplate;
@@ -39,7 +40,7 @@ public class OcrService {
                 HttpHeaders fileHeaders = new HttpHeaders();
                 String contentType = file.getContentType();
                 if (contentType == null || contentType.isEmpty()) {
-                    contentType = MediaType.IMAGE_JPEG_VALUE; // Default to JPEG
+                    contentType = MediaType.IMAGE_JPEG_VALUE;
                 }
                 fileHeaders.setContentType(MediaType.parseMediaType(contentType));
 
@@ -78,10 +79,10 @@ public class OcrService {
 
         } catch (org.springframework.web.client.HttpStatusCodeException e) {
             log.error("OCR Service returned error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
-            throw new RuntimeException("OCR Service failed with status " + e.getStatusCode() + ": " + e.getResponseBodyAsString());
+            throw new BusinessException("OCR Service failed with status " + e.getStatusCode() + ": " + e.getResponseBodyAsString(), HttpStatus.BAD_GATEWAY);
         } catch (Exception e) {
             log.error("Error calling OCR Service: {}", e.getMessage());
-            throw new RuntimeException("OCR Service failed: " + e.getMessage());
+            throw new BusinessException("OCR Service failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 

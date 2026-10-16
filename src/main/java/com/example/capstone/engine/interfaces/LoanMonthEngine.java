@@ -1,18 +1,13 @@
-package com.example.capstone.engineInterface;
+package com.example.capstone.engine.interfaces;
 
 import com.example.capstone.domain.DebtSim;
 import com.example.capstone.domain.LoanMonthResult;
 
 import java.math.BigDecimal;
 
-
-public interface DebtMonthEngine {
-
-    boolean supports(String repaymentType);
-
-    LoanMonthResult runMonth(
+public interface LoanMonthEngine {
+    LoanMonthResult simulateMonth(
             DebtSim debt,
-            BigDecimal minPayment,
             BigDecimal extraPayment
     );
 }

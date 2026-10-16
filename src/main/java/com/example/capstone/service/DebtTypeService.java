@@ -1,5 +1,6 @@
 package com.example.capstone.service;
 
+import com.example.capstone.dto.DebtTypeRequest;
 import com.example.capstone.entity.DebtType;
 import com.example.capstone.repository.DebtTypeRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,6 +38,15 @@ public class DebtTypeService {
             // Fallback
         }
         return types;
+    }
+
+    public String addDebtType(DebtTypeRequest request) {
+        DebtType debtType = new DebtType();
+        debtType.setDebtTypeName(request.getDebtTypeName());
+        debtType.setDebtTypeDescription(request.getDebtTypeDescription());
+        debtTypeRepository.save(debtType);
+        evictCache();
+        return "debtType add successfully";
     }
 
     public String addDebtType(DebtType debtType) {

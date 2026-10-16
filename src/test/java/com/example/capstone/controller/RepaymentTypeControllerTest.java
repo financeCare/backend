@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(RepaymentTypeController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class RepaymentTypeControllerTest {
+class RepaymentTypeControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

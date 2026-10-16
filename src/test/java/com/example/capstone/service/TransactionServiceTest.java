@@ -25,7 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class TransactionServiceTest {
+class TransactionServiceTest {
 
     @Mock
     private TransactionRepository transactionRepository;
@@ -80,7 +80,7 @@ public class TransactionServiceTest {
         assertEquals(600.0, budget.getAmount());
         verify(transactionRepository).save(any(Transaction.class));
         verify(budgetRepository).save(budget);
-        verify(notificationService).createNotificationRuleForBudget(eq(userId), eq("Food"), eq(1000.0), eq(600.0), eq(budget.getBudgetId()));
+        verify(notificationService).createNotificationRuleForBudget(userId, "Food", 1000.0, 600.0, budget.getBudgetId());
     }
 
     @Test

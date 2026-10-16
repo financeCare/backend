@@ -38,8 +38,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.util.*;
 
 import static com.example.capstone.config.GlobalVariables.*;
@@ -47,6 +47,17 @@ import static com.example.capstone.config.GlobalVariables.*;
 @Service
 @RequiredArgsConstructor
 public class UserService implements UserDetailsService {
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final String USER_NOT_FOUND_PREFIX = "User with email ";
+    private static final String NOT_FOUND_SUFFIX = " not found";
+    private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
+
+    private static final String[] DEFAULT_INCOMES = { CATEGORY_SALARY, CATEGORY_EXTRA_INCOME };
+    private static final String[] DEFAULT_EXPENSES = {
+        CATEGORY_FOOD, CATEGORY_TRANSPORT, CATEGORY_SHOPPING, CATEGORY_HEALTH,
+        CATEGORY_ENTERTAINMENT, CATEGORY_BILLS, CATEGORY_OTHER, CATEGORY_SAVING
+    };
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
@@ -62,9 +73,10 @@ public class UserService implements UserDetailsService {
 
     @Value("${app.mail.enabled}")
     private boolean mailEnabled;
+    @Value("${app.google.client-id}")
+    private String googleClientId;
     private final LineConfig lineConfig;
     private final RestTemplate restTemplate = new RestTemplate();
-    private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
 
     private Map<String, Object> getLineUserInfo(String idToken) {
         String url = "https://api.line.me/oauth2/v2.1/verify";
@@ -84,7 +96,7 @@ public class UserService implements UserDetailsService {
         );
         Map<String, Object> body = response.getBody();
         if (body == null) {
-            throw new RuntimeException("LINE verify: empty response");
+            throw new BusinessException("LINE verify: empty response", HttpStatus.BAD_REQUEST);
         }
         return body;
     }
@@ -94,7 +106,7 @@ public class UserService implements UserDetailsService {
             throw new EmailAlreadyExistsException("Email already exists: " + request.getEmail());
         }
         String encodedPassword = passwordEncoder.encode(request.getPassword());
-        userRepository.save(
+        User savedUser = userRepository.save(
                 new User(
                         request.getUsername(),
                         encodedPassword,
@@ -103,9 +115,8 @@ public class UserService implements UserDetailsService {
                         false, null
                 )
         );
-            User newUser = userRepository.findByEmail(request.getEmail()).get();
-            createDefaultCategoriesForUser(newUser.getUserId());
-        CreateUserSettingIfNotExists(newUser.getUserId());
+        createDefaultCategoriesForUser(savedUser.getUserId());
+        createUserSettingIfNotExists(savedUser.getUserId());
     }
 
     public LoginResponse loginWithLine(IdTokenRequest idTokenRequest) {
@@ -131,38 +142,37 @@ public class UserService implements UserDetailsService {
         }
         userRepository.save(user);
         if (userOpt.isEmpty()) {
-            User newUser = userRepository.findByEmail(email).orElseThrow(() -> new BusinessException("can't find this user email",HttpStatus.BAD_REQUEST));
+            User newUser = userRepository.findByEmail(email).orElseThrow(() -> new BusinessException("can't find this user email", HttpStatus.BAD_REQUEST));
             createDefaultCategoriesForUser(newUser.getUserId());
-        }
-        else if (categoryRepository.findByUserId(user.getUserId()).isEmpty()){
+        } else if (categoryRepository.findByUserId(user.getUserId()).isEmpty()) {
             createDefaultCategoriesForUser(user.getUserId());
         }
 
-        CreateUserSettingIfNotExists(user.getUserId());
+        createUserSettingIfNotExists(user.getUserId());
         return new LoginResponse(accessToken, refreshToken);
     }
 
-    @Transactional
-    public LoginResponse loginWithGoogle(IdTokenRequest idTokenString) {
+    public LoginResponse loginWithGoogle(IdTokenRequest idTokenRequest) {
         try {
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
-                    GoogleNetHttpTransport.newTrustedTransport(),
-                    JSON_FACTORY
-            ).build();
-            GoogleIdToken idToken = verifier.verify(idTokenString.getIdToken());
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY)
+                    .setAudience(Collections.singletonList(googleClientId))
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(idTokenRequest.getIdToken());
             if (idToken == null) {
-                throw new BusinessException("Invalid ID token", "INVALID_TOKEN", HttpStatus.UNAUTHORIZED);
+                throw new BusinessException("Invalid ID token.", HttpStatus.UNAUTHORIZED);
             }
             GoogleIdToken.Payload payload = idToken.getPayload();
             String email = payload.getEmail();
-            String fullName = (String) payload.get("name");
-            Optional<User> userOpt = userRepository.findByEmail(email);
+            String name = (String) payload.get("name");
             String accessToken = jwtUtil.generateAccessToken(email);
             String refreshToken = jwtUtil.generateRefreshToken(email);
+
+            Optional<User> userOpt = userRepository.findByEmail(email);
             User user;
             if (userOpt.isEmpty()) {
                 user = new User(
-                        fullName,
+                        name,
                         null,
                         null,
                         email,
@@ -171,72 +181,57 @@ public class UserService implements UserDetailsService {
                 );
             } else {
                 user = userOpt.get();
-                user.setEmailConfirm(true);
                 user.setRefreshToken(refreshToken);
             }
             userRepository.save(user);
             if (userOpt.isEmpty()) {
-                User newUser = userRepository.findByEmail(email).orElseThrow(() -> new BusinessException("can't find this user email",HttpStatus.BAD_REQUEST));
+                User newUser = userRepository.findByEmail(email).orElseThrow(() -> new BusinessException("can't find this user email", HttpStatus.BAD_REQUEST));
                 createDefaultCategoriesForUser(newUser.getUserId());
-            }
-            else if (categoryRepository.findByUserId(user.getUserId()).isEmpty()){
+            } else if (categoryRepository.findByUserId(user.getUserId()).isEmpty()) {
                 createDefaultCategoriesForUser(user.getUserId());
             }
-            CreateUserSettingIfNotExists(user.getUserId());
+            createUserSettingIfNotExists(user.getUserId());
             return new LoginResponse(accessToken, refreshToken);
+        } catch (BusinessException be) {
+            throw be;
         } catch (Exception e) {
             throw new BusinessException("Google login failed: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @Transactional
     public void createDefaultCategoriesForUser(UUID userId) {
-        createCategoryForUser(userId, CATEGORY_SALARY, TYPE_INCOME);
-        createCategoryForUser(userId, CATEGORY_EXTRA_INCOME, TYPE_INCOME);
-        createCategoryForUser(userId, CATEGORY_FOOD, TYPE_EXPENSE);
-        createCategoryForUser(userId, CATEGORY_TRANSPORT, TYPE_EXPENSE);
-        createCategoryForUser(userId, CATEGORY_HEALTH, TYPE_EXPENSE);
-        createCategoryForUser(userId, CATEGORY_SHOPPING, TYPE_EXPENSE);
-        createCategoryForUser(userId, CATEGORY_BILLS, TYPE_EXPENSE);
-        createCategoryForUser(userId, CATEGORY_ENTERTAINMENT, TYPE_EXPENSE);
-        createCategoryForUser(userId, CATEGORY_SAVING, TYPE_EXPENSE);
-        createCategoryForUser(userId, CATEGORY_OTHER , TYPE_EXPENSE);
+        for (String categoryName : DEFAULT_INCOMES) {
+            createCategoryWithBudget(userId, categoryName, TYPE_INCOME);
+        }
+
+        for (String categoryName : DEFAULT_EXPENSES) {
+            createCategoryWithBudget(userId, categoryName, TYPE_EXPENSE);
+        }
     }
 
-    public void createCategoryForUser(UUID userId, String categoryName, String type) {
-        LocalDate today = LocalDate.now();
-        int currentMonth = today.getMonthValue();
-        int currentYear = today.getYear();
+    private void createCategoryWithBudget(UUID userId, String categoryName, String type) {
         Budget budget = new Budget();
         budget.setUserId(userId);
-        budget.setAmount(DEFAULT_BUDGET_AMOUNT);
-        if( type.equals(TYPE_EXPENSE)){
-            budget.setLimitBudget(DEFAULT_LIMIT_BUDGET);
-        } else {
-            budget.setLimitBudget(0.0);
-        }
-        budget.setMonth(currentMonth);
-        budget.setYear(currentYear);
+        budget.setAmount(0.0);
+        budget.setLimitBudget(1000.0);
         Budget savedBudget = budgetRepository.save(budget);
-        Category category = Category.builder()
-                .userId(userId)
-                .categoryName(categoryName)
-                .type(type)
-                .budgetId(savedBudget.getBudgetId())
-                .build();
-         categoryRepository.save(category);
-    }
 
+        Category category = new Category();
+        category.setUserId(userId);
+        category.setCategoryName(categoryName);
+        category.setType(type);
+        category.setBudgetId(savedBudget.getBudgetId());
+        categoryRepository.save(category);
+    }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("User with email " + email + " not found")
-                );
-        String password = Optional.ofNullable(user.getPasswordHash()).orElse("{noop}dummy");
+                .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND_PREFIX + email + NOT_FOUND_SUFFIX));
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
-                password,
+                user.getPasswordHash(),
                 Collections.emptyList()
         );
     }
@@ -245,27 +240,28 @@ public class UserService implements UserDetailsService {
         String email = jwtUtil.extractEmail(token);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new UsernameNotFoundException("User with email " + email + " not found")
+                        new UsernameNotFoundException(USER_NOT_FOUND_PREFIX + email + NOT_FOUND_SUFFIX)
                 );
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(jwtUtil.getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-        if (user.getEmailConfirm() == false) {
+        if (!Boolean.TRUE.equals(user.getEmailConfirm())) {
             throw new BusinessException("Email not verified", "EMAIL_NOT_VERIFIED", HttpStatus.FORBIDDEN);
-        }if ("refresh".equals(claims.get("type"))) {
-            throw new RuntimeException("Refresh token cannot be used to access resources");
+        }
+        if ("refresh".equals(claims.get("type"))) {
+            throw new BusinessException("Refresh token cannot be used to access resources", HttpStatus.FORBIDDEN);
         }
         return user.getUserId();
     }
 
-    private String generateOTP() {
-        return String.format("%06d", new Random().nextInt(999999));
+    private String generateOtp() {
+        return String.format("%06d", SECURE_RANDOM.nextInt(1000000));
     }
 
     public void sendOtp(String email) {
-        String otp = generateOTP();
+        String otp = generateOtp();
         redisTemplate.opsForValue().set("otp:" + email, otp, Duration.ofMinutes(5));
         if (!mailEnabled) {
             return;
@@ -279,8 +275,8 @@ public class UserService implements UserDetailsService {
                     .replace("{{otp}}", otp);
             helper.setText(html, true);
             mailSender.send(mimeMessage);
-        } catch (Exception e){
-            throw new BusinessException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR );
+        } catch (Exception e) {
+            throw new BusinessException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -292,7 +288,7 @@ public class UserService implements UserDetailsService {
         }
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() ->
-                            new BusinessException("User with email " + email + " not found", "USER_NOT_FOUND", HttpStatus.NOT_FOUND)
+                        new BusinessException(USER_NOT_FOUND_PREFIX + email + NOT_FOUND_SUFFIX, "USER_NOT_FOUND", HttpStatus.NOT_FOUND)
                 );
         user.setEmailConfirm(true);
         userRepository.save(user);
@@ -300,7 +296,7 @@ public class UserService implements UserDetailsService {
         return true;
     }
 
-    public void CreateUserSettingIfNotExists(UUID userId) {
+    public void createUserSettingIfNotExists(UUID userId) {
         UserSetting userSettingOpt = userSettingRepository.findByUserId(userId);
         if (userSettingOpt == null) {
             UserSetting userSetting = new UserSetting();
@@ -309,10 +305,10 @@ public class UserService implements UserDetailsService {
         }
     }
 
-    public UserSettingResponseDto getUserSetting(String token){
+    public UserSettingResponseDto getUserSetting(String token) {
         UUID userId = extractUserIdFromToken(token);
         List<UserDevice> devices = userDeviceRepository.findAllByUserIdAndActiveTrue(userId);
-        return new UserSettingResponseDto(userSettingRepository.findByUserId(userId),devices.stream()
+        return new UserSettingResponseDto(userSettingRepository.findByUserId(userId), devices.stream()
                 .map(ud -> new DeviceListDto(
                         ud.getDeviceId(),
                         ud.getDeviceName(),
@@ -330,19 +326,17 @@ public class UserService implements UserDetailsService {
         }
         userSetting.setNotificationsEnabled(newSettings.isNotificationsEnabled());
         userSetting.setDefaultNotifyTime(newSettings.getDefaultNotifyTime());
-        userSetting.setDefaultRemindDaysBefore(newSettings.getNotify_due_days_before());
+        userSetting.setDefaultRemindDaysBefore(newSettings.getNotifyDueDaysBefore());
         userSetting.setSkills(newSettings.getSkills());
         RepaymentPlan repaymentPlan = repaymentPlanRepository.findByUserId(userId);
         if (repaymentPlan != null) {
-            repaymentPlan.setMonthlyBudget(BigDecimal.valueOf(newSettings.getMonthly_repayment_budget()));
-            // ไม่ต้อง find ซ้ำ ใช้ของเดิมที่มีได้เลย
+            repaymentPlan.setMonthlyBudget(BigDecimal.valueOf(newSettings.getMonthlyRepaymentBudget()));
             repaymentPlanRepository.save(repaymentPlan);
         } else {
             RepaymentPlan plan = new RepaymentPlan();
             plan.setPlanId(UUID.randomUUID());
             plan.setUserId(userId);
-            plan.setMonthlyBudget(BigDecimal.valueOf(newSettings.getMonthly_repayment_budget()));
-            // สำหรับผู้ใช้ใหม่ จะยังไม่มี StrategyId ดังนั้นต้องข้ามไปก่อน หรือ set เป็น null
+            plan.setMonthlyBudget(BigDecimal.valueOf(newSettings.getMonthlyRepaymentBudget()));
             repaymentPlanRepository.save(plan);
         }
         userSettingRepository.save(userSetting);

@@ -9,16 +9,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 
-import java.io.InputStream;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class MinioServiceTest {
+class MinioServiceTest {
 
     @Mock
     private MinioClient minioClient;
@@ -35,9 +32,6 @@ public class MinioServiceTest {
                 "test data".getBytes()
         );
 
-        // MinioClient.putObject returns ObjectWriteResponse, which is final/hard to mock, 
-        // but it doesn't return anything we use here other than not throwing an exception.
-        
         String result = minioService.uploadFile(file);
 
         assertNotNull(result);

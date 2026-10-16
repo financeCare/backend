@@ -24,6 +24,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Tag(name = "Job Suggestion", description = "Endpoints for job suggestions based on financial needs")
 public class JobController {
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final JoobleService joobleService;
     private final JobApplicationRepository jobApplicationRepository;
@@ -50,13 +51,13 @@ public class JobController {
             @RequestHeader("Authorization") String authHeader,
             @Valid @RequestBody JobApplicationTrackingRequest request) {
 
-        String token = authHeader.replace("Bearer ", "");
+        String token = authHeader.replace(BEARER_PREFIX, "");
         UUID userId = userService.extractUserIdFromToken(token);
 
         JobApplication application = JobApplication.builder()
                 .userId(userId)
                 .jobId(request.getJobId())
-                .job_title(request.getJobTitle())
+                .jobTitle(request.getJobTitle())
                 .platform(request.getPlatform())
                 .build();
 

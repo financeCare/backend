@@ -19,8 +19,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -29,11 +27,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-
 @WebMvcTest(DebtController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class DebtControllerTest {
+class DebtControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -50,25 +47,8 @@ public class DebtControllerTest {
     @MockitoBean
     private UserService userService;
 
-
     @Autowired
     private ObjectMapper objectMapper;
-
-    // @Test
-    // void testGetOwnDebt() throws Exception {
-    //     Debt debt = new Debt();
-    //     debt.setDebtName("Home Loan");
-    //     List<Debt> debts = Arrays.asList(debt);
-
-    //     when(debtService.getOwnDebt(anyString())).thenReturn(debts);
-
-    //     mockMvc.perform(get("/debts")
-    //                     .header("Authorization", "Bearer token"))
-    //             .andDo(print())
-    //             .andExpect(status().isOk())
-    //             .andExpect(jsonPath("$[0].debtName").value("Home Loan"));
-
-    // }
 
     @Test
     void testGetDebtDetail() throws Exception {

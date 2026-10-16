@@ -6,13 +6,11 @@ import com.example.capstone.security.JwtUtil;
 import com.example.capstone.service.BudgetService;
 import com.example.capstone.service.UserService;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -26,11 +24,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-
 @WebMvcTest(BudgetController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class BudgetControllerTest {
+class BudgetControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -43,10 +40,6 @@ public class BudgetControllerTest {
 
     @MockitoBean
     private UserService userService;
-
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Test
     void testUpdateBudget() throws Exception {
@@ -115,7 +108,6 @@ public class BudgetControllerTest {
                         .header("Authorization", "Bearer token"))
                 .andDo(print())
                 .andExpect(status().isOk());
-
 
         verify(budgetService, times(1)).setSalary(anyString(), eq(30000.0));
     }

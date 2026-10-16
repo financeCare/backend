@@ -1,6 +1,6 @@
 package com.example.capstone.factory;
 
-import com.example.capstone.engineInterface.DebtMonthEngine;
+import com.example.capstone.engine.interfaces.DebtMonthEngine;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;

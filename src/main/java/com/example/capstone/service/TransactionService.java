@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +29,11 @@ import static com.example.capstone.config.GlobalVariables.*;
 @Service
 @RequiredArgsConstructor
 public class TransactionService {
+
+    private static final String CATEGORY_NOT_FOUND_MSG = "Category not found or not owned by this user";
+    private static final String BUDGET_NOT_FOUND_MSG = "Budget not found or not owned by this user";
+    private static final String TRANSACTION_NOT_FOUND_MSG = "Transaction not found or not owned by this user";
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Bangkok");
 
     private final TransactionRepository transactionRepository;
     private final UserService userService;
@@ -93,12 +99,12 @@ public class TransactionService {
         Category category = categoryRepository
                 .findById(transactionRequest.getCategoryId())
                 .orElseThrow(() -> new BusinessException(
-                        "Category not found or not owned by this user",
+                        CATEGORY_NOT_FOUND_MSG,
                         HttpStatus.NOT_FOUND));
         Budget budget = budgetRepository
                 .findByUserIdAndBudgetId(userId, category.getBudgetId())
                 .orElseThrow(() -> new BusinessException(
-                        "Budget not found or not owned by this user",
+                        BUDGET_NOT_FOUND_MSG,
                         HttpStatus.NOT_FOUND));
         Transaction transaction = new Transaction();
         transaction.setUserId(userId);
@@ -123,17 +129,17 @@ public class TransactionService {
         UUID userId = userService.extractUserIdFromToken(token);
         Transaction existingTransaction = transactionRepository
                 .findByTransactionIdAndUserId(transactionId, userId)
-                .orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user",
+                .orElseThrow(() -> new BusinessException(TRANSACTION_NOT_FOUND_MSG,
                         HttpStatus.NOT_FOUND));
         existingTransaction.setAmount(transactionRequest.getAmount());
         Category category = categoryRepository
                 .findByCategoryIdAndUserId(transactionRequest.getCategoryId(), userId)
-                .orElseThrow(() -> new BusinessException("Category not found or not owned by this user",
+                .orElseThrow(() -> new BusinessException(CATEGORY_NOT_FOUND_MSG,
                         HttpStatus.NOT_FOUND));
         existingTransaction.setCategory(category);
         Budget budget = budgetRepository
                 .findByUserIdAndBudgetId(userId, category.getBudgetId())
-                .orElseThrow(() -> new BusinessException("Budget not found or not owned by this user",
+                .orElseThrow(() -> new BusinessException(BUDGET_NOT_FOUND_MSG,
                         HttpStatus.NOT_FOUND));
         double newAmount = budget.getAmount() + transactionRequest.getAmount();
         budget.setAmount(newAmount);
@@ -151,15 +157,15 @@ public class TransactionService {
         UUID userId = userService.extractUserIdFromToken(token);
         Transaction existingTransaction = transactionRepository
                 .findByTransactionIdAndUserId(transactionId, userId)
-                .orElseThrow(() -> new BusinessException("Transaction not found or not owned by this user",
+                .orElseThrow(() -> new BusinessException(TRANSACTION_NOT_FOUND_MSG,
                         HttpStatus.NOT_FOUND));
         Category category = categoryRepository
                 .findByCategoryIdAndUserId(existingTransaction.getCategory().getCategoryId(), userId)
-                .orElseThrow(() -> new BusinessException("Category not found or not owned by this user",
+                .orElseThrow(() -> new BusinessException(CATEGORY_NOT_FOUND_MSG,
                         HttpStatus.NOT_FOUND));
         Budget budget = budgetRepository
                 .findByUserIdAndBudgetId(userId, category.getBudgetId())
-                .orElseThrow(() -> new BusinessException("Budget not found or not owned by this user",
+                .orElseThrow(() -> new BusinessException(BUDGET_NOT_FOUND_MSG,
                         HttpStatus.NOT_FOUND));
         double newAmount = budget.getAmount() - existingTransaction.getAmount();
         budget.setAmount(newAmount);
@@ -167,10 +173,10 @@ public class TransactionService {
         transactionRepository.delete(existingTransaction);
     }
 
-    public boolean checkThisMonth(String token, Transaction transaction) {
-        LocalDate currentDate = LocalDate.now();
+    public boolean checkThisMonth(Transaction transaction) {
+        LocalDate currentDate = LocalDate.now(DEFAULT_ZONE);
         LocalDate transactionDate = transaction.getTransactionDate().toLocalDate();
-        return transactionDate.getMonth() == currentDate.getMonth() &&
+        return transactionDate.getMonthValue() == currentDate.getMonthValue() &&
                 transactionDate.getYear() == currentDate.getYear();
     }
 
@@ -182,7 +188,7 @@ public class TransactionService {
             if (category.getCategoryName().equals(CATEGORY_EXTRA_INCOME)) {
                 Budget extraIncomeBudget = budgetRepository
                         .findByUserIdAndBudgetId(userId, category.getBudgetId())
-                        .orElseThrow(() -> new BusinessException("Budget not found or not owned by this user",
+                        .orElseThrow(() -> new BusinessException(BUDGET_NOT_FOUND_MSG,
                                 HttpStatus.NOT_FOUND));
                 double newAmount = extraIncomeBudget.getAmount() + amount;
                 extraIncomeBudget.setAmount(newAmount);
@@ -192,7 +198,7 @@ public class TransactionService {
         Transaction transaction = new Transaction();
         transaction.setUserId(userId);
         transaction.setAmount(amount);
-        transaction.setTransactionDate(LocalDateTime.now());
+        transaction.setTransactionDate(LocalDateTime.now(DEFAULT_ZONE));
         transaction.setDescription("Extra Income");
         Category incomeCategory = categoryRepository.findByUserIdAndType(userId, "Income").get(0);
         transaction.setCategory(incomeCategory);
@@ -201,9 +207,8 @@ public class TransactionService {
 
     public Double getMonthlyExpenses(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
-        LocalDateTime start = LocalDate.now().withDayOfMonth(1).atStartOfDay();
-        LocalDateTime end = LocalDate.now().withDayOfMonth(1).plusMonths(1).atStartOfDay();
+        LocalDateTime start = LocalDate.now(DEFAULT_ZONE).withDayOfMonth(1).atStartOfDay();
+        LocalDateTime end = LocalDate.now(DEFAULT_ZONE).withDayOfMonth(1).plusMonths(1).atStartOfDay();
         return transactionRepository.sumByCategoryType(userId, TYPE_EXPENSE, start, end);
     }
 }
-

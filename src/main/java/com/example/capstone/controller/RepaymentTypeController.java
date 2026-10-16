@@ -1,5 +1,6 @@
 package com.example.capstone.controller;
 
+import com.example.capstone.dto.RepaymentTypeRequest;
 import com.example.capstone.entity.RepaymentType;
 import com.example.capstone.service.RepaymentTypeService;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +22,8 @@ public class RepaymentTypeController {
     }
 
     @PostMapping
-    public ResponseEntity<String> addRepaymentType(@RequestBody RepaymentType repaymentType) {
-        String msg = repaymentTypeService.addRepaymentType(repaymentType);
+    public ResponseEntity<String> addRepaymentType(@RequestBody RepaymentTypeRequest request) {
+        String msg = repaymentTypeService.addRepaymentType(request);
         return ResponseEntity.status(201).body(msg);
     }
 

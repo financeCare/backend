@@ -1,12 +1,10 @@
 package com.example.capstone.controller;
 
-import com.example.capstone.entity.Slip;
 import com.example.capstone.entity.User;
 import com.example.capstone.security.JwtUtil;
 import com.example.capstone.repository.UserRepository;
 import com.example.capstone.service.SlipService;
 import com.example.capstone.service.UserService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -31,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(SlipController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class SlipControllerTest {
+class SlipControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -47,9 +45,6 @@ public class SlipControllerTest {
 
     @MockitoBean
     private JwtUtil jwtUtil;
-
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @Test
     void testUploadSlips_Success() throws Exception {

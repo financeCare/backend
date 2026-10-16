@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(JobController.class)
 @AutoConfigureMockMvc
-public class JobControllerTest {
+class JobControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

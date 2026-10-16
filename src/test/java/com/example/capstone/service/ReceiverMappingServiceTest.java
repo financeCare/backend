@@ -21,7 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class ReceiverMappingServiceTest {
+class ReceiverMappingServiceTest {
 
     @Mock
     private ReceiverMappingRepository receiverMappingRepository;

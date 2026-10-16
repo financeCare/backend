@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-@Component("DAILY_SIMPLE")
+@Component("dailySimple")
 public class DailySimpleInterestCalculator implements InterestCalculator {
 
     @Override

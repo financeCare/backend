@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(DebtTypeController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class DebtTypeControllerTest {
+class DebtTypeControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

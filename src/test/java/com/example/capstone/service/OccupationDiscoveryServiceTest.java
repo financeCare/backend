@@ -19,7 +19,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class OccupationDiscoveryServiceTest {
+class OccupationDiscoveryServiceTest {
 
     @Mock
     private StringRedisTemplate redisTemplate;

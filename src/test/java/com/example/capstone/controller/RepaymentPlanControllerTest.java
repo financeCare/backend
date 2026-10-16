@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(RepaymentPlanController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class RepaymentPlanControllerTest {
+class RepaymentPlanControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -173,7 +173,7 @@ public class RepaymentPlanControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(expectedMsg));
 
-        verify(repaymentPlanService, times(1)).deleteRepaymentStrategy(eq(strategyId));
+        verify(repaymentPlanService, times(1)).deleteRepaymentStrategy(strategyId);
     }
 
     @Test
@@ -215,9 +215,9 @@ public class RepaymentPlanControllerTest {
                 .andExpect(jsonPath("$.monthlyBudget").value(5000))
                 .andExpect(jsonPath("$.strategyId").value(strategyId.toString()));
 
-        verify(userService, times(1)).extractUserIdFromToken(eq("test-token"));
+        verify(userService, times(1)).extractUserIdFromToken("test-token");
         verify(repaymentPlanService, times(1))
-                .changeRepaymentPlan(eq(userId), eq(new BigDecimal("5000")), eq(strategyId));
+                .changeRepaymentPlan(userId, new BigDecimal("5000"), strategyId);
     }
 
     @Test

@@ -1,9 +1,9 @@
-package com.example.capstone.engineImp.repaymentType;
+package com.example.capstone.engine.repaymenttype;
 
 import com.example.capstone.domain.DebtSim;
 import com.example.capstone.domain.LoanMonthResult;
-import com.example.capstone.engineImp.calculator.InterestCalculator;
-import com.example.capstone.engineInterface.DebtMonthEngine;
+import com.example.capstone.engine.calculator.InterestCalculator;
+import com.example.capstone.engine.interfaces.DebtMonthEngine;
 import com.example.capstone.util.PenaltyLogic;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -12,11 +12,11 @@ import java.math.BigDecimal;
 
 @Component
 @RequiredArgsConstructor
-public class EMIEngine implements DebtMonthEngine {
+public class LumpSumEngine implements DebtMonthEngine {
 
     @Override
     public boolean supports(String repaymentType) {
-        return repaymentType.equals("EMI");
+        return repaymentType.equals("LUMPSUM");
     }
 
     @Override

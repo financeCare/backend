@@ -21,7 +21,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class JoobleServiceTest {
+class JoobleServiceTest {
 
     @Mock
     private RestTemplate restTemplate;
@@ -60,7 +60,7 @@ public class JoobleServiceTest {
         mockResponses[0].setTitle("Java Developer");
 
         when(valueOperations.get(anyString())).thenReturn(cachedJson);
-        when(objectMapper.readValue(eq(cachedJson), eq(JobSuggestionResponse[].class))).thenReturn(mockResponses);
+        when(objectMapper.readValue(cachedJson, JobSuggestionResponse[].class)).thenReturn(mockResponses);
 
         // Act
         List<JobSuggestionResponse> result = joobleService.getSuggestedJobs(request);

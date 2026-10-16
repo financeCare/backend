@@ -1,5 +1,6 @@
 package com.example.capstone.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 
@@ -10,12 +11,16 @@ import java.util.UUID;
 public class UserSettingDto {
     private boolean notificationsEnabled;
     private LocalTime defaultNotifyTime;
-    private int notify_due_days_before;
+
+    @JsonProperty("notify_due_days_before")
+    private int notifyDueDaysBefore;
 
     @PositiveOrZero(message = "Monthly repayment budget must be zero or positive")
-    private double monthly_repayment_budget;
+    @JsonProperty("monthly_repayment_budget")
+    private double monthlyRepaymentBudget;
 
-    private UUID default_strategy;
+    @JsonProperty("default_strategy")
+    private UUID defaultStrategy;
 
     private String skills;
 }

@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-@Component("FLAT_RATE")
+@Component("flatRate")
 public class FlatRateInterestCalculator implements InterestCalculator {
 
     @Override

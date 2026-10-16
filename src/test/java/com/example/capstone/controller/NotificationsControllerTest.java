@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(NotificationsController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class NotificationsControllerTest {
+class NotificationsControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -107,7 +107,7 @@ public class NotificationsControllerTest {
 
     @Test
     void testUnreadCount() throws Exception {
-        when(notificationsService.countUnreadNotifications(anyString())).thenReturn(5);
+        when(notificationsService.countUnreadNotifications(anyString())).thenReturn(5L);
 
         MockHttpServletRequestBuilder requestBuilder = get("/notifications/logs/unread-count")
                 .header("Authorization", "Bearer token");

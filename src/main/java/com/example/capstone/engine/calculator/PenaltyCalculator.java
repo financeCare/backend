@@ -1,9 +1,13 @@
-package com.example.capstone.engineImp.calculator;
+package com.example.capstone.engine.calculator;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-public class PenaltyCalculator {
+public final class PenaltyCalculator {
+
+    private PenaltyCalculator() {
+        // Utility class private constructor
+    }
 
     public static BigDecimal calculateMonthly(
             BigDecimal principal,

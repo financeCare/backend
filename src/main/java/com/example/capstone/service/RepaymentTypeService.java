@@ -1,5 +1,6 @@
 package com.example.capstone.service;
 
+import com.example.capstone.dto.RepaymentTypeRequest;
 import com.example.capstone.entity.RepaymentType;
 import com.example.capstone.exception.BusinessException;
 import com.example.capstone.repository.RepaymentTypeRepository;
@@ -39,6 +40,19 @@ public class RepaymentTypeService {
             // Fallback
         }
         return types;
+    }
+
+    public String addRepaymentType(RepaymentTypeRequest request) {
+        try {
+            RepaymentType repaymentType = new RepaymentType();
+            repaymentType.setRepaymentTypeName(request.getRepaymentTypeName());
+            repaymentType.setRepaymentTypeDescription(request.getRepaymentTypeDescription());
+            repaymentTypeRepository.save(repaymentType);
+            evictCache();
+        } catch (Exception e) {
+            throw new BusinessException(e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+        return "repaymentType add successfully";
     }
 
     public String addRepaymentType(RepaymentType repaymentType) {

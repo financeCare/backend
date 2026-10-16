@@ -9,6 +9,7 @@ import com.example.capstone.exception.BusinessException;
 import com.example.capstone.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -28,7 +29,11 @@ import com.google.firebase.messaging.FirebaseMessaging;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationService {
+    private static final String DEFAULT_TIMEZONE = "Asia/Bangkok";
+    private static final ZoneId DEFAULT_ZONE = ZoneId.of(DEFAULT_TIMEZONE);
+
     private final UserService userService;
     private final UserDeviceRepository userDeviceRepository;
     private final UserSettingRepository userSettingRepository;
@@ -40,113 +45,109 @@ public class NotificationService {
         LocalDate today = LocalDate.now(zoneId);
         LocalDate first = today.withDayOfMonth(1);
         int lastDay = first.lengthOfMonth();
-        int safeDay = Math.min(Math.max(dueDay, 1), lastDay);
+        int safeDay = Math.clamp(dueDay, 1, lastDay);
         return first.withDayOfMonth(safeDay);
     }
 
     @Transactional
     public UserDeviceResponse registerDevice(String token, UserDeviceRequest req) {
         UUID userId = userService.extractUserIdFromToken(token);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(DEFAULT_ZONE);
 
-        // 1) กันชนด้วย unique key (fcm_token)
         if (req.getFcmToken() != null && !req.getFcmToken().isBlank()) {
             Optional<UserDevice> byTokenOpt = userDeviceRepository.findByFcmToken(req.getFcmToken());
             if (byTokenOpt.isPresent()) {
                 UserDevice d = byTokenOpt.get();
-
-                // update ให้เป็นข้อมูลล่าสุด (อาจเป็นคนละ user/deviceKey ก็ได้)
                 d.setUserId(userId);
                 d.setDeviceKey(req.getDeviceKey());
-                d.setPlatform(req.getPlatform());
                 d.setDeviceName(req.getDeviceName());
-                d.setLastSeen(now);
+                d.setPlatform(req.getPlatform());
                 d.setActive(true);
-
-                userDeviceRepository.save(d);
-                return new UserDeviceResponse(d.getDeviceId(), d.getActive(), now);
+                d.setLastSeen(now);
+                d.setUpdatedAt(now);
+                UserDevice saved = userDeviceRepository.save(d);
+                return toResponse(saved);
             }
         }
 
-        // 2) ถ้า token ยังไม่เคยมี → หา device เดิมด้วย deviceKey+userId
-        Optional<UserDevice> byKeyUserOpt = userDeviceRepository.findByDeviceKeyAndUserId(req.getDeviceKey(), userId);
-
-        if (byKeyUserOpt.isPresent()) {
-            UserDevice d = byKeyUserOpt.get();
-            d.setFcmToken(req.getFcmToken()); // token ใหม่ (ถ้ามี)
-            d.setPlatform(req.getPlatform());
-            d.setDeviceName(req.getDeviceName());
-            d.setLastSeen(now);
-            d.setActive(true);
-
-            userDeviceRepository.save(d);
-            return new UserDeviceResponse(d.getDeviceId(), d.getActive(), now);
+        if (req.getDeviceKey() != null && !req.getDeviceKey().isBlank()) {
+            Optional<UserDevice> byKeyOpt = userDeviceRepository.findByDeviceKeyAndUserId(req.getDeviceKey(), userId);
+            if (byKeyOpt.isPresent()) {
+                UserDevice d = byKeyOpt.get();
+                d.setFcmToken(req.getFcmToken());
+                d.setDeviceName(req.getDeviceName());
+                d.setPlatform(req.getPlatform());
+                d.setActive(true);
+                d.setLastSeen(now);
+                d.setUpdatedAt(now);
+                UserDevice saved = userDeviceRepository.save(d);
+                return toResponse(saved);
+            }
         }
 
-        // 3) ไม่เจอทั้งคู่ → create ใหม่
-        UserDevice d = new UserDevice();
-        d.setUserId(userId);
-        d.setFcmToken(req.getFcmToken());
-        d.setPlatform(req.getPlatform());
-        d.setDeviceName(req.getDeviceName()); // ✅ แก้บั๊ก
-        d.setLastSeen(now);
-        d.setDeviceKey(req.getDeviceKey());
-        d.setActive(true);
+        UserDevice d = UserDevice.builder()
+                .userId(userId)
+                .deviceKey(req.getDeviceKey())
+                .deviceName(req.getDeviceName())
+                .platform(req.getPlatform())
+                .fcmToken(req.getFcmToken())
+                .active(true)
+                .lastSeen(now)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
 
-        userDeviceRepository.save(d);
-        return new UserDeviceResponse(d.getDeviceId(), d.getActive(), now);
+        UserDevice saved = userDeviceRepository.save(d);
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public void unregisterDevice(String token, UUID deviceId) {
+        UUID userId = userService.extractUserIdFromToken(token);
+        Optional<UserDevice> dOpt = userDeviceRepository.findById(deviceId);
+        if (dOpt.isPresent()) {
+            UserDevice d = dOpt.get();
+            if (d.getUserId().equals(userId)) {
+                d.setActive(false);
+                d.setUpdatedAt(LocalDateTime.now(DEFAULT_ZONE));
+                userDeviceRepository.save(d);
+            }
+        }
     }
 
     public List<DeviceListDto> getMyDevices(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
-        List<UserDevice> userDevices = userDeviceRepository.findAllByUserIdAndActiveTrue(userId);
-        return userDevices.stream()
-                .map(ud -> new DeviceListDto(
-                        ud.getDeviceId(),
-                        ud.getDeviceName(),
-                        ud.getPlatform(),
-                        ud.getLastSeen()))
+        List<UserDevice> devices = userDeviceRepository.findAllByUserIdAndActiveTrue(userId);
+        return devices.stream()
+                .map(d -> new DeviceListDto(d.getDeviceId(), d.getDeviceName(), d.getPlatform(), d.getLastSeen()))
                 .toList();
     }
 
-    public void unregisterDevice(String token, UUID deviceId) {
-        UUID userId = userService.extractUserIdFromToken(token);
-        UserDevice userDevice = userDeviceRepository.findById(deviceId)
-                .orElseThrow(() -> new BusinessException("Device not found", HttpStatus.NOT_FOUND));
-        if (!userDevice.getUserId().equals(userId)) {
-            throw new BusinessException("Forbidden", HttpStatus.FORBIDDEN);
-        }
-        userDevice.setActive(false);
-        userDeviceRepository.save(userDevice);
+    private UserDeviceResponse toResponse(UserDevice d) {
+        return new UserDeviceResponse(d.getDeviceId(), Boolean.TRUE.equals(d.getActive()), d.getLastSeen());
     }
 
-    public void createNotificationRuleForDebt(UUID userId, String debtName, BigDecimal minPayment, UUID debtId) {
-        UserSetting userSetting = userSettingRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException("User id is not found", HttpStatus.NOT_FOUND));
-        NotificationRule notificationRule = new NotificationRule();
-        notificationRule.setUserId(userId);
-        notificationRule.setRefId(debtId.toString());
-        notificationRule.setRefType(RefType.DEBT);
-        notificationRule.setTitle("เตือนหนี้ครบกำหนด");
-        notificationRule.setBodyTemplate("หนี้ " + debtName + " จำนวนขั้นต่ำ " + minPayment + " บาทครบกำหนดวันนี้");
-        notificationRule.setRemindDaysBefore(userSetting.getDefaultRemindDaysBefore());
-        notificationRule.setTimeOfDay(userSetting.getDefaultNotifyTime());
-        notificationRule.setTimezone(userSetting.getTimezone());
-        notificationRuleRepository.save(notificationRule);
+    public void createNotificationRuleForBudget(UUID userId, String categoryName, Double limitBudget, Double currentAmount, UUID budgetId) {
+        double limit = (limitBudget != null) ? limitBudget : 0;
+        double current = (currentAmount != null) ? currentAmount : 0;
+        double usedPercentage = (limit > 0) ? (current / limit) * 100 : 0;
+        double remaining = limit - current;
+        sendBudgetNotification(userId, budgetId, categoryName, usedPercentage, remaining);
     }
 
-    public void createNotificationRuleForBudget(UUID userId, String categoryName,
-            Double limitAmount, Double amount, UUID budgetId) {
-        double usedPercentage = (amount / limitAmount) * 100.0;
-        if (usedPercentage <= 90)
+    @Transactional
+    public void sendBudgetNotification(UUID userId, UUID budgetId, String categoryName, double usedPercentage, double remaining) {
+        UserSetting userSetting = userSettingRepository.findByUserId(userId);
+        if (userSetting != null && !Boolean.TRUE.equals(userSetting.getNotificationsEnabled())) {
             return;
-        double remaining = limitAmount - amount;
+        }
+
         NotificationRule notificationRule = new NotificationRule();
         notificationRule.setUserId(userId);
         notificationRule.setRefType(RefType.BUDGET);
-        notificationRule.setRemindDaysBefore(0);
-        notificationRule.setTimeOfDay(null);
-        notificationRule.setTimezone("Asia/Bangkok");
+        notificationRule.setRefId(budgetId.toString());
+        notificationRule.setActive(true);
+
         if (usedPercentage >= 100) {
             notificationRule.setTitle("แจ้งเตือนงบประมาณเกินกำหนด");
             notificationRule.setBodyTemplate(String.format(
@@ -165,12 +166,17 @@ public class NotificationService {
         notificationRuleRepository.save(notificationRule);
         List<UserDevice> devices = userDeviceRepository.findAllByUserIdAndActiveTrue(userId);
         if (devices.isEmpty()) {
-            saveLog(
-                    userId, notificationRule.getRuleId(), null,
-                    RefType.BUDGET, budgetId.toString(),
-                    NotificationChannel.PUSH, NotificationStatus.FAILED,
-                    notificationRule.getTitle(), notificationRule.getBodyTemplate(),
-                    "this user doesn't have any device");
+            saveLogDirect(NotificationLog.builder()
+                    .userId(userId)
+                    .ruleId(notificationRule.getRuleId())
+                    .refType(RefType.BUDGET)
+                    .refId(budgetId.toString())
+                    .channel(NotificationChannel.PUSH)
+                    .status(NotificationStatus.FAILED)
+                    .title(notificationRule.getTitle())
+                    .body(notificationRule.getBodyTemplate())
+                    .errorMessage("this user doesn't have any device")
+                    .build());
             return;
         }
         for (UserDevice d : devices) {
@@ -185,29 +191,45 @@ public class NotificationService {
                         .putData("refId", budgetId.toString())
                         .build();
                 if (FirebaseApp.getApps().isEmpty()) {
-                    throw new RuntimeException("Firebase is not initialized. Skipping send.");
+                    log.warn("Firebase is not initialized. Skipping send.");
+                    continue;
                 }
                 FirebaseMessaging.getInstance().send(message);
             } catch (Exception ex) {
-                saveLog(
-                        userId, notificationRule.getRuleId(), null,
-                        RefType.BUDGET, budgetId.toString(),
-                        NotificationChannel.PUSH, NotificationStatus.FAILED,
-                        notificationRule.getTitle(), notificationRule.getBodyTemplate(),
-                        ex.getMessage());
+                saveLogDirect(NotificationLog.builder()
+                        .userId(userId)
+                        .ruleId(notificationRule.getRuleId())
+                        .refType(RefType.BUDGET)
+                        .refId(budgetId.toString())
+                        .channel(NotificationChannel.PUSH)
+                        .status(NotificationStatus.FAILED)
+                        .title(notificationRule.getTitle())
+                        .body(notificationRule.getBodyTemplate())
+                        .errorMessage(ex.getMessage())
+                        .build());
             }
         }
-        saveLog(
-                userId, notificationRule.getRuleId(), null,
-                RefType.BUDGET, budgetId.toString(),
-                NotificationChannel.PUSH, NotificationStatus.SENT,
-                notificationRule.getTitle(), notificationRule.getBodyTemplate(), null);
+        saveLogDirect(NotificationLog.builder()
+                .userId(userId)
+                .ruleId(notificationRule.getRuleId())
+                .refType(RefType.BUDGET)
+                .refId(budgetId.toString())
+                .channel(NotificationChannel.PUSH)
+                .status(NotificationStatus.SENT)
+                .title(notificationRule.getTitle())
+                .body(notificationRule.getBodyTemplate())
+                .build());
     }
 
-    public Page<NotificationLog> getNotificationLogs(String token, String refType, Pageable pageable) {
-        UUID userId = userService.extractUserIdFromToken(token);
-        return notificationLogRepository.findAllByUserIdAndRefTypeAndStatusIsNot(userId, RefType.valueOf(refType),
-                NotificationStatus.FAILED, pageable);
+    public void createNotificationRuleForDebt(UUID userId, String debtName, BigDecimal minPayment, UUID debtId) {
+        NotificationRule notificationRule = new NotificationRule();
+        notificationRule.setUserId(userId);
+        notificationRule.setRefType(RefType.DEBT);
+        notificationRule.setRefId(debtId.toString());
+        notificationRule.setActive(true);
+        notificationRule.setTitle("แจ้งเตือนชำระหนี้: " + debtName);
+        notificationRule.setBodyTemplate(String.format("ยอดชำระขั้นต่ำ %.2f บาท สำหรับ %s", minPayment, debtName));
+        notificationRuleRepository.save(notificationRule);
     }
 
     public Page<NotificationLog> getAllNotificationLogs(String token, Pageable pageable) {
@@ -215,37 +237,43 @@ public class NotificationService {
         return notificationLogRepository.findAllByUserIdAndStatusIsNot(userId, NotificationStatus.FAILED, pageable);
     }
 
-    public int countUnreadNotifications(String token) {
+    public Page<NotificationLog> getNotificationLogs(String token, String refType, Pageable pageable) {
         UUID userId = userService.extractUserIdFromToken(token);
-        return (int) notificationLogRepository.findAllByUserId(userId, Pageable.unpaged())
+        return notificationLogRepository.findAllByUserIdAndRefTypeAndStatusIsNot(userId, RefType.valueOf(refType), NotificationStatus.FAILED, pageable);
+    }
+
+    public long countUnreadNotifications(String token) {
+        UUID userId = userService.extractUserIdFromToken(token);
+        return notificationLogRepository.findAllByUserId(userId, Pageable.unpaged())
                 .stream()
-                .filter(log -> log.getStatus() == NotificationStatus.SENT)
+                .filter(logEntry -> logEntry.getStatus() == NotificationStatus.SENT)
                 .count();
     }
 
+    @Transactional
     public void markAllNotificationsAsRead(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
         List<NotificationLog> logs = notificationLogRepository.findAllByUserId(userId, Pageable.unpaged())
                 .stream()
-                .filter(log -> log.getStatus() == NotificationStatus.SENT)
+                .filter(logEntry -> logEntry.getStatus() == NotificationStatus.SENT)
                 .toList();
-        for (NotificationLog log : logs) {
-            log.setStatus(NotificationStatus.CLICKED);
+        for (NotificationLog l : logs) {
+            l.setStatus(NotificationStatus.CLICKED);
         }
         notificationLogRepository.saveAll(logs);
     }
 
+    @Transactional
     public void markNotificationAsClicked(String token, UUID logId) {
         UUID userId = userService.extractUserIdFromToken(token);
-        NotificationLog log = notificationLogRepository.findById(logId)
-                .orElseThrow(() -> new BusinessException("Notification log not found", HttpStatus.NOT_FOUND));
-        if (!log.getUserId().equals(userId)) {
+        NotificationLog logEntry = notificationLogRepository.findById(logId)
+                .orElseThrow(() -> new BusinessException("Notification not found", HttpStatus.NOT_FOUND));
+        if (!logEntry.getUserId().equals(userId)) {
             throw new BusinessException("Forbidden", HttpStatus.FORBIDDEN);
         }
-        log.setStatus(NotificationStatus.CLICKED);
-        notificationLogRepository.save(log);
+        logEntry.setStatus(NotificationStatus.CLICKED);
+        notificationLogRepository.save(logEntry);
     }
-
 
     @Scheduled(cron = "0 * * * * *")
     public void runNotificationScheduler() {
@@ -259,11 +287,10 @@ public class NotificationService {
         UUID userId = rule.getUserId();
 
         UserSetting setting = userSettingRepository.findById(userId).orElse(null);
-        if (setting == null)
+        if (setting == null || !Boolean.TRUE.equals(setting.getNotificationsEnabled())) {
             return;
+        }
 
-        if (!setting.getNotificationsEnabled())
-            return;
         if (rule.getRefType() == RefType.DEBT) {
             Debt debt = debtRepository
                     .findById(UUID.fromString(rule.getRefId()))
@@ -282,7 +309,6 @@ public class NotificationService {
                     sendDebtNotification(userId, rule.getRuleId(), debt, daysBefore, timezone, timeOfDay);
                 }
             }
-
         }
     }
 
@@ -291,7 +317,7 @@ public class NotificationService {
             int remindDaysBefore,
             LocalTime timeOfDay,
             String timezone) {
-        ZoneId zoneId = ZoneId.of((timezone == null || timezone.isBlank()) ? "Asia/Bangkok" : timezone);
+        ZoneId zoneId = ZoneId.of((timezone == null || timezone.isBlank()) ? DEFAULT_TIMEZONE : timezone);
 
         LocalDate today = LocalDate.now(zoneId);
         LocalTime nowTime = LocalTime.now(zoneId);
@@ -316,7 +342,7 @@ public class NotificationService {
             int remindDaysBefore,
             String timezone,
             LocalTime timeOfDay) {
-        ZoneId zoneId = ZoneId.of((timezone == null || timezone.isBlank()) ? "Asia/Bangkok" : timezone);
+        ZoneId zoneId = ZoneId.of((timezone == null || timezone.isBlank()) ? DEFAULT_TIMEZONE : timezone);
 
         LocalDate today = LocalDate.now(zoneId);
         LocalTime nowTime = LocalTime.now(zoneId);
@@ -350,11 +376,18 @@ public class NotificationService {
         List<UserDevice> devices = userDeviceRepository.findAllByUserIdAndActiveTrue(userId);
 
         if (devices.isEmpty()) {
-            saveLog(
-                    userId, ruleId, scheduleKey,
-                    RefType.DEBT, String.valueOf(debt.getDebtId()),
-                    NotificationChannel.PUSH, NotificationStatus.FAILED,
-                    title, body, "No active device tokens");
+            saveLogDirect(NotificationLog.builder()
+                    .userId(userId)
+                    .ruleId(ruleId)
+                    .scheduleKey(scheduleKey)
+                    .refType(RefType.DEBT)
+                    .refId(String.valueOf(debt.getDebtId()))
+                    .channel(NotificationChannel.PUSH)
+                    .status(NotificationStatus.FAILED)
+                    .title(title)
+                    .body(body)
+                    .errorMessage("No active device tokens")
+                    .build());
             return;
         }
 
@@ -371,25 +404,37 @@ public class NotificationService {
                         .putData("scheduleKey", scheduleKey)
                         .build();
                 if (FirebaseApp.getApps().isEmpty()) {
-                    throw new RuntimeException("Firebase is not initialized. Skipping send.");
+                    log.warn("Firebase is not initialized. Skipping send.");
+                    continue;
                 }
                 FirebaseMessaging.getInstance().send(message);
             } catch (Exception ex) {
-                saveLog(
-                        userId, ruleId, scheduleKey,
-                        RefType.DEBT, String.valueOf(debt.getDebtId()),
-                        NotificationChannel.PUSH, NotificationStatus.FAILED,
-                        title, body, ex.getMessage());
+                saveLogDirect(NotificationLog.builder()
+                        .userId(userId)
+                        .ruleId(ruleId)
+                        .scheduleKey(scheduleKey)
+                        .refType(RefType.DEBT)
+                        .refId(String.valueOf(debt.getDebtId()))
+                        .channel(NotificationChannel.PUSH)
+                        .status(NotificationStatus.FAILED)
+                        .title(title)
+                        .body(body)
+                        .errorMessage(ex.getMessage())
+                        .build());
             }
         }
-        saveLog(
-                userId, ruleId, scheduleKey,
-                RefType.DEBT, String.valueOf(debt.getDebtId()),
-                NotificationChannel.PUSH, NotificationStatus.SENT,
-                title, body, null);
+        saveLogDirect(NotificationLog.builder()
+                .userId(userId)
+                .ruleId(ruleId)
+                .scheduleKey(scheduleKey)
+                .refType(RefType.DEBT)
+                .refId(String.valueOf(debt.getDebtId()))
+                .channel(NotificationChannel.PUSH)
+                .status(NotificationStatus.SENT)
+                .title(title)
+                .body(body)
+                .build());
     }
-
-    // ===== Helpers =====
 
     private String buildDebtScheduleKey(UUID debtId, int daysBefore) {
         return "DEBT:" + debtId + ":D-" + daysBefore;
@@ -398,7 +443,7 @@ public class NotificationService {
     public static LocalDate getDueDateForThisMonth(int dueDay, ZoneId zoneId) {
         LocalDate today = LocalDate.now(zoneId);
         int lastDay = today.lengthOfMonth();
-        int safeDay = Math.min(Math.max(dueDay, 1), lastDay);
+        int safeDay = Math.clamp(dueDay, 1, lastDay);
         return LocalDate.of(today.getYear(), today.getMonth(), safeDay);
     }
 
@@ -409,31 +454,10 @@ public class NotificationService {
         return "อีก " + remindDaysBefore + " วัน จะครบกำหนดชำระหนี้ (" + dueDate + "): " + debt.getDebtName();
     }
 
-    private void saveLog(
-            UUID userId,
-            UUID ruleId,
-            String scheduleKey,
-            RefType refType,
-            String refId,
-            NotificationChannel channel,
-            NotificationStatus status,
-            String title,
-            String body,
-            String errorMessage) {
-        NotificationLog log = NotificationLog.builder()
-                .userId(userId)
-                .ruleId(ruleId)
-                .scheduleKey(scheduleKey)
-                .refType(refType)
-                .refId(refId)
-                .channel(channel)
-                .status(status)
-                .title(title)
-                .body(body)
-                .errorMessage(errorMessage)
-                .sentAt(LocalDateTime.now())
-                .build();
-        notificationLogRepository.save(log);
+    private void saveLogDirect(NotificationLog notificationLog) {
+        if (notificationLog.getSentAt() == null) {
+            notificationLog.setSentAt(LocalDateTime.now(DEFAULT_ZONE));
+        }
+        notificationLogRepository.save(notificationLog);
     }
-
 }

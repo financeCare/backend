@@ -24,7 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class RepaymentPlanServiceTest {
+class RepaymentPlanServiceTest {
 
     @Mock
     private RepaymentPlanRepository repaymentPlanRepository;
@@ -78,26 +78,6 @@ public class RepaymentPlanServiceTest {
         assertNotNull(result.getRepaymentStrategyList());
     }
 
-    // @Test
-    // void testGetMonthlyDebtStatus_Insufficient() {
-    //     when(userService.extractUserIdFromToken(token)).thenReturn(userId);
-        
-    //     Debt debt = new Debt();
-    //     debt.setMinPayment(new BigDecimal("5000"));
-    //     debt.setPrincipalOutstanding(new BigDecimal("100000"));
-    //     debt.setInterestRate(new BigDecimal("12"));
-    //     debt.setActive(true);
-    //     when(debtRepository.findByActiveAndUserId(true, userId)).thenReturn(List.of(debt));
-        
-    //     RepaymentPlan plan = new RepaymentPlan();
-    //     plan.setMonthlyBudget(new BigDecimal("1000")); // Lower than interest
-    //     when(repaymentPlanRepository.findByUserId(userId)).thenReturn(plan);
-        
-    //     MonthlyStatusDTO result = repaymentPlanService.getMonthlyDebtStatus(token);
-        
-    //     assertTrue(result.isBudgetInsufficient());
-    //     assertEquals(new BigDecimal("5000"), result.getActualMinPayment());
-    // }
 
     @Test
     void testCalculateSafeMinPayment_Rounding() {

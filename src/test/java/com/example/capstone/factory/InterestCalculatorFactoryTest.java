@@ -1,7 +1,7 @@
 package com.example.capstone.factory;
 
-import com.example.capstone.engineImp.calculator.InterestCalculator;
 import com.example.capstone.enums.InterestCalculationType;
+import com.example.capstone.strategy.interest.InterestCalculator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -13,13 +13,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class InterestCalculatorFactoryTest {
+class InterestCalculatorFactoryTest {
 
     @Test
-    public void testGetCalculator() {
+    void testGetCalculator() {
         InterestCalculator calculator = mock(InterestCalculator.class);
         Map<String, InterestCalculator> calculators = new HashMap<>();
-        calculators.put(InterestCalculationType.THIRTY_360.name(), calculator);
+        calculators.put("thirty360", calculator);
 
         InterestCalculatorFactory factory = new InterestCalculatorFactory(calculators);
 

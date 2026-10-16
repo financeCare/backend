@@ -1,16 +1,13 @@
 package com.example.capstone.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-public class verifyOTPDTO {
-
-    @NotBlank(message = "Email is required")
-    @Email(message = "Email format is invalid")
+@NoArgsConstructor
+@AllArgsConstructor
+public class VerifyOtpDto {
     private String email;
-
-    @NotBlank(message = "OTP is required")
     private String otp;
 }

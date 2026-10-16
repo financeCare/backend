@@ -1,6 +1,6 @@
 package com.example.capstone.factory;
 
-import com.example.capstone.engineInterface.DebtMonthEngine;
+import com.example.capstone.engine.interfaces.DebtMonthEngine;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

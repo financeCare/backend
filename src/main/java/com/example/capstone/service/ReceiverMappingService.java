@@ -2,10 +2,11 @@ package com.example.capstone.service;
 
 import com.example.capstone.entity.Category;
 import com.example.capstone.entity.ReceiverMapping;
-import com.example.capstone.entity.User;
+import com.example.capstone.exception.BusinessException;
 import com.example.capstone.repository.CategoryRepository;
 import com.example.capstone.repository.ReceiverMappingRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +34,7 @@ public class ReceiverMappingService {
         Category category = null;
         if (categoryId != null) {
             category = categoryRepository.findById(categoryId)
-                    .orElseThrow(() -> new RuntimeException("Category not found"));
+                    .orElseThrow(() -> new BusinessException("Category not found", HttpStatus.NOT_FOUND));
         }
 
         Optional<ReceiverMapping> existing = receiverMappingRepository.findByUserIdAndReceiverName(userId, receiverName);
@@ -58,10 +59,10 @@ public class ReceiverMappingService {
     public void deleteMapping(Long id, String token) {
         UUID userId = userService.extractUserIdFromToken(token);
         ReceiverMapping mapping = receiverMappingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Mapping not found"));
+                .orElseThrow(() -> new BusinessException("Mapping not found", HttpStatus.NOT_FOUND));
         
         if (!mapping.getUserId().equals(userId)) {
-            throw new RuntimeException("Unauthorized to delete this mapping");
+            throw new BusinessException("Unauthorized to delete this mapping", HttpStatus.FORBIDDEN);
         }
         
         receiverMappingRepository.delete(mapping);
@@ -85,7 +86,6 @@ public class ReceiverMappingService {
         String normalizedReceiver = receiverName.toLowerCase().trim();
         List<ReceiverMapping> allMappings = receiverMappingRepository.findByUserId(userId);
         
-        // Try exact match first for better precision
         Optional<ReceiverMapping> exactMatch = allMappings.stream()
                 .filter(m -> m.getReceiverName().equalsIgnoreCase(receiverName.trim()))
                 .findFirst();
@@ -94,7 +94,6 @@ public class ReceiverMappingService {
             return exactMatch;
         }
 
-        // Fuzzy match: check if OCR name contains mapping name OR mapping name contains OCR name
         return allMappings.stream()
                 .filter(m -> {
                     String mappingName = m.getReceiverName().toLowerCase().trim();
