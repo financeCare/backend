@@ -213,7 +213,7 @@ public class RepaymentPlanService {
         }
 
         RepaymentPlanDtoV2 simPlan = mapToDomainPlan(planEntity);
-        List<DebtSim> simDebts = debtEntities.stream().map(this::mapToDomainDebt).toList();
+        List<DebtSim> simDebts = toDomainDebts(debtEntities);
         RepaymentStrategyInterface strategy = strategyFactory.getStrategy(simPlan.getStrategyType());
         return repaymentPlanSimulator.simulateCore(simPlan, simDebts, strategy);
     }
@@ -237,7 +237,16 @@ public class RepaymentPlanService {
         return plan;
     }
 
-    private DebtSim mapToDomainDebt(Debt entity) {
+    private List<DebtSim> toDomainDebts(List<Debt> debts) {
+        Map<UUID, Map<DebtTxnType, BigDecimal>> outstanding = debtTransactionRepository.outstandingByDebt(
+                debts.stream().map(Debt::getDebtId).toList(),
+                List.of(DebtTxnType.INTEREST_CHARGE, DebtTxnType.LATE_FEE_CHARGE, DebtTxnType.PENALTY_INTEREST_CHARGE));
+        return debts.stream()
+                .map(d -> mapToDomainDebt(d, outstanding.getOrDefault(d.getDebtId(), Map.of())))
+                .toList();
+    }
+
+    private DebtSim mapToDomainDebt(Debt entity, Map<DebtTxnType, BigDecimal> outstanding) {
         if (entity == null) throw new IllegalArgumentException("Debt entity must not be null");
 
         DebtSim debtSim = new DebtSim();
@@ -250,14 +259,9 @@ public class RepaymentPlanService {
         debtSim.setActive(entity.getActive());
         
         // Calculate outstanding amounts directly to avoid circular dependency with DebtService
-        UUID debtId = entity.getDebtId();
-        BigDecimal interest = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.INTEREST_CHARGE);
-        BigDecimal lateFee = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.LATE_FEE_CHARGE);
-        BigDecimal penalty = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.PENALTY_INTEREST_CHARGE);
-        
-        debtSim.setInterestOutstanding(interest != null ? interest : BigDecimal.ZERO);
-        debtSim.setLateFeeOutstanding(lateFee != null ? lateFee : BigDecimal.ZERO);
-        debtSim.setPenaltyOutstanding(penalty != null ? penalty : BigDecimal.ZERO);
+        debtSim.setInterestOutstanding(outstanding.getOrDefault(DebtTxnType.INTEREST_CHARGE, BigDecimal.ZERO));
+        debtSim.setLateFeeOutstanding(outstanding.getOrDefault(DebtTxnType.LATE_FEE_CHARGE, BigDecimal.ZERO));
+        debtSim.setPenaltyOutstanding(outstanding.getOrDefault(DebtTxnType.PENALTY_INTEREST_CHARGE, BigDecimal.ZERO));
 
         debtSim.setRepaymentType(RepaymentTypeEnum.fromString(entity.getRepaymentType().getRepaymentTypeName()));
 
@@ -412,7 +416,7 @@ public class RepaymentPlanService {
         }
 
         RepaymentPlanDtoV2 simPlan = mapToDomainPlan(planEntity);
-        List<DebtSim> simDebts = debtEntities.stream().map(this::mapToDomainDebt).toList();
+        List<DebtSim> simDebts = toDomainDebts(debtEntities);
         RepaymentStrategyInterface strategy = strategyFactory.getStrategy(simPlan.getStrategyType());
 
         DebtSim target = strategy.apply(simDebts);

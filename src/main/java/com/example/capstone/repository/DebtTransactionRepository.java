@@ -7,7 +7,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public interface DebtTransactionRepository extends JpaRepository<DebtTransaction, UUID> {
@@ -77,4 +80,52 @@ public interface DebtTransactionRepository extends JpaRepository<DebtTransaction
 
         @Query("SELECT t FROM DebtTransaction t WHERE t.debt.debtId = :debtId ORDER BY t.txnDate DESC")
         List<DebtTransaction> findByDebtDebtIdOrderByTxnDateDesc(@Param("debtId") UUID debtId);
+
+        /** Batch version of {@link #sumOutstandingByType}: one row per (debt, type) instead of one query per debt and type. */
+        @Query("""
+                        SELECT t.debt.debtId, t.txnType, COALESCE(SUM(t.amount), 0)
+                        FROM DebtTransaction t
+                        WHERE t.debt.debtId IN :debtIds
+                        AND t.txnType IN :types
+                        AND t.amount > 0
+                        GROUP BY t.debt.debtId, t.txnType
+                        """)
+        List<Object[]> sumOutstandingByDebtIds(
+                        @Param("debtIds") Collection<UUID> debtIds,
+                        @Param("types") Collection<DebtTxnType> types);
+
+        /** Batch version of {@link #sumMonthDebt}. */
+        @Query("""
+                        SELECT t.debt.debtId, t.txnType, COALESCE(SUM(t.amount), 0)
+                        FROM DebtTransaction t
+                        WHERE t.debt.debtId IN :debtIds
+                        AND t.txnType IN :types
+                        AND t.amount > 0
+                        AND YEAR(t.txnDate) = :year
+                        AND MONTH(t.txnDate) = :month
+                        GROUP BY t.debt.debtId, t.txnType
+                        """)
+        List<Object[]> sumMonthByDebtIds(
+                        @Param("debtIds") Collection<UUID> debtIds,
+                        @Param("types") Collection<DebtTxnType> types,
+                        @Param("year") int year,
+                        @Param("month") int month);
+
+        default Map<UUID, Map<DebtTxnType, BigDecimal>> outstandingByDebt(Collection<UUID> debtIds, Collection<DebtTxnType> types) {
+                return debtIds.isEmpty() ? Map.of() : group(sumOutstandingByDebtIds(debtIds, types));
+        }
+
+        default Map<UUID, Map<DebtTxnType, BigDecimal>> monthByDebt(Collection<UUID> debtIds, Collection<DebtTxnType> types, int year, int month) {
+                return debtIds.isEmpty() ? Map.of() : group(sumMonthByDebtIds(debtIds, types, year, month));
+        }
+
+        private static Map<UUID, Map<DebtTxnType, BigDecimal>> group(List<Object[]> rows) {
+                Map<UUID, Map<DebtTxnType, BigDecimal>> result = new HashMap<>();
+                if (rows == null) return result;
+                for (Object[] row : rows) {
+                        result.computeIfAbsent((UUID) row[0], k -> new HashMap<>())
+                                        .put((DebtTxnType) row[1], (BigDecimal) row[2]);
+                }
+                return result;
+        }
 }

@@ -36,6 +36,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
@@ -227,7 +229,7 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
+        User user = findByEmailForRequest(email)
                 .orElseThrow(() -> new UsernameNotFoundException(USER_NOT_FOUND_PREFIX + email + NOT_FOUND_SUFFIX));
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
@@ -236,9 +238,30 @@ public class UserService implements UserDetailsService {
         );
     }
 
+    /**
+     * The auth filter and each service call look up the same user several times per HTTP request.
+     * Remember the result for the current request only (nothing is shared across requests, so
+     * password / email-confirm changes are never served stale). Outside a request it queries as before.
+     */
+    private Optional<User> findByEmailForRequest(String email) {
+        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();
+        String key = "userByEmail:" + email;
+        if (attrs != null) {
+            Object cached = attrs.getAttribute(key, RequestAttributes.SCOPE_REQUEST);
+            if (cached instanceof User user) {
+                return Optional.of(user);
+            }
+        }
+        Optional<User> found = userRepository.findByEmail(email);
+        if (attrs != null) {
+            found.ifPresent(user -> attrs.setAttribute(key, user, RequestAttributes.SCOPE_REQUEST));
+        }
+        return found;
+    }
+
     public UUID extractUserIdFromToken(String token) {
         String email = jwtUtil.extractEmail(token);
-        User user = userRepository.findByEmail(email)
+        User user = findByEmailForRequest(email)
                 .orElseThrow(() ->
                         new UsernameNotFoundException(USER_NOT_FOUND_PREFIX + email + NOT_FOUND_SUFFIX)
                 );

@@ -19,6 +19,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import java.util.List;
 import java.util.Map;
@@ -45,10 +46,11 @@ public class DebtService {
                 UUID userId = userService.extractUserIdFromToken(token);
                 List<Debt> debts = debtRepository.findAllByUserId(userId);
                 Map<UUID, BigDecimal> allocations = repaymentPlanService.calculateCurrentMonthAllocation(userId);
+                Map<UUID, DebtSummaryDTO> summaries = buildSummaries(debts);
 
                 return debts.stream()
                                 .map(debt -> {
-                                        DebtSummaryDTO summary = getDebtSummaryInternal(debt);
+                                        DebtSummaryDTO summary = summaries.get(debt.getDebtId());
                                         summary.setPlannedPayment(allocations.getOrDefault(debt.getDebtId(), BigDecimal.ZERO));
                                         return DebtResponseDTO.builder()
                                                         .debt(debt)
@@ -270,45 +272,44 @@ public class DebtService {
         }
 
         public DebtSummaryDTO getDebtSummaryInternal(Debt debt) {
-                UUID debtId = debt.getDebtId();
-                BigDecimal principal = debt.getPrincipalOutstanding() != null ? 
-                                debt.getPrincipalOutstanding() : debt.getPrincipalAmount();
-                if (principal == null) principal = BigDecimal.ZERO;
-                
-                BigDecimal interest = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.INTEREST_CHARGE);
-                if (interest == null) interest = BigDecimal.ZERO;
-                BigDecimal lateFee = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.LATE_FEE_CHARGE);
-                if (lateFee == null) lateFee = BigDecimal.ZERO;
-                BigDecimal penalty = debtTransactionRepository.sumOutstandingByType(debtId, DebtTxnType.PENALTY_INTEREST_CHARGE);
-                if (penalty == null) penalty = BigDecimal.ZERO;
-                
+                return buildSummaries(List.of(debt)).get(debt.getDebtId());
+        }
+
+        /** Builds the summaries for all debts with two grouped queries instead of 7 queries per debt. */
+        private Map<UUID, DebtSummaryDTO> buildSummaries(List<Debt> debts) {
+                List<UUID> debtIds = debts.stream().map(Debt::getDebtId).toList();
                 LocalDate now = LocalDate.now(DEFAULT_ZONE);
-                int year = now.getYear();
-                int month = now.getMonthValue();
-                
-                BigDecimal interestMonth = debtTransactionRepository.sumMonthDebt(debtId, DebtTxnType.INTEREST_CHARGE, year, month);
-                if (interestMonth == null) interestMonth = BigDecimal.ZERO;
-                BigDecimal lateFeeMonth = debtTransactionRepository.sumMonthDebt(debtId, DebtTxnType.LATE_FEE_CHARGE, year, month);
-                if (lateFeeMonth == null) lateFeeMonth = BigDecimal.ZERO;
-                BigDecimal penaltyMonth = debtTransactionRepository.sumMonthDebt(debtId, DebtTxnType.PENALTY_INTEREST_CHARGE, year, month);
-                if (penaltyMonth == null) penaltyMonth = BigDecimal.ZERO;
+                Map<UUID, Map<DebtTxnType, BigDecimal>> outstanding = debtTransactionRepository.outstandingByDebt(
+                                debtIds, List.of(DebtTxnType.INTEREST_CHARGE, DebtTxnType.LATE_FEE_CHARGE, DebtTxnType.PENALTY_INTEREST_CHARGE));
+                Map<UUID, Map<DebtTxnType, BigDecimal>> month = debtTransactionRepository.monthByDebt(
+                                debtIds, List.of(DebtTxnType.INTEREST_CHARGE, DebtTxnType.LATE_FEE_CHARGE, DebtTxnType.PENALTY_INTEREST_CHARGE, DebtTxnType.PAYMENT),
+                                now.getYear(), now.getMonthValue());
 
-                BigDecimal paidThisMonth = debtTransactionRepository.sumMonthDebt(debtId, DebtTxnType.PAYMENT, year, month);
-                if (paidThisMonth == null) paidThisMonth = BigDecimal.ZERO;
+                Map<UUID, DebtSummaryDTO> result = new HashMap<>();
+                for (Debt debt : debts) {
+                        Map<DebtTxnType, BigDecimal> out = outstanding.getOrDefault(debt.getDebtId(), Map.of());
+                        Map<DebtTxnType, BigDecimal> mon = month.getOrDefault(debt.getDebtId(), Map.of());
+                        BigDecimal principal = debt.getPrincipalOutstanding() != null ?
+                                        debt.getPrincipalOutstanding() : debt.getPrincipalAmount();
+                        if (principal == null) principal = BigDecimal.ZERO;
 
-                BigDecimal total = principal.add(interest).add(lateFee).add(penalty);
+                        BigDecimal interest = out.getOrDefault(DebtTxnType.INTEREST_CHARGE, BigDecimal.ZERO);
+                        BigDecimal lateFee = out.getOrDefault(DebtTxnType.LATE_FEE_CHARGE, BigDecimal.ZERO);
+                        BigDecimal penalty = out.getOrDefault(DebtTxnType.PENALTY_INTEREST_CHARGE, BigDecimal.ZERO);
 
-                return DebtSummaryDTO.builder()
-                                .principalRemaining(principal)
-                                .interestRemaining(interest)
-                                .lateFeeRemaining(lateFee)
-                                .penaltyInterestRemaining(penalty)
-                                .interestRemainingMonth(interestMonth)
-                                .lateFeeRemainingMonth(lateFeeMonth)
-                                .penaltyInterestRemainingMonth(penaltyMonth)
-                                .totalRemaining(total)
-                                .paidThisMonth(paidThisMonth)
-                                .build();
+                        result.put(debt.getDebtId(), DebtSummaryDTO.builder()
+                                        .principalRemaining(principal)
+                                        .interestRemaining(interest)
+                                        .lateFeeRemaining(lateFee)
+                                        .penaltyInterestRemaining(penalty)
+                                        .interestRemainingMonth(mon.getOrDefault(DebtTxnType.INTEREST_CHARGE, BigDecimal.ZERO))
+                                        .lateFeeRemainingMonth(mon.getOrDefault(DebtTxnType.LATE_FEE_CHARGE, BigDecimal.ZERO))
+                                        .penaltyInterestRemainingMonth(mon.getOrDefault(DebtTxnType.PENALTY_INTEREST_CHARGE, BigDecimal.ZERO))
+                                        .totalRemaining(principal.add(interest).add(lateFee).add(penalty))
+                                        .paidThisMonth(mon.getOrDefault(DebtTxnType.PAYMENT, BigDecimal.ZERO))
+                                        .build());
+                }
+                return result;
         }
 
         public List<DebtTransactionResponseDTO> getDebtHistory(String token, UUID debtId) {
