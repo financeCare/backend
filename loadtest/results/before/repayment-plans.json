@@ -1,0 +1,780 @@
+{
+ "estimatedMonths": 17,
+ "monthlyResults": [
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 2289.73,
+     "beforeBalance": 15000.0,
+     "debtId": "bda0983b-f3e7-4c20-8ffc-81102e0d1f58",
+     "debtName": "\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122 (\u00e0\u00b8\u201d\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b9\u20ac\u00e0\u00b8\u0161\u00e0\u00b8\u00b5\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u2122\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u0161\u00e0\u00b8\u0161)",
+     "defaulted": false,
+     "extraPaid": 13650.0,
+     "interestAdded": 739.73,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 750.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 80622.47,
+     "beforeBalance": 84070.99,
+     "debtId": "8341ac02-b14a-45d6-9762-6154836f6396",
+     "debtName": "\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u0160\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u00aa\u00e0\u00b9\u02c6\u00e0\u00b8\u00a7\u00e0\u00b8\u2122\u00e0\u00b8\u0161\u00e0\u00b8\u00b8\u00e0\u00b8\u201e\u00e0\u00b8\u201e\u00e0\u00b8\u00a5 SCB",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 1751.48,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 5200.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 157901.58,
+     "beforeBalance": 157901.58,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 13158.46,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 28801.52,
+     "beforeBalance": 30399.2,
+     "debtId": "4c0732fc-14f4-4f4b-b28c-af3870031eda",
+     "debtName": "\u00e0\u00b8\u0161\u00e0\u00b8\u00b1\u00e0\u00b8\u2022\u00e0\u00b8\u00a3\u00e0\u00b9\u20ac\u00e0\u00b8\u201e\u00e0\u00b8\u00a3\u00e0\u00b8\u201d\u00e0\u00b8\u00b4\u00e0\u00b8\u2022 KBank",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 402.32,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2000.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 33603.78,
+     "beforeBalance": 36232.04,
+     "debtId": "dfa4c5b9-8a38-429c-8ac1-cfd4facc202a",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u00a1\u00e0\u00b8\u00ad\u00e0\u00b9\u20ac\u00e0\u00b8\u2022\u00e0\u00b8\u00ad\u00e0\u00b8\u00a3\u00e0\u00b9\u0152\u00e0\u00b9\u201e\u00e0\u00b8\u2039\u00e0\u00b8\u201e\u00e0\u00b9\u0152 Honda",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 271.74,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2900.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 10000.0,
+     "beforeBalance": 12000.0,
+     "debtId": "363b1a61-9ef4-4630-96f6-7b1cfedaaa32",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122 iPad 0% (BNPL)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 0.0,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2000.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 16323.73,
+   "monthNo": 1,
+   "paidThisMonth": 28000.0,
+   "remainingDebtTotal": 313219.08
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 0,
+     "beforeBalance": 2289.73,
+     "debtId": "bda0983b-f3e7-4c20-8ffc-81102e0d1f58",
+     "debtName": "\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122 (\u00e0\u00b8\u201d\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b9\u20ac\u00e0\u00b8\u0161\u00e0\u00b8\u00b5\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u2122\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u0161\u00e0\u00b8\u0161)",
+     "defaulted": false,
+     "extraPaid": 13650.0,
+     "interestAdded": 112.92,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 750.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 77102.1,
+     "beforeBalance": 80622.47,
+     "debtId": "8341ac02-b14a-45d6-9762-6154836f6396",
+     "debtName": "\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u0160\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u00aa\u00e0\u00b9\u02c6\u00e0\u00b8\u00a7\u00e0\u00b8\u2122\u00e0\u00b8\u0161\u00e0\u00b8\u00b8\u00e0\u00b8\u201e\u00e0\u00b8\u201e\u00e0\u00b8\u00a5 SCB",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 1679.63,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 5200.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 157901.58,
+     "beforeBalance": 157901.58,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 13158.46,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 27182.7,
+     "beforeBalance": 28801.52,
+     "debtId": "4c0732fc-14f4-4f4b-b28c-af3870031eda",
+     "debtName": "\u00e0\u00b8\u0161\u00e0\u00b8\u00b1\u00e0\u00b8\u2022\u00e0\u00b8\u00a3\u00e0\u00b9\u20ac\u00e0\u00b8\u201e\u00e0\u00b8\u00a3\u00e0\u00b8\u201d\u00e0\u00b8\u00b4\u00e0\u00b8\u2022 KBank",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 381.18,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2000.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 30955.81,
+     "beforeBalance": 33603.78,
+     "debtId": "dfa4c5b9-8a38-429c-8ac1-cfd4facc202a",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u00a1\u00e0\u00b8\u00ad\u00e0\u00b9\u20ac\u00e0\u00b8\u2022\u00e0\u00b8\u00ad\u00e0\u00b8\u00a3\u00e0\u00b9\u0152\u00e0\u00b9\u201e\u00e0\u00b8\u2039\u00e0\u00b8\u201e\u00e0\u00b9\u0152 Honda",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 252.03,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2900.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 8000.0,
+     "beforeBalance": 10000.0,
+     "debtId": "363b1a61-9ef4-4630-96f6-7b1cfedaaa32",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122 iPad 0% (BNPL)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 0.0,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2000.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 15584.22,
+   "monthNo": 2,
+   "paidThisMonth": 28000.0,
+   "remainingDebtTotal": 301142.19
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 59108.39,
+     "beforeBalance": 77102.1,
+     "debtId": "8341ac02-b14a-45d6-9762-6154836f6396",
+     "debtName": "\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u0160\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u00aa\u00e0\u00b9\u02c6\u00e0\u00b8\u00a7\u00e0\u00b8\u2122\u00e0\u00b8\u0161\u00e0\u00b8\u00b8\u00e0\u00b8\u201e\u00e0\u00b8\u201e\u00e0\u00b8\u00a5 SCB",
+     "defaulted": false,
+     "extraPaid": 14400.0,
+     "interestAdded": 1606.29,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 5200.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 157901.58,
+     "beforeBalance": 157901.58,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 13158.46,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 25542.45,
+     "beforeBalance": 27182.7,
+     "debtId": "4c0732fc-14f4-4f4b-b28c-af3870031eda",
+     "debtName": "\u00e0\u00b8\u0161\u00e0\u00b8\u00b1\u00e0\u00b8\u2022\u00e0\u00b8\u00a3\u00e0\u00b9\u20ac\u00e0\u00b8\u201e\u00e0\u00b8\u00a3\u00e0\u00b8\u201d\u00e0\u00b8\u00b4\u00e0\u00b8\u2022 KBank",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 359.75,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2000.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 28287.98,
+     "beforeBalance": 30955.81,
+     "debtId": "dfa4c5b9-8a38-429c-8ac1-cfd4facc202a",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u00a1\u00e0\u00b8\u00ad\u00e0\u00b9\u20ac\u00e0\u00b8\u2022\u00e0\u00b8\u00ad\u00e0\u00b8\u00a3\u00e0\u00b9\u0152\u00e0\u00b9\u201e\u00e0\u00b8\u2039\u00e0\u00b8\u201e\u00e0\u00b9\u0152 Honda",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 232.17,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2900.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 6000.0,
+     "beforeBalance": 8000.0,
+     "debtId": "363b1a61-9ef4-4630-96f6-7b1cfedaaa32",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122 iPad 0% (BNPL)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 0.0,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2000.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 15356.67,
+   "monthNo": 3,
+   "paidThisMonth": 28000.0,
+   "remainingDebtTotal": 276840.4
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 40739.81,
+     "beforeBalance": 59108.39,
+     "debtId": "8341ac02-b14a-45d6-9762-6154836f6396",
+     "debtName": "\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u0160\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u00aa\u00e0\u00b9\u02c6\u00e0\u00b8\u00a7\u00e0\u00b8\u2122\u00e0\u00b8\u0161\u00e0\u00b8\u00b8\u00e0\u00b8\u201e\u00e0\u00b8\u201e\u00e0\u00b8\u00a5 SCB",
+     "defaulted": false,
+     "extraPaid": 14400.0,
+     "interestAdded": 1231.42,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 5200.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 157901.58,
+     "beforeBalance": 157901.58,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 13158.46,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 23880.49,
+     "beforeBalance": 25542.45,
+     "debtId": "4c0732fc-14f4-4f4b-b28c-af3870031eda",
+     "debtName": "\u00e0\u00b8\u0161\u00e0\u00b8\u00b1\u00e0\u00b8\u2022\u00e0\u00b8\u00a3\u00e0\u00b9\u20ac\u00e0\u00b8\u201e\u00e0\u00b8\u00a3\u00e0\u00b8\u201d\u00e0\u00b8\u00b4\u00e0\u00b8\u2022 KBank",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 338.04,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2000.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 25600.14,
+     "beforeBalance": 28287.98,
+     "debtId": "dfa4c5b9-8a38-429c-8ac1-cfd4facc202a",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u00a1\u00e0\u00b8\u00ad\u00e0\u00b9\u20ac\u00e0\u00b8\u2022\u00e0\u00b8\u00ad\u00e0\u00b8\u00a3\u00e0\u00b9\u0152\u00e0\u00b9\u201e\u00e0\u00b8\u2039\u00e0\u00b8\u201e\u00e0\u00b9\u0152 Honda",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 212.16,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2900.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 4000.0,
+     "beforeBalance": 6000.0,
+     "debtId": "363b1a61-9ef4-4630-96f6-7b1cfedaaa32",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122 iPad 0% (BNPL)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 0.0,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2000.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 14940.08,
+   "monthNo": 4,
+   "paidThisMonth": 28000.0,
+   "remainingDebtTotal": 252122.02
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 21988.56,
+     "beforeBalance": 40739.81,
+     "debtId": "8341ac02-b14a-45d6-9762-6154836f6396",
+     "debtName": "\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u0160\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u00aa\u00e0\u00b9\u02c6\u00e0\u00b8\u00a7\u00e0\u00b8\u2122\u00e0\u00b8\u0161\u00e0\u00b8\u00b8\u00e0\u00b8\u201e\u00e0\u00b8\u201e\u00e0\u00b8\u00a5 SCB",
+     "defaulted": false,
+     "extraPaid": 14400.0,
+     "interestAdded": 848.75,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 5200.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 157901.58,
+     "beforeBalance": 157901.58,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 13158.46,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 22196.54,
+     "beforeBalance": 23880.49,
+     "debtId": "4c0732fc-14f4-4f4b-b28c-af3870031eda",
+     "debtName": "\u00e0\u00b8\u0161\u00e0\u00b8\u00b1\u00e0\u00b8\u2022\u00e0\u00b8\u00a3\u00e0\u00b9\u20ac\u00e0\u00b8\u201e\u00e0\u00b8\u00a3\u00e0\u00b8\u201d\u00e0\u00b8\u00b4\u00e0\u00b8\u2022 KBank",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 316.05,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2000.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 22892.14,
+     "beforeBalance": 25600.14,
+     "debtId": "dfa4c5b9-8a38-429c-8ac1-cfd4facc202a",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u00a1\u00e0\u00b8\u00ad\u00e0\u00b9\u20ac\u00e0\u00b8\u2022\u00e0\u00b8\u00ad\u00e0\u00b8\u00a3\u00e0\u00b9\u0152\u00e0\u00b9\u201e\u00e0\u00b8\u2039\u00e0\u00b8\u201e\u00e0\u00b9\u0152 Honda",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 192.0,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2900.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 2000.0,
+     "beforeBalance": 4000.0,
+     "debtId": "363b1a61-9ef4-4630-96f6-7b1cfedaaa32",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122 iPad 0% (BNPL)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 0.0,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2000.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 14515.26,
+   "monthNo": 5,
+   "paidThisMonth": 28000.0,
+   "remainingDebtTotal": 226978.82
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 2846.65,
+     "beforeBalance": 21988.56,
+     "debtId": "8341ac02-b14a-45d6-9762-6154836f6396",
+     "debtName": "\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u0160\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u00aa\u00e0\u00b9\u02c6\u00e0\u00b8\u00a7\u00e0\u00b8\u2122\u00e0\u00b8\u0161\u00e0\u00b8\u00b8\u00e0\u00b8\u201e\u00e0\u00b8\u201e\u00e0\u00b8\u00a5 SCB",
+     "defaulted": false,
+     "extraPaid": 14400.0,
+     "interestAdded": 458.09,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 5200.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 157901.58,
+     "beforeBalance": 157901.58,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 13158.46,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 20490.3,
+     "beforeBalance": 22196.54,
+     "debtId": "4c0732fc-14f4-4f4b-b28c-af3870031eda",
+     "debtName": "\u00e0\u00b8\u0161\u00e0\u00b8\u00b1\u00e0\u00b8\u2022\u00e0\u00b8\u00a3\u00e0\u00b9\u20ac\u00e0\u00b8\u201e\u00e0\u00b8\u00a3\u00e0\u00b8\u201d\u00e0\u00b8\u00b4\u00e0\u00b8\u2022 KBank",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 293.76,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2000.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 20163.83,
+     "beforeBalance": 22892.14,
+     "debtId": "dfa4c5b9-8a38-429c-8ac1-cfd4facc202a",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u00a1\u00e0\u00b8\u00ad\u00e0\u00b9\u20ac\u00e0\u00b8\u2022\u00e0\u00b8\u00ad\u00e0\u00b8\u00a3\u00e0\u00b9\u0152\u00e0\u00b9\u201e\u00e0\u00b8\u2039\u00e0\u00b8\u201e\u00e0\u00b9\u0152 Honda",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 171.69,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2900.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 0.0,
+     "beforeBalance": 2000.0,
+     "debtId": "363b1a61-9ef4-4630-96f6-7b1cfedaaa32",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122 iPad 0% (BNPL)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 0.0,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2000.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 14082.0,
+   "monthNo": 6,
+   "paidThisMonth": 28000.0,
+   "remainingDebtTotal": 201402.36
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 0.0,
+     "beforeBalance": 2846.65,
+     "debtId": "8341ac02-b14a-45d6-9762-6154836f6396",
+     "debtName": "\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u0160\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u00aa\u00e0\u00b9\u02c6\u00e0\u00b8\u00a7\u00e0\u00b8\u2122\u00e0\u00b8\u0161\u00e0\u00b8\u00b8\u00e0\u00b8\u201e\u00e0\u00b8\u201e\u00e0\u00b8\u00a5 SCB",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 59.31,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2905.96,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 157901.58,
+     "beforeBalance": 157901.58,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 13158.46,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 18761.48,
+     "beforeBalance": 20490.3,
+     "debtId": "4c0732fc-14f4-4f4b-b28c-af3870031eda",
+     "debtName": "\u00e0\u00b8\u0161\u00e0\u00b8\u00b1\u00e0\u00b8\u2022\u00e0\u00b8\u00a3\u00e0\u00b9\u20ac\u00e0\u00b8\u201e\u00e0\u00b8\u00a3\u00e0\u00b8\u201d\u00e0\u00b8\u00b4\u00e0\u00b8\u2022 KBank",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 271.18,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2000.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 17415.06,
+     "beforeBalance": 20163.83,
+     "debtId": "dfa4c5b9-8a38-429c-8ac1-cfd4facc202a",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u00a1\u00e0\u00b8\u00ad\u00e0\u00b9\u20ac\u00e0\u00b8\u2022\u00e0\u00b8\u00ad\u00e0\u00b8\u00a3\u00e0\u00b9\u0152\u00e0\u00b9\u201e\u00e0\u00b8\u2039\u00e0\u00b8\u201e\u00e0\u00b9\u0152 Honda",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 151.23,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2900.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 13640.18,
+   "monthNo": 7,
+   "paidThisMonth": 9305.96,
+   "remainingDebtTotal": 194078.12
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 157901.58,
+     "beforeBalance": 157901.58,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 13158.46,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 0.0,
+     "beforeBalance": 18761.48,
+     "debtId": "4c0732fc-14f4-4f4b-b28c-af3870031eda",
+     "debtName": "\u00e0\u00b8\u0161\u00e0\u00b8\u00b1\u00e0\u00b8\u2022\u00e0\u00b8\u00a3\u00e0\u00b9\u20ac\u00e0\u00b8\u201e\u00e0\u00b8\u00a3\u00e0\u00b8\u201d\u00e0\u00b8\u00b4\u00e0\u00b8\u2022 KBank",
+     "defaulted": false,
+     "extraPaid": 17009.78,
+     "interestAdded": 248.3,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2000.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 14645.67,
+     "beforeBalance": 17415.06,
+     "debtId": "dfa4c5b9-8a38-429c-8ac1-cfd4facc202a",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u00a1\u00e0\u00b8\u00ad\u00e0\u00b9\u20ac\u00e0\u00b8\u2022\u00e0\u00b8\u00ad\u00e0\u00b8\u00a3\u00e0\u00b9\u0152\u00e0\u00b9\u201e\u00e0\u00b8\u2039\u00e0\u00b8\u201e\u00e0\u00b9\u0152 Honda",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 130.61,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2900.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 13537.37,
+   "monthNo": 8,
+   "paidThisMonth": 23409.78,
+   "remainingDebtTotal": 172547.25
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 157901.58,
+     "beforeBalance": 157901.58,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 0.0,
+     "interestAdded": 13158.46,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    },
+    {
+     "afterBalance": 0.0,
+     "beforeBalance": 14645.67,
+     "debtId": "dfa4c5b9-8a38-429c-8ac1-cfd4facc202a",
+     "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u00a1\u00e0\u00b8\u00ad\u00e0\u00b9\u20ac\u00e0\u00b8\u2022\u00e0\u00b8\u00ad\u00e0\u00b8\u00a3\u00e0\u00b9\u0152\u00e0\u00b9\u201e\u00e0\u00b8\u2039\u00e0\u00b8\u201e\u00e0\u00b9\u0152 Honda",
+     "defaulted": false,
+     "extraPaid": 11855.51,
+     "interestAdded": 109.84,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 2900.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 13268.3,
+   "monthNo": 9,
+   "paidThisMonth": 16255.51,
+   "remainingDebtTotal": 157901.58
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 143060.04,
+     "beforeBalance": 157901.58,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 26500.0,
+     "interestAdded": 13158.46,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 13158.46,
+   "monthNo": 10,
+   "paidThisMonth": 28000.0,
+   "remainingDebtTotal": 143060.04
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 126981.71,
+     "beforeBalance": 143060.04,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 26500.0,
+     "interestAdded": 11921.67,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 11921.67,
+   "monthNo": 11,
+   "paidThisMonth": 28000.0,
+   "remainingDebtTotal": 126981.71
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 109563.52,
+     "beforeBalance": 126981.71,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 26500.0,
+     "interestAdded": 10581.81,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 10581.81,
+   "monthNo": 12,
+   "paidThisMonth": 28000.0,
+   "remainingDebtTotal": 109563.52
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 90693.81,
+     "beforeBalance": 109563.52,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 26500.0,
+     "interestAdded": 9130.29,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 9130.29,
+   "monthNo": 13,
+   "paidThisMonth": 28000.0,
+   "remainingDebtTotal": 90693.81
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 70251.63,
+     "beforeBalance": 90693.81,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 26500.0,
+     "interestAdded": 7557.82,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 7557.82,
+   "monthNo": 14,
+   "paidThisMonth": 28000.0,
+   "remainingDebtTotal": 70251.63
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 48105.93,
+     "beforeBalance": 70251.63,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 26500.0,
+     "interestAdded": 5854.3,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 5854.3,
+   "monthNo": 15,
+   "paidThisMonth": 28000.0,
+   "remainingDebtTotal": 48105.93
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 24114.76,
+     "beforeBalance": 48105.93,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 26500.0,
+     "interestAdded": 4008.83,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 4008.83,
+   "monthNo": 16,
+   "paidThisMonth": 28000.0,
+   "remainingDebtTotal": 24114.76
+  },
+  {
+   "debtPayments": [
+    {
+     "afterBalance": 0.0,
+     "beforeBalance": 24114.76,
+     "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+     "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+     "defaulted": false,
+     "extraPaid": 24624.32,
+     "interestAdded": 2009.56,
+     "isDefaulted": false,
+     "isNplRisk": false,
+     "minPaid": 1500.0,
+     "nplRisk": false
+    }
+   ],
+   "monthInterest": 2009.56,
+   "monthNo": 17,
+   "paidThisMonth": 26124.32,
+   "remainingDebtTotal": 0
+  }
+ ],
+ "totalInterest": 195470.55,
+ "totalPaid": 439095.57
+}

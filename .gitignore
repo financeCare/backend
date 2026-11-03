@@ -35,3 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Load test artifacts (local only)
+loadtest/*.log
+loadtest/backup-orig/
+loadtest/backup-new/

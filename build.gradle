@@ -65,7 +65,6 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
-    ignoreFailures = true
     finalizedBy jacocoTestReport // run jacoco after tests
 }
 
@@ -109,6 +108,19 @@ jacocoTestReport {
                 '**/com/example/capstone/CapstoneApplication*'
             ])
         }))
+    }
+}
+
+// Unfiltered report: the report above excludes most services/engines/controllers, so it overstates coverage.
+tasks.register('jacocoFullReport', JacocoReport) {
+    dependsOn test
+    executionData(test)
+    sourceSets sourceSets.main
+    reports {
+        xml.required = true
+        html.required = true
+        xml.outputLocation = layout.buildDirectory.file('reports/jacoco/full/jacocoFullReport.xml')
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco/full/html')
     }
 }
 

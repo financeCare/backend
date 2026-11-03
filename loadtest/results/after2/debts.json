@@ -1,0 +1,308 @@
+[
+ {
+  "debt": {
+   "active": true,
+   "debtId": "bda0983b-f3e7-4c20-8ffc-81102e0d1f58",
+   "debtName": "\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122 (\u00e0\u00b8\u201d\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b9\u20ac\u00e0\u00b8\u0161\u00e0\u00b8\u00b5\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u2122\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u0161\u00e0\u00b8\u0161)",
+   "debtType": {
+    "debtTypeDescription": "\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122 / \u00e0\u00b8\u201e\u00e0\u00b8\u2122\u00e0\u00b8\u00a3\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u02c6\u00e0\u00b8\u00b1\u00e0\u00b8\udc81 / \u00e0\u00b9\u20ac\u00e0\u00b8\u2021\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u2122\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u0161\u00e0\u00b8\u0161",
+    "debtTypeId": 5,
+    "debtTypeName": "\u00e0\u00b8\u00ab\u00e0\u00b8\u2122\u00e0\u00b8\u00b5\u00e0\u00b9\u2030\u00e0\u00b8\u2122\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u0161\u00e0\u00b8\u0161"
+   },
+   "defaulted": false,
+   "dueDay": 10,
+   "endDate": "2027-05-03T00:00:00.000+07:00",
+   "gracePeriodDays": 0,
+   "initialInterestRemaining": 750.0,
+   "initialLateFeeRemaining": 200.0,
+   "initialPenaltyRemaining": 0.0,
+   "interestCalculationType": "DAILY_SIMPLE",
+   "interestInterval": "MONTHLY",
+   "interestRate": 5.0,
+   "isInformal": true,
+   "minPayment": 750.0,
+   "overpaymentBalance": 0.0,
+   "paymentInterval": "MONTHLY",
+   "penaltyAnnualRate": 0.0,
+   "penaltyTriggerDays": 1,
+   "principalAmount": 15000.0,
+   "principalOutstanding": 15000.0,
+   "priority": 1,
+   "repaymentType": {
+    "repaymentTypeDescription": "\u00e0\u00b8\u02c6\u00e0\u00b9\u02c6\u00e0\u00b8\u00b2\u00e0\u00b8\u00a2\u00e0\u00b8\u201d\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b9\u20ac\u00e0\u00b8\u0161\u00e0\u00b8\u00b5\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00a3\u00e0\u00b8\u00b2\u00e0\u00b8\u00a2\u00e0\u00b8\u2021\u00e0\u00b8\u00a7\u00e0\u00b8\u201d \u00e0\u00b8\u201e\u00e0\u00b8\u00b7\u00e0\u00b8\u2122\u00e0\u00b8\u2022\u00e0\u00b9\u2030\u00e0\u00b8\u2122\u00e0\u00b8\u2014\u00e0\u00b8\u00b5\u00e0\u00b9\u20ac\u00e0\u00b8\u201d\u00e0\u00b8\u00b5\u00e0\u00b8\u00a2\u00e0\u00b8\u00a7\u00e0\u00b8\u2022\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u2014\u00e0\u00b9\u2030\u00e0\u00b8\u00b2\u00e0\u00b8\u00a2",
+    "repaymentTypeId": 8,
+    "repaymentTypeName": "Bullet Payment"
+   },
+   "startDate": "2026-08-10T00:00:00.000+07:00",
+   "totalInterestPaid": 0.0,
+   "userId": "bf6d8c34-f5d2-4475-9343-1b043ef3e130"
+  },
+  "summary": {
+   "interestRemaining": 750.0,
+   "interestRemainingMonth": 0,
+   "lateFeeRemaining": 200.0,
+   "lateFeeRemainingMonth": 0,
+   "paidThisMonth": 0,
+   "penaltyInterestRemaining": 0,
+   "penaltyInterestRemainingMonth": 0,
+   "plannedPayment": 14400.0,
+   "principalRemaining": 15000.0,
+   "totalRemaining": 15950.0
+  }
+ },
+ {
+  "debt": {
+   "active": true,
+   "debtId": "8341ac02-b14a-45d6-9762-6154836f6396",
+   "debtName": "\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u0160\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u00aa\u00e0\u00b9\u02c6\u00e0\u00b8\u00a7\u00e0\u00b8\u2122\u00e0\u00b8\u0161\u00e0\u00b8\u00b8\u00e0\u00b8\u201e\u00e0\u00b8\u201e\u00e0\u00b8\u00a5 SCB",
+   "debtType": {
+    "debtTypeDescription": "\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u0160\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u00aa\u00e0\u00b9\u02c6\u00e0\u00b8\u00a7\u00e0\u00b8\u2122\u00e0\u00b8\u0161\u00e0\u00b8\u00b8\u00e0\u00b8\u201e\u00e0\u00b8\u201e\u00e0\u00b8\u00a5\u00e0\u00b8\u02c6\u00e0\u00b8\u00b2\u00e0\u00b8\udc81\u00e0\u00b8\u02dc\u00e0\u00b8\u2122\u00e0\u00b8\u00b2\u00e0\u00b8\u201e\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3",
+    "debtTypeId": 2,
+    "debtTypeName": "\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u0160\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u00aa\u00e0\u00b9\u02c6\u00e0\u00b8\u00a7\u00e0\u00b8\u2122\u00e0\u00b8\u0161\u00e0\u00b8\u00b8\u00e0\u00b8\u201e\u00e0\u00b8\u201e\u00e0\u00b8\u00a5"
+   },
+   "defaulted": false,
+   "dueDay": 5,
+   "endDate": "2028-07-03T00:00:00.000+07:00",
+   "gracePeriodDays": 5,
+   "initialInterestRemaining": 0.0,
+   "initialLateFeeRemaining": 0.0,
+   "initialPenaltyRemaining": 0.0,
+   "interestCalculationType": "THIRTY_360",
+   "interestInterval": "YEARLY",
+   "interestRate": 25.0,
+   "isInformal": false,
+   "minPayment": 5200.0,
+   "overpaymentBalance": 0.0,
+   "paymentInterval": "MONTHLY",
+   "penaltyAnnualRate": 15.0,
+   "penaltyTriggerDays": 5,
+   "principalAmount": 120000.0,
+   "principalOutstanding": 84070.99,
+   "priority": 2,
+   "repaymentType": {
+    "repaymentTypeDescription": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u0160\u00e0\u00b8\u00b3\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u2021\u00e0\u00b8\u00a7\u00e0\u00b8\u201d\u00e0\u00b9\u20ac\u00e0\u00b8\u2014\u00e0\u00b9\u02c6\u00e0\u00b8\u00b2\u00e0\u00b8\udc81\u00e0\u00b8\u00b1\u00e0\u00b8\u2122\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\udc81\u00e0\u00b9\u20ac\u00e0\u00b8\u201d\u00e0\u00b8\u00b7\u00e0\u00b8\u00ad\u00e0\u00b8\u2122",
+    "repaymentTypeId": 6,
+    "repaymentTypeName": "Installment / EMI"
+   },
+   "startDate": "2026-01-05T00:00:00.000+07:00",
+   "totalInterestPaid": 5670.99,
+   "userId": "bf6d8c34-f5d2-4475-9343-1b043ef3e130"
+  },
+  "summary": {
+   "interestRemaining": 0,
+   "interestRemainingMonth": 0,
+   "lateFeeRemaining": 0,
+   "lateFeeRemainingMonth": 0,
+   "paidThisMonth": 0,
+   "penaltyInterestRemaining": 0,
+   "penaltyInterestRemainingMonth": 0,
+   "plannedPayment": 5200.0,
+   "principalRemaining": 84070.99,
+   "totalRemaining": 84070.99
+  }
+ },
+ {
+  "debt": {
+   "active": true,
+   "debtId": "43bf2d74-8a5b-4617-a7ef-a2d368fcb4aa",
+   "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)",
+   "debtType": {
+    "debtTypeDescription": "\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u2021\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b9\u0192\u00e0\u00b8\u00ab\u00e0\u00b9\u2030\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2",
+    "debtTypeId": 4,
+    "debtTypeName": "\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u0160\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2"
+   },
+   "defaulted": false,
+   "dueDay": 28,
+   "endDate": "2035-11-03T00:00:00.000+07:00",
+   "gracePeriodDays": 30,
+   "initialInterestRemaining": 0.0,
+   "initialLateFeeRemaining": 0.0,
+   "initialPenaltyRemaining": 0.0,
+   "interestCalculationType": "THIRTY_360",
+   "interestInterval": "YEARLY",
+   "interestRate": 1.0,
+   "isInformal": false,
+   "minPayment": 1500.0,
+   "overpaymentBalance": 0.0,
+   "paymentInterval": "MONTHLY",
+   "penaltyAnnualRate": 0.0,
+   "penaltyTriggerDays": 30,
+   "principalAmount": 180000.0,
+   "principalOutstanding": 157901.58,
+   "priority": 5,
+   "repaymentType": {
+    "repaymentTypeDescription": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u0160\u00e0\u00b8\u00b3\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u2021\u00e0\u00b8\u00a7\u00e0\u00b8\u201d\u00e0\u00b9\u20ac\u00e0\u00b8\u2014\u00e0\u00b9\u02c6\u00e0\u00b8\u00b2\u00e0\u00b8\udc81\u00e0\u00b8\u00b1\u00e0\u00b8\u2122\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\udc81\u00e0\u00b9\u20ac\u00e0\u00b8\u201d\u00e0\u00b8\u00b7\u00e0\u00b8\u00ad\u00e0\u00b8\u2122",
+    "repaymentTypeId": 6,
+    "repaymentTypeName": "Installment / EMI"
+   },
+   "startDate": "2025-05-28T00:00:00.000+07:00",
+   "totalInterestPaid": 401.58,
+   "userId": "bf6d8c34-f5d2-4475-9343-1b043ef3e130"
+  },
+  "summary": {
+   "interestRemaining": 0,
+   "interestRemainingMonth": 0,
+   "lateFeeRemaining": 0,
+   "lateFeeRemainingMonth": 0,
+   "paidThisMonth": 0,
+   "penaltyInterestRemaining": 0,
+   "penaltyInterestRemainingMonth": 0,
+   "plannedPayment": 1500.0,
+   "principalRemaining": 157901.58,
+   "totalRemaining": 157901.58
+  }
+ },
+ {
+  "debt": {
+   "active": true,
+   "debtId": "4c0732fc-14f4-4f4b-b28c-af3870031eda",
+   "debtName": "\u00e0\u00b8\u0161\u00e0\u00b8\u00b1\u00e0\u00b8\u2022\u00e0\u00b8\u00a3\u00e0\u00b9\u20ac\u00e0\u00b8\u201e\u00e0\u00b8\u00a3\u00e0\u00b8\u201d\u00e0\u00b8\u00b4\u00e0\u00b8\u2022 KBank",
+   "debtType": {
+    "debtTypeDescription": "\u00e0\u00b8\u00ab\u00e0\u00b8\u2122\u00e0\u00b8\u00b5\u00e0\u00b9\u2030\u00e0\u00b8\u0161\u00e0\u00b8\u00b1\u00e0\u00b8\u2022\u00e0\u00b8\u00a3\u00e0\u00b9\u20ac\u00e0\u00b8\u201e\u00e0\u00b8\u00a3\u00e0\u00b8\u201d\u00e0\u00b8\u00b4\u00e0\u00b8\u2022",
+    "debtTypeId": 1,
+    "debtTypeName": "\u00e0\u00b8\u0161\u00e0\u00b8\u00b1\u00e0\u00b8\u2022\u00e0\u00b8\u00a3\u00e0\u00b9\u20ac\u00e0\u00b8\u201e\u00e0\u00b8\u00a3\u00e0\u00b8\u201d\u00e0\u00b8\u00b4\u00e0\u00b8\u2022"
+   },
+   "defaulted": false,
+   "dueDay": 25,
+   "endDate": "2028-11-03T00:00:00.000+07:00",
+   "gracePeriodDays": 3,
+   "initialInterestRemaining": 0.0,
+   "initialLateFeeRemaining": 0.0,
+   "initialPenaltyRemaining": 0.0,
+   "interestCalculationType": "DAILY_COMPOUND",
+   "interestInterval": "YEARLY",
+   "interestRate": 16.0,
+   "isInformal": false,
+   "minPayment": 2000.0,
+   "overpaymentBalance": 0.0,
+   "paymentInterval": "MONTHLY",
+   "penaltyAnnualRate": 20.0,
+   "penaltyTriggerDays": 3,
+   "principalAmount": 48000.0,
+   "principalOutstanding": 30399.2,
+   "priority": 3,
+   "repaymentType": {
+    "repaymentTypeDescription": "\u00e0\u00b8\u00a7\u00e0\u00b8\u2021\u00e0\u00b9\u20ac\u00e0\u00b8\u2021\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b8\u00ab\u00e0\u00b8\u00a1\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u00a7\u00e0\u00b8\u00b5\u00e0\u00b8\u00a2\u00e0\u00b8\u2122 \u00e0\u00b9\u20ac\u00e0\u00b8\u0160\u00e0\u00b9\u02c6\u00e0\u00b8\u2122 \u00e0\u00b8\u0161\u00e0\u00b8\u00b1\u00e0\u00b8\u2022\u00e0\u00b8\u00a3\u00e0\u00b9\u20ac\u00e0\u00b8\u201e\u00e0\u00b8\u00a3\u00e0\u00b8\u201d\u00e0\u00b8\u00b4\u00e0\u00b8\u2022",
+    "repaymentTypeId": 7,
+    "repaymentTypeName": "Revolving / Credit Line"
+   },
+   "startDate": "2025-09-25T00:00:00.000+07:00",
+   "totalInterestPaid": 1399.2,
+   "userId": "bf6d8c34-f5d2-4475-9343-1b043ef3e130"
+  },
+  "summary": {
+   "interestRemaining": 0,
+   "interestRemainingMonth": 0,
+   "lateFeeRemaining": 0,
+   "lateFeeRemainingMonth": 0,
+   "paidThisMonth": 0,
+   "penaltyInterestRemaining": 0,
+   "penaltyInterestRemainingMonth": 0,
+   "plannedPayment": 2000.0,
+   "principalRemaining": 30399.2,
+   "totalRemaining": 30399.2
+  }
+ },
+ {
+  "debt": {
+   "active": true,
+   "debtId": "dfa4c5b9-8a38-429c-8ac1-cfd4facc202a",
+   "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u00a1\u00e0\u00b8\u00ad\u00e0\u00b9\u20ac\u00e0\u00b8\u2022\u00e0\u00b8\u00ad\u00e0\u00b8\u00a3\u00e0\u00b9\u0152\u00e0\u00b9\u201e\u00e0\u00b8\u2039\u00e0\u00b8\u201e\u00e0\u00b9\u0152 Honda",
+   "debtType": {
+    "debtTypeDescription": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u00a3\u00e0\u00b8\u2013\u00e0\u00b8\u00a2\u00e0\u00b8\u2122\u00e0\u00b8\u2022\u00e0\u00b9\u0152 / \u00e0\u00b8\u00a1\u00e0\u00b8\u00ad\u00e0\u00b9\u20ac\u00e0\u00b8\u2022\u00e0\u00b8\u00ad\u00e0\u00b8\u00a3\u00e0\u00b9\u0152\u00e0\u00b9\u201e\u00e0\u00b8\u2039\u00e0\u00b8\u201e\u00e0\u00b9\u0152",
+    "debtTypeId": 3,
+    "debtTypeName": "\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u0160\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u00a2\u00e0\u00b8\u00b2\u00e0\u00b8\u2122\u00e0\u00b8\u017e\u00e0\u00b8\u00b2\u00e0\u00b8\u00ab\u00e0\u00b8\u2122\u00e0\u00b8\u00b0"
+   },
+   "defaulted": false,
+   "dueDay": 15,
+   "endDate": "2028-03-03T00:00:00.000+07:00",
+   "gracePeriodDays": 7,
+   "initialInterestRemaining": 0.0,
+   "initialLateFeeRemaining": 0.0,
+   "initialPenaltyRemaining": 0.0,
+   "interestCalculationType": "FLAT_RATE",
+   "interestInterval": "YEARLY",
+   "interestRate": 9.0,
+   "isInformal": false,
+   "minPayment": 2900.0,
+   "overpaymentBalance": 0.0,
+   "paymentInterval": "MONTHLY",
+   "penaltyAnnualRate": 15.0,
+   "penaltyTriggerDays": 7,
+   "principalAmount": 65000.0,
+   "principalOutstanding": 36232.04,
+   "priority": 4,
+   "repaymentType": {
+    "repaymentTypeDescription": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u0160\u00e0\u00b8\u00b3\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u2021\u00e0\u00b8\u00a7\u00e0\u00b8\u201d\u00e0\u00b9\u20ac\u00e0\u00b8\u2014\u00e0\u00b9\u02c6\u00e0\u00b8\u00b2\u00e0\u00b8\udc81\u00e0\u00b8\u00b1\u00e0\u00b8\u2122\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\udc81\u00e0\u00b9\u20ac\u00e0\u00b8\u201d\u00e0\u00b8\u00b7\u00e0\u00b8\u00ad\u00e0\u00b8\u2122",
+    "repaymentTypeId": 6,
+    "repaymentTypeName": "Installment / EMI"
+   },
+   "startDate": "2025-11-15T00:00:00.000+07:00",
+   "totalInterestPaid": 932.04,
+   "userId": "bf6d8c34-f5d2-4475-9343-1b043ef3e130"
+  },
+  "summary": {
+   "interestRemaining": 0,
+   "interestRemainingMonth": 0,
+   "lateFeeRemaining": 0,
+   "lateFeeRemainingMonth": 0,
+   "paidThisMonth": 0,
+   "penaltyInterestRemaining": 0,
+   "penaltyInterestRemainingMonth": 0,
+   "plannedPayment": 2900.0,
+   "principalRemaining": 36232.04,
+   "totalRemaining": 36232.04
+  }
+ },
+ {
+  "debt": {
+   "active": true,
+   "debtId": "363b1a61-9ef4-4630-96f6-7b1cfedaaa32",
+   "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122 iPad 0% (BNPL)",
+   "debtType": {
+    "debtTypeDescription": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b8\u201e\u00e0\u00b9\u2030\u00e0\u00b8\u00b2 0% / BNPL",
+    "debtTypeId": 6,
+    "debtTypeName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b8\u201e\u00e0\u00b9\u2030\u00e0\u00b8\u00b2"
+   },
+   "defaulted": false,
+   "dueDay": 20,
+   "endDate": "2027-07-03T00:00:00.000+07:00",
+   "gracePeriodDays": 3,
+   "initialInterestRemaining": 0.0,
+   "initialLateFeeRemaining": 0.0,
+   "initialPenaltyRemaining": 0.0,
+   "interestCalculationType": "THIRTY_360",
+   "interestInterval": "YEARLY",
+   "interestRate": 0.0,
+   "isInformal": false,
+   "minPayment": 2000.0,
+   "overpaymentBalance": 0.0,
+   "paymentInterval": "MONTHLY",
+   "penaltyAnnualRate": 0.0,
+   "penaltyTriggerDays": 3,
+   "principalAmount": 24000.0,
+   "principalOutstanding": 12000.0,
+   "priority": 6,
+   "repaymentType": {
+    "repaymentTypeDescription": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u0160\u00e0\u00b8\u00b3\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u2021\u00e0\u00b8\u00a7\u00e0\u00b8\u201d\u00e0\u00b9\u20ac\u00e0\u00b8\u2014\u00e0\u00b9\u02c6\u00e0\u00b8\u00b2\u00e0\u00b8\udc81\u00e0\u00b8\u00b1\u00e0\u00b8\u2122\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\udc81\u00e0\u00b9\u20ac\u00e0\u00b8\u201d\u00e0\u00b8\u00b7\u00e0\u00b8\u00ad\u00e0\u00b8\u2122",
+    "repaymentTypeId": 6,
+    "repaymentTypeName": "Installment / EMI"
+   },
+   "startDate": "2026-07-20T00:00:00.000+07:00",
+   "totalInterestPaid": 0.0,
+   "userId": "bf6d8c34-f5d2-4475-9343-1b043ef3e130"
+  },
+  "summary": {
+   "interestRemaining": 0,
+   "interestRemainingMonth": 0,
+   "lateFeeRemaining": 0,
+   "lateFeeRemainingMonth": 0,
+   "paidThisMonth": 0,
+   "penaltyInterestRemaining": 0,
+   "penaltyInterestRemainingMonth": 0,
+   "plannedPayment": 2000.0,
+   "principalRemaining": 12000.0,
+   "totalRemaining": 12000.0
+  }
+ }
+]

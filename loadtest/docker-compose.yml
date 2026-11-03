@@ -1,0 +1,17 @@
+# Isolated Postgres + Redis for load testing (does not touch the real DB)
+services:
+  postgres:
+    image: postgres:16
+    container_name: lt-postgres
+    environment:
+      POSTGRES_DB: financeCare_DB
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password123
+    ports:
+      - "55432:5432"
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements", "-c", "pg_stat_statements.track=all", "-c", "max_connections=200"]
+  redis:
+    image: redis:7.2
+    container_name: lt-redis
+    ports:
+      - "56379:6379"
