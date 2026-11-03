@@ -54,7 +54,7 @@ class RepaymentBugReproductionTest {
         debt.setStartDate(java.util.Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
 
         when(userService.extractUserIdFromToken(token)).thenReturn(userId);
-        when(debtRepository.findByDebtIdAndUserIdAndActiveTrue(debtId, userId)).thenReturn(Optional.of(debt));
+        when(debtRepository.findByDebtIdAndUserId(debtId, userId)).thenReturn(Optional.of(debt));
 
         repaymentService.payDebt(token, req);
 

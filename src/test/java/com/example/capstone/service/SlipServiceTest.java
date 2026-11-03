@@ -64,6 +64,7 @@ class SlipServiceTest {
 
         OcrService.OcrResponse ocrResponse = new OcrService.OcrResponse();
         ocrResponse.setFilename("slip.jpg");
+        ocrResponse.setStatus("success"); // slips with any other OCR status are skipped
         ObjectNode dataNode = objectMapper.createObjectNode();
         dataNode.put("bank", "KBank");
         dataNode.put("receiver", "Shop A");
@@ -93,7 +94,7 @@ class SlipServiceTest {
         verify(minioService).uploadFile(mockFile);
         verify(ocrService).verifySlips(files);
         verify(slipRepository).save(any(Slip.class));
-        verify(transactionService).createTransaction(user.getUserId(), any());
+        verify(transactionService).createTransaction(eq(user.getUserId()), any());
     }
 
     @Test
@@ -106,6 +107,7 @@ class SlipServiceTest {
 
         OcrService.OcrResponse ocrResponse = new OcrService.OcrResponse();
         ocrResponse.setFilename("slip.jpg");
+        ocrResponse.setStatus("success"); // slips with any other OCR status are skipped
         ObjectNode dataNode = objectMapper.createObjectNode();
         dataNode.put("receiver", "Debt Collector");
         dataNode.put("amount", "5000.00");

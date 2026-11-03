@@ -72,8 +72,17 @@ class RepaymentServiceTest {
 
     @Test
     void testPayDebt_InvalidAmount() {
+        UUID debtId = UUID.randomUUID();
         DebtPaymentRequestDTO req = new DebtPaymentRequestDTO();
+        req.setDebtId(debtId);
         req.setPaymentAmount(BigDecimal.ZERO);
+
+        Debt debt = new Debt();
+        debt.setDebtId(debtId);
+        debt.setUserId(userId);
+        // the amount is validated after the debt lookup, so the debt has to exist
+        when(userService.extractUserIdFromToken(token)).thenReturn(userId);
+        when(debtRepository.findByDebtIdAndUserId(debtId, userId)).thenReturn(Optional.of(debt));
 
         BusinessException ex = assertThrows(BusinessException.class, () -> {
             repaymentService.payDebt(token, req);

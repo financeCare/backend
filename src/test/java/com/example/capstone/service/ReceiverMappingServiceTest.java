@@ -142,10 +142,10 @@ class ReceiverMappingServiceTest {
         String receiverName = "Shop A";
         Category category = new Category();
         category.setCategoryName("Food");
-        ReceiverMapping mapping = ReceiverMapping.builder().category(category).build();
+        ReceiverMapping mapping = ReceiverMapping.builder().receiverName(receiverName).category(category).build();
 
         when(userService.extractUserIdFromToken(token)).thenReturn(userId);
-        when(receiverMappingRepository.findByUserIdAndReceiverName(userId, receiverName)).thenReturn(Optional.of(mapping));
+        when(receiverMappingRepository.findByUserId(userId)).thenReturn(List.of(mapping));
 
         Optional<Category> result = receiverMappingService.suggestCategory(token, receiverName);
 

@@ -4,6 +4,7 @@ import com.example.capstone.dto.DebtDTO;
 import com.example.capstone.dto.DebtPaymentRequestDTO;
 import com.example.capstone.entity.Debt;
 import com.example.capstone.enums.InterestCalculationType;
+import com.example.capstone.security.JwtUtil;
 import com.example.capstone.service.DebtService;
 import com.example.capstone.service.RepaymentService;
 import com.example.capstone.service.RepaymentPlanService;
@@ -47,6 +48,9 @@ class DebtControllerTest {
     @MockitoBean
     private UserService userService;
 
+    @MockitoBean
+    private JwtUtil jwtUtil;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -73,6 +77,7 @@ class DebtControllerTest {
         dto.setInterestRate(new java.math.BigDecimal(5));
         dto.setRepaymentTypeId(1);
         dto.setStartDate(new java.util.Date());
+        dto.setEndDate(new java.util.Date(System.currentTimeMillis() + 365L * 24 * 60 * 60 * 1000)); // endDate is required by DebtDTO
         dto.setDebtTypeId(1);
         dto.setMinPayment(new java.math.BigDecimal(5000));
         dto.setDueDay(1);
@@ -102,6 +107,7 @@ class DebtControllerTest {
         dto.setInterestRate(new java.math.BigDecimal(5));
         dto.setRepaymentTypeId(1);
         dto.setStartDate(new java.util.Date());
+        dto.setEndDate(new java.util.Date(System.currentTimeMillis() + 365L * 24 * 60 * 60 * 1000)); // endDate is required by DebtDTO
         dto.setDebtTypeId(1);
         dto.setMinPayment(new java.math.BigDecimal(5000));
         dto.setDueDay(1);

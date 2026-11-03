@@ -155,6 +155,7 @@ class RepaymentPlanServiceTest {
         // SafeMin = 10,000 + 10,000 = 20,000
         // Result = max(5000, 20000) = 20000
         
-        assertEquals(new BigDecimal("20000.00"), result);
+        // the service rounds up to whole units (scale 0), so compare by value, not by scale
+        assertEquals(0, new BigDecimal("20000").compareTo(result));
     }
 }
