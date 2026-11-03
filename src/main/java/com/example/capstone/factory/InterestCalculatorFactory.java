@@ -1,7 +1,7 @@
 package com.example.capstone.factory;
 
-import com.example.capstone.engineImp.calculator.InterestCalculator;
 import com.example.capstone.enums.InterestCalculationType;
+import com.example.capstone.strategy.interest.InterestCalculator;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -16,6 +16,14 @@ public class InterestCalculatorFactory {
     }
 
     public InterestCalculator get(InterestCalculationType type) {
-        return calculators.get(type.name());
+        if (type == null) {
+            return null;
+        }
+        return switch (type) {
+            case DAILY_SIMPLE -> calculators.getOrDefault("dailySimple", calculators.get(type.name()));
+            case DAILY_COMPOUND -> calculators.getOrDefault("dailyCompound", calculators.get(type.name()));
+            case FLAT_RATE -> calculators.getOrDefault("flatRate", calculators.get(type.name()));
+            case THIRTY_360 -> calculators.getOrDefault("thirty360", calculators.get(type.name()));
+        };
     }
 }

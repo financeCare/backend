@@ -2,7 +2,9 @@ package com.example.capstone.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -23,7 +25,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class OcrServiceTest {
+class OcrServiceTest {
 
     @Mock
     private RestTemplate restTemplate;
@@ -33,6 +35,12 @@ public class OcrServiceTest {
 
     @InjectMocks
     private OcrService ocrService;
+
+    @BeforeEach
+    void setUp() {
+        // @Value is not injected by @InjectMocks, and anyString() does not match null
+        ReflectionTestUtils.setField(ocrService, "ocrUrl", "http://ocr-service/slip/verify");
+    }
 
     @Test
     void testVerifySlips_Success() throws Exception {

@@ -1,5 +1,6 @@
 package com.example.capstone.controller;
 
+import com.example.capstone.dto.DebtTypeRequest;
 import com.example.capstone.entity.DebtType;
 import com.example.capstone.service.DebtTypeService;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +23,8 @@ public class DebtTypeController {
     }
 
     @PostMapping
-    public ResponseEntity<String> addDebtType(@Valid @RequestBody DebtType debtType) {
-        String msg = debtTypeService.addDebtType(debtType);
+    public ResponseEntity<String> addDebtType(@Valid @RequestBody DebtTypeRequest request) {
+        String msg = debtTypeService.addDebtType(request);
         return ResponseEntity.status(201).body(msg);
     }
 

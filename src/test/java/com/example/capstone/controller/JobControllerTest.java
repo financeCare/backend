@@ -4,7 +4,9 @@ import com.example.capstone.dto.JobApplicationTrackingRequest;
 import com.example.capstone.dto.JobSuggestionRequest;
 import com.example.capstone.dto.JobSuggestionResponse;
 import com.example.capstone.repository.JobApplicationRepository;
+import com.example.capstone.security.JwtUtil;
 import com.example.capstone.service.JoobleService;
+import com.example.capstone.service.OccupationDiscoveryService;
 import com.example.capstone.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -29,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(JobController.class)
 @AutoConfigureMockMvc
-public class JobControllerTest {
+class JobControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -45,6 +47,12 @@ public class JobControllerTest {
 
     @MockitoBean
     private UserService userService;
+
+    @MockitoBean
+    private OccupationDiscoveryService occupationDiscoveryService;
+
+    @MockitoBean
+    private JwtUtil jwtUtil;
 
     @Test
     @WithMockUser

@@ -7,6 +7,7 @@ import com.example.capstone.entity.RepaymentType;
 import com.example.capstone.enums.InterestCalculationType;
 import com.example.capstone.exception.BusinessException;
 import com.example.capstone.repository.DebtRepository;
+import com.example.capstone.repository.DebtTransactionRepository;
 import com.example.capstone.repository.DebtTypeRepository;
 import com.example.capstone.repository.RepaymentTypeRepository;
 import com.example.capstone.repository.CategoryRepository;
@@ -27,7 +28,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class DebtServiceTest {
+class DebtServiceTest {
 
     @Mock
     private DebtTypeRepository debtTypeRepository;
@@ -43,6 +44,10 @@ public class DebtServiceTest {
     private CategoryRepository categoryRepository;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private DebtTransactionRepository debtTransactionRepository;
+    @Mock
+    private RepaymentPlanService repaymentPlanService;
 
     @InjectMocks
     private DebtService debtService;
@@ -122,5 +127,46 @@ public class DebtServiceTest {
         });
 
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+    }
+
+    @Test
+    void testGetOwnDebt_summariesComeFromBatchedQueries() {
+        UUID debtId1 = UUID.randomUUID();
+        UUID debtId2 = UUID.randomUUID();
+        Debt d1 = new Debt();
+        d1.setDebtId(debtId1);
+        d1.setPrincipalOutstanding(new BigDecimal("1000"));
+        Debt d2 = new Debt();
+        d2.setDebtId(debtId2);
+        d2.setPrincipalAmount(new BigDecimal("500"));   // outstanding is null: falls back to the original amount
+
+        when(userService.extractUserIdFromToken(token)).thenReturn(userId);
+        when(debtRepository.findAllByUserId(userId)).thenReturn(java.util.List.of(d1, d2));
+        when(repaymentPlanService.calculateCurrentMonthAllocation(userId))
+                .thenReturn(java.util.Map.of(debtId1, new BigDecimal("300")));
+        when(debtTransactionRepository.outstandingByDebt(any(), any())).thenReturn(java.util.Map.of(
+                debtId1, java.util.Map.of(
+                        com.example.capstone.enums.DebtTxnType.INTEREST_CHARGE, new BigDecimal("50"),
+                        com.example.capstone.enums.DebtTxnType.LATE_FEE_CHARGE, new BigDecimal("10"))));
+        when(debtTransactionRepository.monthByDebt(any(), any(), anyInt(), anyInt())).thenReturn(java.util.Map.of(
+                debtId1, java.util.Map.of(com.example.capstone.enums.DebtTxnType.PAYMENT, new BigDecimal("200"))));
+
+        java.util.List<com.example.capstone.dto.DebtResponseDTO> result = debtService.getOwnDebt(token);
+
+        assertEquals(2, result.size());
+        com.example.capstone.dto.DebtSummaryDTO s1 = result.get(0).getSummary();
+        assertEquals(0, new BigDecimal("1060").compareTo(s1.getTotalRemaining()));   // 1000 + 50 + 10 + 0
+        assertEquals(0, new BigDecimal("200").compareTo(s1.getPaidThisMonth()));
+        assertEquals(0, new BigDecimal("300").compareTo(s1.getPlannedPayment()));
+        com.example.capstone.dto.DebtSummaryDTO s2 = result.get(1).getSummary();
+        assertEquals(0, new BigDecimal("500").compareTo(s2.getPrincipalRemaining()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(s2.getTotalRemaining().subtract(new BigDecimal("500"))));
+        assertEquals(0, BigDecimal.ZERO.compareTo(s2.getPlannedPayment()));
+
+        // the point of the change: one grouped query per kind, not 7 per debt
+        verify(debtTransactionRepository, times(1)).outstandingByDebt(any(), any());
+        verify(debtTransactionRepository, times(1)).monthByDebt(any(), any(), anyInt(), anyInt());
+        verify(debtTransactionRepository, never()).sumOutstandingByType(any(), any());
+        verify(debtTransactionRepository, never()).sumMonthDebt(any(), any(), anyInt(), anyInt());
     }
 }

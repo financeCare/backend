@@ -9,13 +9,12 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
-public class DebtRepositoryTest {
+class DebtRepositoryTest {
 
     @Autowired
     private DebtRepository debtRepository;

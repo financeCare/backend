@@ -26,7 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class NotificationServiceTest {
+class NotificationServiceTest {
 
     @Mock
     private UserService userService;
@@ -64,6 +64,7 @@ public class NotificationServiceTest {
         when(userService.extractUserIdFromToken(token)).thenReturn(userId);
         when(userDeviceRepository.findByFcmToken(req.getFcmToken())).thenReturn(Optional.empty());
         when(userDeviceRepository.findByDeviceKeyAndUserId(req.getDeviceKey(), userId)).thenReturn(Optional.empty());
+        when(userDeviceRepository.save(any(UserDevice.class))).thenAnswer(inv -> inv.getArgument(0));
 
         UserDeviceResponse result = notificationService.registerDevice(token, req);
 
@@ -103,19 +104,21 @@ public class NotificationServiceTest {
     }
 
     @Test
-    void testUnregisterDevice_Forbidden() {
+    void testUnregisterDevice_OtherUsersDevice_IsIgnored() {
         UUID deviceId = UUID.randomUUID();
         UserDevice device = new UserDevice();
         device.setDeviceId(deviceId);
         device.setUserId(UUID.randomUUID()); // Different user
+        device.setActive(true);
 
         when(userService.extractUserIdFromToken(token)).thenReturn(userId);
         when(userDeviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
 
-        BusinessException ex = assertThrows(BusinessException.class, () -> {
-            notificationService.unregisterDevice(token, deviceId);
-        });
-        assertEquals(HttpStatus.FORBIDDEN, ex.getStatus());
+        notificationService.unregisterDevice(token, deviceId);
+
+        // the service silently ignores devices owned by someone else (no state change, no save)
+        assertTrue(device.getActive());
+        verify(userDeviceRepository, never()).save(any(UserDevice.class));
     }
 
     @Test

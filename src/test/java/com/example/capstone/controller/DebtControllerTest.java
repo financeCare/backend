@@ -4,6 +4,7 @@ import com.example.capstone.dto.DebtDTO;
 import com.example.capstone.dto.DebtPaymentRequestDTO;
 import com.example.capstone.entity.Debt;
 import com.example.capstone.enums.InterestCalculationType;
+import com.example.capstone.security.JwtUtil;
 import com.example.capstone.service.DebtService;
 import com.example.capstone.service.RepaymentService;
 import com.example.capstone.service.RepaymentPlanService;
@@ -19,8 +20,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -29,11 +28,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-
 @WebMvcTest(DebtController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class DebtControllerTest {
+class DebtControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -50,25 +48,11 @@ public class DebtControllerTest {
     @MockitoBean
     private UserService userService;
 
+    @MockitoBean
+    private JwtUtil jwtUtil;
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    // @Test
-    // void testGetOwnDebt() throws Exception {
-    //     Debt debt = new Debt();
-    //     debt.setDebtName("Home Loan");
-    //     List<Debt> debts = Arrays.asList(debt);
-
-    //     when(debtService.getOwnDebt(anyString())).thenReturn(debts);
-
-    //     mockMvc.perform(get("/debts")
-    //                     .header("Authorization", "Bearer token"))
-    //             .andDo(print())
-    //             .andExpect(status().isOk())
-    //             .andExpect(jsonPath("$[0].debtName").value("Home Loan"));
-
-    // }
 
     @Test
     void testGetDebtDetail() throws Exception {
@@ -93,6 +77,7 @@ public class DebtControllerTest {
         dto.setInterestRate(new java.math.BigDecimal(5));
         dto.setRepaymentTypeId(1);
         dto.setStartDate(new java.util.Date());
+        dto.setEndDate(new java.util.Date(System.currentTimeMillis() + 365L * 24 * 60 * 60 * 1000)); // endDate is required by DebtDTO
         dto.setDebtTypeId(1);
         dto.setMinPayment(new java.math.BigDecimal(5000));
         dto.setDueDay(1);
@@ -122,6 +107,7 @@ public class DebtControllerTest {
         dto.setInterestRate(new java.math.BigDecimal(5));
         dto.setRepaymentTypeId(1);
         dto.setStartDate(new java.util.Date());
+        dto.setEndDate(new java.util.Date(System.currentTimeMillis() + 365L * 24 * 60 * 60 * 1000)); // endDate is required by DebtDTO
         dto.setDebtTypeId(1);
         dto.setMinPayment(new java.math.BigDecimal(5000));
         dto.setDueDay(1);

@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(CategoryController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class CategoryControllerTest {
+class CategoryControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

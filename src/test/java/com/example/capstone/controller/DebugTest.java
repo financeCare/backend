@@ -16,7 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 @WebMvcTest(SimpleController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class DebugTest {
+class DebugTest {
 
     @Autowired
     private MockMvc mockMvc;

@@ -1,6 +1,11 @@
 package com.example.capstone.config;
 
-public class GlobalVariables {
+public final class GlobalVariables {
+
+    private GlobalVariables() {
+        // Utility class private constructor
+    }
+
     public static final String CATEGORY_SALARY = "Salary";
     public static final String CATEGORY_EXTRA_INCOME = "Extra Income";
     public static final String CATEGORY_FOOD = "Food";

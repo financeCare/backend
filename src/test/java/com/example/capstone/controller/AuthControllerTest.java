@@ -1,7 +1,8 @@
 package com.example.capstone.controller;
+
+import com.example.capstone.dto.VerifyOtpDto;
 import com.example.capstone.dto.login.LoginRequest;
 import com.example.capstone.dto.login.RegisterRequest;
-import com.example.capstone.dto.verifyOTPDTO;
 import com.example.capstone.entity.User;
 import com.example.capstone.repository.UserRepository;
 import com.example.capstone.security.JwtUtil;
@@ -29,11 +30,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-
 @WebMvcTest(AuthController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class AuthControllerTest {
+class AuthControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -69,7 +69,7 @@ public class AuthControllerTest {
 
     @Test
     void testVerifyOtp_Success() throws Exception {
-        verifyOTPDTO request = new verifyOTPDTO();
+        VerifyOtpDto request = new VerifyOtpDto();
         request.setEmail("test@example.com");
         request.setOtp("123456");
 
@@ -128,7 +128,6 @@ public class AuthControllerTest {
         request.setUsername("testuser");
         request.setEmail("test@example.com");
         request.setPassword("password");
-
 
         doNothing().when(userService).registerUser(any(RegisterRequest.class));
 

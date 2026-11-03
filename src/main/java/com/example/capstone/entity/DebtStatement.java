@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 @Entity
@@ -57,7 +58,7 @@ public class DebtStatement {
 
     @PrePersist
     void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now(ZoneId.of("Asia/Bangkok"));
         if (this.interestCharged == null) this.interestCharged = BigDecimal.ZERO;
         if (this.interestPaid == null) this.interestPaid = BigDecimal.ZERO;
         if (this.interestOutstanding == null) this.interestOutstanding = BigDecimal.ZERO;

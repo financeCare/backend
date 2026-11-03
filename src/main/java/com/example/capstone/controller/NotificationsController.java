@@ -19,6 +19,7 @@ import java.util.UUID;
 @RequestMapping("/notifications")
 @RequiredArgsConstructor
 public class NotificationsController {
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final NotificationService notificationsService;
 
@@ -28,9 +29,8 @@ public class NotificationsController {
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size
     ) {
-        String token = authorizationHeader.replace("Bearer ", "");
-        return notificationsService.getAllNotificationLogs(token, PageRequest.of(page, size, Sort.by("sentAt").descending())
-        );
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
+        return notificationsService.getAllNotificationLogs(token, PageRequest.of(page, size, Sort.by("sentAt").descending()));
     }
 
     @GetMapping("/logs/filter-refType/{refType}")
@@ -40,7 +40,7 @@ public class NotificationsController {
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size
     ) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         return notificationsService.getNotificationLogs(
                 token,
                 refType,
@@ -50,13 +50,13 @@ public class NotificationsController {
 
     @GetMapping("/logs/unread-count")
     public long unreadCount(@RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         return notificationsService.countUnreadNotifications(token);
     }
 
     @GetMapping("/logs/read-all")
     public void maskAsReadAll(@RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         notificationsService.markAllNotificationsAsRead(token);
     }
 
@@ -65,28 +65,27 @@ public class NotificationsController {
             @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable("logId") UUID logId
     ) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         notificationsService.markNotificationAsClicked(token, logId);
     }
 
-
     @GetMapping("/devices/my-devices")
     public List<DeviceListDto> getMyDevices(@RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         return notificationsService.getMyDevices(token);
     }
 
     @PostMapping("/devices/register")
     public UserDeviceResponse registerDevice(@RequestHeader("Authorization") String authorizationHeader,
                                              @Valid @RequestBody UserDeviceRequest userDeviceRequest) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         return notificationsService.registerDevice(token, userDeviceRequest);
     }
 
     @DeleteMapping("/devices/{deviceId}")
     public void unregisterDevice(@RequestHeader("Authorization") String authorizationHeader,
                                  @PathVariable("deviceId") UUID deviceId) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         notificationsService.unregisterDevice(token, deviceId);
     }
 }

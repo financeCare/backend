@@ -47,12 +47,15 @@ public class BudgetService {
     public List<BudgetOverviewDto> getAmountFromBudget(String token) {
         UUID userId = userService.extractUserIdFromToken(token);
         List<Budget> budgets = budgetRepository.findByUserId(userId);
+        // one query for the user's categories instead of one query per budget
+        List<Category> categories = categoryRepository.findByUserId(userId);
         List<BudgetOverviewDto> result = new ArrayList<>();
         for (Budget budget : budgets) {
-            Category relatedCategories = categoryRepository.findByUserIdAndBudgetIdAndTypeNot(
-                    userId,
-                    budget.getBudgetId(),
-                    "Income");
+            Category relatedCategories = categories.stream()
+                    .filter(c -> budget.getBudgetId().equals(c.getBudgetId())
+                            && c.getType() != null && !"Income".equals(c.getType()))
+                    .findFirst()
+                    .orElse(null);
             if (relatedCategories == null) {
                 continue;
             }

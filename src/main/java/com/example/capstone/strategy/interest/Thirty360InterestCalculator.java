@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-@Component("THIRTY_360")
+@Component("thirty360")
 public class Thirty360InterestCalculator implements InterestCalculator {
 
     @Override

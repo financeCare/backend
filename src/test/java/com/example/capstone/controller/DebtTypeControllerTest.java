@@ -1,5 +1,6 @@
 package com.example.capstone.controller;
 
+import com.example.capstone.dto.DebtTypeRequest;
 import com.example.capstone.entity.DebtType;
 import com.example.capstone.security.JwtUtil;
 import com.example.capstone.service.DebtTypeService;
@@ -29,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(DebtTypeController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class DebtTypeControllerTest {
+class DebtTypeControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -65,11 +66,9 @@ public class DebtTypeControllerTest {
 
     @Test
     void testAddDebtType() throws Exception {
-        DebtType debtType = new DebtType();
-        debtType.setDebtTypeName("Credit Card");
-        debtType.setDebtTypeDescription("Credit Card Description");
+        DebtTypeRequest debtType = new DebtTypeRequest("Credit Card", "Credit Card Description");
 
-        when(debtTypeService.addDebtType(any(DebtType.class))).thenReturn("Success");
+        when(debtTypeService.addDebtType(any(DebtTypeRequest.class))).thenReturn("Success");
 
         mockMvc.perform(post("/debt-types")
                         .contentType(MediaType.APPLICATION_JSON)

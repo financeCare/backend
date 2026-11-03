@@ -8,19 +8,23 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MinioConfig {
 
-        //TODO change minio to public url for production
     @Value("${app.minio.url}")
     private String url;
     @Value("${app.minio.access-key}")
     private String accessKey;
     @Value("${app.minio.secret-key}")
     private String secretKey;
+    @Value("${app.minio.region:}")
+    private String region;
 
     @Bean
     public MinioClient minioClient() {
-        return MinioClient.builder()
+        MinioClient.Builder builder = MinioClient.builder()
                 .endpoint(url)
-                .credentials(accessKey, secretKey)
-                .build();
+                .credentials(accessKey, secretKey);
+        if (!region.isBlank()) {
+            builder.region(region);
+        }
+        return builder.build();
     }
 }

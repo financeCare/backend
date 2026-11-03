@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(UserSettingController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class UserSettingControllerTest {
+class UserSettingControllerTest {
 
     @Autowired
     private MockMvc mockMvc;

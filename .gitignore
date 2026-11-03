@@ -36,5 +36,7 @@ out/
 ### VS Code ###
 .vscode/
 
-### Secrets ###
-.env
+# Load test artifacts (local only)
+loadtest/*.log
+loadtest/backup-orig/
+loadtest/backup-new/

@@ -13,7 +13,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
-      APP_OCR_URL: http://easyocr-service:8000/slip/verify
+      APP_OCR_URL: http://easyocr-service:7860/slip/verify
       APP_MINIO_URL: http://minio-service:9000
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       MAIL_USERNAME: ${MAIL_USERNAME:?set MAIL_USERNAME in .env}
@@ -43,9 +43,9 @@ services:
       context: ../../ocr/easyOcr
     container_name: easyocr-service
     # ลบ ports: - "8000:8000" ออก
-    # เพราะ spring-app คุยผ่าน http://easyocr-service:8000 ภายในเครือข่ายได้
+    # เพราะ spring-app คุยผ่าน http://easyocr-service:7860 ภายในเครือข่ายได้
     volumes:
-      - easyocr_data:/root/.EasyOCR
+      - easyocr_data:/home/user/.EasyOCR
     networks:
       - finance-net
     restart: unless-stopped

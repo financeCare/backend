@@ -25,7 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class BudgetServiceTest {
+class BudgetServiceTest {
 
     @Mock
     private BudgetRepository budgetRepository;
@@ -107,9 +107,10 @@ public class BudgetServiceTest {
         Category category = new Category();
         category.setCategoryId(1);
         category.setCategoryName("Food");
+        category.setBudgetId(budget.getBudgetId());
+        category.setType("Expense");
         
-        when(categoryRepository.findByUserIdAndBudgetIdAndTypeNot(userId, budget.getBudgetId(), "Income"))
-                .thenReturn(category);
+        when(categoryRepository.findByUserId(userId)).thenReturn(List.of(category));
 
         List<BudgetOverviewDto> result = budgetService.getAmountFromBudget(token);
 

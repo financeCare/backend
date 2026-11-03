@@ -1,0 +1,12 @@
+{
+ "interestRemaining": 750.0,
+ "interestRemainingMonth": 0,
+ "lateFeeRemaining": 200.0,
+ "lateFeeRemainingMonth": 0,
+ "paidThisMonth": 0,
+ "penaltyInterestRemaining": 0,
+ "penaltyInterestRemainingMonth": 0,
+ "plannedPayment": 14400.0,
+ "principalRemaining": 15000.0,
+ "totalRemaining": 15950.0
+}

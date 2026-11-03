@@ -19,12 +19,13 @@ import java.util.UUID;
 @RequestMapping("/transactions")
 @RequiredArgsConstructor
 public class TransactionController {
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final TransactionService transactionService;
 
     @GetMapping
     public List<TransactionResponse> getTransactions(@RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         return transactionService.getTransactionsByUserId(token);
     }
 
@@ -35,7 +36,7 @@ public class TransactionController {
             @RequestParam(name = "page", defaultValue = "0") int page,
             @RequestParam(name = "size", defaultValue = "10") int size,
             @RequestParam(name = "sortBy", defaultValue = "transactionDate") String sortBy) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).descending());
         return transactionService.getTransactionByCategory(token, categoryId, pageable);
     }
@@ -43,34 +44,34 @@ public class TransactionController {
     @GetMapping("/filterByIncome")
     public List<Transaction> filterTransactionByIncome(
             @RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         return transactionService.filterTransactionByIncome(token);
     }
 
     @PostMapping
     public Transaction createTransaction(@RequestHeader("Authorization") String authorizationHeader,
             @Valid @RequestBody TransactionRequest transaction) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         return transactionService.createTransaction(token, transaction);
     }
 
     @PutMapping("/{transactionId}")
     public Transaction updateTransaction(@RequestHeader("Authorization") String authorizationHeader,
             @PathVariable("transactionId") UUID transactionId, @Valid @RequestBody TransactionRequest transaction) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         return transactionService.updateTransaction(token, transactionId, transaction);
     }
 
     @DeleteMapping("/{transactionId}")
     public void deleteTransaction(@RequestHeader("Authorization") String authorizationHeader,
             @PathVariable("transactionId") UUID transactionId) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         transactionService.deleteTransaction(token, transactionId);
     }
 
     @GetMapping("/monthly-expenses")
     public Double getMonthlyExpenses(@RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         return transactionService.getMonthlyExpenses(token);
     }
 }

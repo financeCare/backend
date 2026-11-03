@@ -1,5 +1,6 @@
 package com.example.capstone.controller;
 
+import com.example.capstone.dto.RepaymentTypeRequest;
 import com.example.capstone.entity.RepaymentType;
 import com.example.capstone.security.JwtUtil;
 import com.example.capstone.service.RepaymentTypeService;
@@ -27,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(RepaymentTypeController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class RepaymentTypeControllerTest {
+class RepaymentTypeControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -61,10 +62,9 @@ public class RepaymentTypeControllerTest {
 
     @Test
     void testAddRepaymentType() throws Exception {
-        RepaymentType type = new RepaymentType();
-        type.setRepaymentTypeName("BULLET");
+        RepaymentTypeRequest type = new RepaymentTypeRequest("BULLET", "Pay everything at maturity");
 
-        when(repaymentTypeService.addRepaymentType(any(RepaymentType.class))).thenReturn("Success");
+        when(repaymentTypeService.addRepaymentType(any(RepaymentTypeRequest.class))).thenReturn("Success");
 
         mockMvc.perform(post("/repayment-types")
                         .contentType(MediaType.APPLICATION_JSON)

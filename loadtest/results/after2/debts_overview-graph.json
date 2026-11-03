@@ -1,0 +1,87 @@
+{
+ "budgetDTO": [
+  {
+   "amount": 0.0,
+   "budgetId": "0f351fad-cff5-480a-95e1-d83fb70e3e5f",
+   "categoryId": 4,
+   "categoryName": "Transport",
+   "limit": 3000.0
+  },
+  {
+   "amount": 0.0,
+   "budgetId": "12877605-4cb2-4199-9917-9cb8872e9d18",
+   "categoryId": 5,
+   "categoryName": "Shopping",
+   "limit": 4000.0
+  },
+  {
+   "amount": 0.0,
+   "budgetId": "307e7e9c-0a9e-4c46-b20d-ce94cc3537cc",
+   "categoryId": 6,
+   "categoryName": "Health",
+   "limit": 2000.0
+  },
+  {
+   "amount": 0.0,
+   "budgetId": "f53c230e-cf1a-4e3e-8695-93204a85fb8e",
+   "categoryId": 7,
+   "categoryName": "Entertainment",
+   "limit": 2500.0
+  },
+  {
+   "amount": 0.0,
+   "budgetId": "48b5497c-d9f6-41a4-a990-c7a1e87cc6ac",
+   "categoryId": 9,
+   "categoryName": "Other",
+   "limit": 2000.0
+  },
+  {
+   "amount": 2303.0,
+   "budgetId": "80771803-5da3-4856-b305-5a649da4243d",
+   "categoryId": 8,
+   "categoryName": "Bills",
+   "limit": 5000.0
+  },
+  {
+   "amount": 3000.0,
+   "budgetId": "38097054-6e60-4492-b309-c430b61f3981",
+   "categoryId": 10,
+   "categoryName": "Saving",
+   "limit": 5000.0
+  },
+  {
+   "amount": 316.0,
+   "budgetId": "b927b995-f4c0-49a8-9759-a32eb9476f9d",
+   "categoryId": 3,
+   "categoryName": "Food",
+   "limit": 8000.0
+  }
+ ],
+ "debtGraphDTO": [
+  {
+   "amount": 15000.0,
+   "debtName": "\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122 (\u00e0\u00b8\u201d\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b9\u20ac\u00e0\u00b8\u0161\u00e0\u00b8\u00b5\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u2122\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00a3\u00e0\u00b8\u00b0\u00e0\u00b8\u0161\u00e0\u00b8\u0161)"
+  },
+  {
+   "amount": 120000.0,
+   "debtName": "\u00e0\u00b8\u00aa\u00e0\u00b8\u00b4\u00e0\u00b8\u2122\u00e0\u00b9\u20ac\u00e0\u00b8\u0160\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u00aa\u00e0\u00b9\u02c6\u00e0\u00b8\u00a7\u00e0\u00b8\u2122\u00e0\u00b8\u0161\u00e0\u00b8\u00b8\u00e0\u00b8\u201e\u00e0\u00b8\u201e\u00e0\u00b8\u00a5 SCB"
+  },
+  {
+   "amount": 180000.0,
+   "debtName": "\u00e0\u00b8\udc81\u00e0\u00b8\u00a2\u00e0\u00b8\u00a8. (\u00e0\u00b8\udc81\u00e0\u00b8\u00ad\u00e0\u00b8\u2021\u00e0\u00b8\u2014\u00e0\u00b8\u00b8\u00e0\u00b8\u2122\u00e0\u00b8\udc81\u00e0\u00b8\u00b9\u00e0\u00b9\u2030\u00e0\u00b8\u00a2\u00e0\u00b8\u00b7\u00e0\u00b8\u00a1\u00e0\u00b9\u20ac\u00e0\u00b8\u017e\u00e0\u00b8\u00b7\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\udc81\u00e0\u00b8\u00b2\u00e0\u00b8\u00a3\u00e0\u00b8\u00a8\u00e0\u00b8\u00b6\u00e0\u00b8\udc81\u00e0\u00b8\u00a9\u00e0\u00b8\u00b2)"
+  },
+  {
+   "amount": 48000.0,
+   "debtName": "\u00e0\u00b8\u0161\u00e0\u00b8\u00b1\u00e0\u00b8\u2022\u00e0\u00b8\u00a3\u00e0\u00b9\u20ac\u00e0\u00b8\u201e\u00e0\u00b8\u00a3\u00e0\u00b8\u201d\u00e0\u00b8\u00b4\u00e0\u00b8\u2022 KBank"
+  },
+  {
+   "amount": 65000.0,
+   "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122\u00e0\u00b8\u00a1\u00e0\u00b8\u00ad\u00e0\u00b9\u20ac\u00e0\u00b8\u2022\u00e0\u00b8\u00ad\u00e0\u00b8\u00a3\u00e0\u00b9\u0152\u00e0\u00b9\u201e\u00e0\u00b8\u2039\u00e0\u00b8\u201e\u00e0\u00b9\u0152 Honda"
+  },
+  {
+   "amount": 24000.0,
+   "debtName": "\u00e0\u00b8\u0153\u00e0\u00b9\u02c6\u00e0\u00b8\u00ad\u00e0\u00b8\u2122 iPad 0% (BNPL)"
+  }
+ ],
+ "income": 5619.0
+}

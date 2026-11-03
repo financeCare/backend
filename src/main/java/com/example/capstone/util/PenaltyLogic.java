@@ -1,12 +1,16 @@
 package com.example.capstone.util;
 
 import com.example.capstone.domain.DebtSim;
-import com.example.capstone.engineImp.calculator.PenaltyCalculator;
+import com.example.capstone.engine.calculator.PenaltyCalculator;
 import lombok.Data;
 
 import java.math.BigDecimal;
 
-public class PenaltyLogic {
+public final class PenaltyLogic {
+
+    private PenaltyLogic() {
+        // Utility class private constructor
+    }
 
     @Data
     public static class LateResult {
@@ -52,7 +56,7 @@ public class PenaltyLogic {
         BigDecimal penalty = BigDecimal.ZERO;
         if (overdueDays > debt.getPenaltyTriggerDays() && debt.getPenaltyAnnualRate() != null) {
             // คิดค่าปรับจากยอดที่ขาด (Overdue Amount) เป็นจำนวนวัน
-            penalty = com.example.capstone.engineImp.calculator.PenaltyCalculator.calculateDaily(
+            penalty = PenaltyCalculator.calculateDaily(
                     overdueAmount,
                     debt.getPenaltyAnnualRate(),
                     (int) overdueDays

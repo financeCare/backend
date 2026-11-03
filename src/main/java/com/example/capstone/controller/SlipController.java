@@ -18,43 +18,46 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/slips")
 @RequiredArgsConstructor
+@Slf4j
 public class SlipController {
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final SlipService slipService;
     private final UserService userService;
     private final UserRepository userRepository;
 
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadSlips(@RequestHeader("Authorization") String authorizationHeader,
+    public ResponseEntity<List<Map<String, Object>>> uploadSlips(@RequestHeader("Authorization") String authorizationHeader,
             @RequestParam("files") List<MultipartFile> files) {
         if (files == null || files.isEmpty()) {
             throw new BusinessException("No files uploaded", HttpStatus.BAD_REQUEST);
         }
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         UUID userId = userService.extractUserIdFromToken(token);
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
 
         try {
-            List<?> results = slipService.processSlips(files, user);
+            List<Map<String, Object>> results = slipService.processSlips(files, user);
             return ResponseEntity.ok(results);
         } catch (Exception e) {
-            e.printStackTrace(); // เพิ่ม log ในคอนโซล
-            return ResponseEntity.badRequest().body("Processing failed: " + e.getMessage());
+            log.error("Processing slips failed: ", e);
+            throw new BusinessException("Processing failed: " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 
     @GetMapping
     public ResponseEntity<List<Slip>> getMySlips(@RequestHeader("Authorization") String authorizationHeader) {
-        String token = authorizationHeader.replace("Bearer ", "");
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
         UUID userId = userService.extractUserIdFromToken(token);
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
 
         List<Slip> results = slipService.getSlipsByUser(user);
         return ResponseEntity.ok(results);
@@ -77,6 +80,7 @@ public class SlipController {
                     .contentType(MediaType.parseMediaType(contentType))
                     .body(new InputStreamResource(inputStream));
         } catch (Exception e) {
+            log.error("Failed to load slip image {}: {}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

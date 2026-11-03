@@ -24,7 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class UserServiceTest {
+class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
@@ -136,5 +136,44 @@ public class UserServiceTest {
 
         assertFalse(result);
         verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void testLoadUserByUsername_isQueriedOncePerHttpRequest() {
+        User user = new User();
+        user.setEmail("memo@example.com");
+        user.setPasswordHash("hash");
+        when(userRepository.findByEmail("memo@example.com")).thenReturn(Optional.of(user));
+
+        org.springframework.mock.web.MockHttpServletRequest request1 = new org.springframework.mock.web.MockHttpServletRequest();
+        org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(
+                new org.springframework.web.context.request.ServletRequestAttributes(request1));
+        try {
+            userService.loadUserByUsername("memo@example.com");
+            userService.loadUserByUsername("memo@example.com");
+            verify(userRepository, times(1)).findByEmail("memo@example.com");
+
+            // a new request must not see the previous request's user (no cross-request caching)
+            org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(
+                    new org.springframework.web.context.request.ServletRequestAttributes(
+                            new org.springframework.mock.web.MockHttpServletRequest()));
+            userService.loadUserByUsername("memo@example.com");
+            verify(userRepository, times(2)).findByEmail("memo@example.com");
+        } finally {
+            org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
+    void testLoadUserByUsername_outsideARequestAlwaysQueries() {
+        User user = new User();
+        user.setEmail("nocontext@example.com");
+        user.setPasswordHash("hash");
+        when(userRepository.findByEmail("nocontext@example.com")).thenReturn(Optional.of(user));
+
+        userService.loadUserByUsername("nocontext@example.com");
+        userService.loadUserByUsername("nocontext@example.com");
+
+        verify(userRepository, times(2)).findByEmail("nocontext@example.com");
     }
 }

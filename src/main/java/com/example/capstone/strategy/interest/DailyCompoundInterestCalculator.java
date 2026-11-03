@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.math.MathContext;
 
-@Component("DAILY_COMPOUND")
+@Component("dailyCompound")
 public class DailyCompoundInterestCalculator implements InterestCalculator {
 
     private static final MathContext MC = new MathContext(15);

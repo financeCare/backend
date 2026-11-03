@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(ReceiverMappingController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-public class ReceiverMappingControllerTest {
+class ReceiverMappingControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
