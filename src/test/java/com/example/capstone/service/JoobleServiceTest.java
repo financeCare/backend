@@ -35,6 +35,9 @@ class JoobleServiceTest {
     @Mock
     private ValueOperations<String, String> valueOperations;
 
+    @Mock
+    private com.example.capstone.observability.CacheMetrics cacheMetrics;
+
     @InjectMocks
     private JoobleService joobleService;
 

@@ -1,0 +1,26 @@
+# Prometheus + Grafana for local observability. The backend exposes metrics on :9081 (MANAGEMENT_PORT).
+#   docker compose up -d          Grafana: http://localhost:3001 (admin / admin), Prometheus: http://localhost:9090
+services:
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: fc-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # needed on Linux; Docker Desktop already provides it
+  grafana:
+    image: grafana/grafana:11.3.1
+    container_name: fc-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus

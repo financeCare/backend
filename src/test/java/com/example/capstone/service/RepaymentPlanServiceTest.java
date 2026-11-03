@@ -39,6 +39,9 @@ class RepaymentPlanServiceTest {
     @Mock
     private StrategyFactory strategyFactory;
 
+    @Mock
+    private com.example.capstone.observability.CacheMetrics cacheMetrics;
+
     @InjectMocks
     private RepaymentPlanService repaymentPlanService;
 

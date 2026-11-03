@@ -1,5 +1,6 @@
 package com.example.capstone.service;
 
+import com.example.capstone.observability.CacheMetrics;
 import com.example.capstone.dto.OccupationResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Builder;
@@ -19,16 +20,19 @@ public class OccupationDiscoveryService {
 
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final CacheMetrics cacheMetrics;
 
     public List<OccupationResponse> getRecommendedOccupations() {
         try {
             String cachedData = redisTemplate.opsForValue().get(CACHE_KEY);
             if (cachedData != null) {
+                cacheMetrics.hit("occupations");
                 return List.of(objectMapper.readValue(cachedData, OccupationResponse[].class));
             }
         } catch (Exception e) {
             // Fallback and execute method body
         }
+        cacheMetrics.miss("occupations");
 
         List<InternalOccupation> occupations = new ArrayList<>();
 

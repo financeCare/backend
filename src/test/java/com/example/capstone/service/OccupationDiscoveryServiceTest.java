@@ -30,6 +30,9 @@ class OccupationDiscoveryServiceTest {
     @Mock
     private ObjectMapper objectMapper;
 
+    @Mock
+    private com.example.capstone.observability.CacheMetrics cacheMetrics;
+
     @InjectMocks
     private OccupationDiscoveryService occupationDiscoveryService;
 

@@ -1,5 +1,6 @@
 package com.example.capstone.service;
 
+import com.example.capstone.observability.CacheMetrics;
 import com.example.capstone.dto.JobSuggestionRequest;
 import com.example.capstone.dto.JobSuggestionResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -32,6 +33,7 @@ public class JoobleService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final StringRedisTemplate redisTemplate;
+    private final CacheMetrics cacheMetrics;
 
     private static final String REDIS_KEY_PREFIX = "jooble:jobs:";
     private static final long CACHE_TTL_HOURS = 6;
@@ -47,8 +49,10 @@ public class JoobleService {
         
         Optional<List<JobSuggestionResponse>> cached = getFromCache(cacheKey);
         if (cached.isPresent()) {
+            cacheMetrics.hit("jooble_jobs");
             return cached.get();
         }
+        cacheMetrics.miss("jooble_jobs");
 
         try {
             log.info("Calling Jooble API...");

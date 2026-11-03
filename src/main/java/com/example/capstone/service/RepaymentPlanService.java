@@ -1,5 +1,6 @@
 package com.example.capstone.service;
 
+import com.example.capstone.observability.CacheMetrics;
 import com.example.capstone.domain.DebtSim;
 import com.example.capstone.dto.*;
 import com.example.capstone.enums.RepaymentTypeEnum;
@@ -48,6 +49,7 @@ public class RepaymentPlanService {
     private final com.example.capstone.allocation.DefaultBudgetAllocator allocator;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+    private final CacheMetrics cacheMetrics;
 
     public RepaymentStrategy createRepaymentStrategy(RepaymentStrategyDTO repaymentStrategyDTO) {
         RepaymentStrategy strategy = new RepaymentStrategy();
@@ -68,11 +70,13 @@ public class RepaymentPlanService {
         try {
             String cachedData = redisTemplate.opsForValue().get(cacheKey);
             if (cachedData != null) {
+                cacheMetrics.hit("plan_strategies");
                 return objectMapper.readValue(cachedData, RepaymentStrategyDtoResponse.class);
             }
         } catch (Exception e) {
             // Fallback
         }
+        cacheMetrics.miss("plan_strategies");
 
         List<Debt> debts = debtRepository.findByActiveAndUserId(true, userId);
         
@@ -350,11 +354,13 @@ public class RepaymentPlanService {
         try {
             String cachedData = redisTemplate.opsForValue().get(cacheKey);
             if (cachedData != null) {
+                cacheMetrics.hit("monthly_status");
                 return objectMapper.readValue(cachedData, MonthlyStatusDTO.class);
             }
         } catch (Exception e) {
             // Fallback
         }
+        cacheMetrics.miss("monthly_status");
 
         LocalDate now = LocalDate.now(DEFAULT_ZONE);
         int year = now.getYear();
