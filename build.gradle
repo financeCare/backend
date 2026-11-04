@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.4.1'
+    id 'org.springframework.boot' version '3.5.16'
     id 'io.spring.dependency-management' version '1.1.7'
     id "org.sonarqube" version "5.0.0.4638"
     id 'jacoco'
@@ -30,7 +30,18 @@ repositories {
     mavenCentral()
 }
 
+// Security fixes that are newer than the Spring Boot 3.5.16 BOM (found by the Trivy scan in CI).
+// Remove these overrides once the Boot BOM catches up.
+ext['tomcat.version'] = '10.1.61'
+ext['netty.version'] = '4.1.140.Final'
+
 dependencies {
+    constraints {
+        implementation('org.bouncycastle:bcprov-jdk18on:1.85') {
+            because 'bcprov 1.76 (via the Firebase/Google client libraries) has CRITICAL advisories fixed in 1.84/1.85'
+        }
+    }
+
     //login dependencies
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
@@ -60,7 +71,7 @@ dependencies {
     implementation("com.google.http-client:google-http-client-jackson2:2.0.2")
     implementation 'com.google.firebase:firebase-admin:9.4.3'
     implementation 'io.minio:minio:8.5.7'
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17'
     implementation 'org.jetbrains.kotlin:kotlin-reflect:1.9.21'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.21'
 }

@@ -1,0 +1,6 @@
+# Spring Framework 6.2.x: the only fix is Spring Framework 7 (Spring Boot 4); OSS 6.2 ends at 6.2.19.
+# Neither issue is reachable in this app. Re-review when migrating to Spring Boot 4 (entry expires on its own).
+# CVE-2026-47890: SSE stream corruption when rendering view fragments (server-side views). This is a JSON REST API.
+CVE-2026-47890 exp:2027-01-31
+# CVE-2026-47884: SSRF/RCE through XsltView with a /** mapping. XsltView is not used.
+CVE-2026-47884 exp:2027-01-31
