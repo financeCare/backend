@@ -83,11 +83,10 @@ jobs:
           cache-to: type=gha,mode=max
 
       # Fails the build on fixable CRITICAL vulnerabilities in the image. Raise to HIGH once the backlog is clear.
+      # Runs the official Trivy image directly: aquasecurity/trivy-action's installer failed on the runner (curl exit 6).
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: financecare-backend:${{ github.sha }}
-          severity: CRITICAL
-          ignore-unfixed: true
-          exit-code: "1"
-          format: table
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.76.1 image \
+            --severity CRITICAL --ignore-unfixed --exit-code 1 \
+            financecare-backend:${{ github.sha }}
