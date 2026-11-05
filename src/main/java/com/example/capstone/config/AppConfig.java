@@ -15,7 +15,7 @@ public class AppConfig {
         org.springframework.http.client.SimpleClientHttpRequestFactory factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(10000); // 10 seconds
         factory.setReadTimeout(60000);    // 60 seconds (for heavy OCR)
-        
+
         RestTemplate restTemplate = new RestTemplate(factory);
         restTemplate.getMessageConverters()
                 .add(0, new org.springframework.http.converter.StringHttpMessageConverter(java.nio.charset.StandardCharsets.UTF_8));
