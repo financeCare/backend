@@ -1,0 +1,6 @@
+apiVersion: v2
+name: financecare
+description: FinanceCare backend (Spring Boot) with optional in-cluster Postgres and Redis for local use
+type: application
+version: 0.1.0
+appVersion: "0.0.1-SNAPSHOT"

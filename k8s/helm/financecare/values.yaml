@@ -1,0 +1,72 @@
+# Defaults for a real cluster: managed Postgres/Redis, secrets from an existing Secret, no demo mode, no Ingress.
+# `values-local.yaml` overrides these for a kind cluster.
+
+image:
+  repository: ghcr.io/financecare/backend
+  tag: ""                      # empty = the chart's appVersion; deploy a commit sha tag instead of "latest"
+  pullPolicy: IfNotPresent
+
+replicaCount: 1                # ignored while autoscaling is enabled
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 60     # percent of resources.requests.cpu
+  scaleDownStabilizationSeconds: 60
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 768Mi              # no CPU limit on purpose: throttling distorts the autoscaling numbers
+
+# Non-secret configuration, passed as environment variables.
+config:
+  SPRING_DATASOURCE_URL: ""            # required unless postgresql.enabled
+  SPRING_DATASOURCE_USERNAME: root
+  SPRING_DATA_REDIS_HOST: ""           # required unless redis.enabled
+  SPRING_DATA_REDIS_PORT: "6379"
+  JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=70"
+extraEnv: []                           # more env entries in Kubernetes syntax (name/value or valueFrom)
+
+# The credentials the application needs: DB_PASSWORD, JWT_SECRET (base64), JOOBLE_API_KEY, MAIL_USERNAME,
+# MAIL_PASSWORD, MINIO_SECRET_KEY. Either point at a Secret you manage ...
+existingSecret: ""
+# ... or let the chart create one from values you pass at install time (never commit them):
+#   helm install fc ./financecare --set secret.create=true --set-string secret.values.JWT_SECRET=...
+secret:
+  create: false
+  values: {}
+
+demo:
+  enabled: false               # DEMO_SEED_ENABLED: POST /auth/demo-login with sample data. Never in production.
+
+# Throwaway Postgres / Redis inside the cluster, no persistence. Local use only.
+postgresql:
+  enabled: false
+  image: postgres:16
+  database: financeCare_DB
+  username: root
+redis:
+  enabled: false
+  image: redis:7.2
+
+service:
+  type: ClusterIP
+  port: 8080
+  nodePort: null               # set with type NodePort (kind maps it to the host)
+# The management port (9081: health and Prometheus metrics) is deliberately not part of the Service or the Ingress.
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: ""
+  tls: []
+
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

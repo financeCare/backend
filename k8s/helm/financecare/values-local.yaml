@@ -1,0 +1,31 @@
+# For a local kind cluster (see k8s/README.md). Throwaway values only; the secret values below are not real credentials.
+image:
+  repository: financecare-backend
+  tag: k8s-local
+  pullPolicy: IfNotPresent
+
+config:
+  SPRING_DATASOURCE_URL: ""        # filled from the in-cluster Postgres
+  SPRING_DATA_REDIS_HOST: ""
+
+postgresql:
+  enabled: true
+redis:
+  enabled: true
+
+demo:
+  enabled: true
+
+service:
+  type: NodePort
+  nodePort: 30080                  # kind-config.yaml maps this to http://localhost:18090
+
+secret:
+  create: true
+  values:
+    DB_PASSWORD: local-only-password
+    JWT_SECRET: bG9jYWwtY2x1c3Rlci1vbmx5LXNlY3JldC1rZXktMDEyMzQ1Njc4OWFiY2RlZg==   # base64, local only
+    JOOBLE_API_KEY: local
+    MAIL_USERNAME: local@example.com
+    MAIL_PASSWORD: local
+    MINIO_SECRET_KEY: local

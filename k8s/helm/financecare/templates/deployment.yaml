@@ -1,0 +1,105 @@
+{{- if not (or .Values.existingSecret .Values.secret.create) }}
+{{- fail "set existingSecret to a Secret that holds the credentials, or secret.create=true with secret.values (see values.yaml)" }}
+{{- end }}
+{{- if not (or .Values.postgresql.enabled .Values.config.SPRING_DATASOURCE_URL) }}
+{{- fail "set config.SPRING_DATASOURCE_URL, or postgresql.enabled=true for a throwaway database" }}
+{{- end }}
+{{- if not (or .Values.redis.enabled .Values.config.SPRING_DATA_REDIS_HOST) }}
+{{- fail "set config.SPRING_DATA_REDIS_HOST, or redis.enabled=true for a throwaway Redis" }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "financecare.fullname" . }}
+  labels:
+    {{- include "financecare.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "financecare.selectorLabels" . | nindent 6 }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        {{- include "financecare.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        # a changed generated Secret rolls the pods
+        checksum/secret: {{ toYaml .Values.secret.values | sha256sum }}
+    spec:
+      {{- if .Values.postgresql.enabled }}
+      initContainers:
+        # without this the app starts before Postgres accepts connections, exits, and Kubernetes restarts it
+        - name: wait-for-postgres
+          image: {{ .Values.postgresql.image }}
+          command: ["sh", "-c", "until pg_isready -h {{ include "financecare.postgresHost" . }} -p 5432 -U {{ .Values.postgresql.username }}; do echo waiting for postgres; sleep 2; done"]
+      {{- end }}
+      containers:
+        - name: backend
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: management
+              containerPort: 9081
+          env:
+            {{- range $key, $value := .Values.config }}
+            {{- if and $value (not (has $key (list "SPRING_DATASOURCE_URL" "SPRING_DATA_REDIS_HOST"))) }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+            - name: SPRING_DATASOURCE_URL
+              value: {{ if .Values.postgresql.enabled }}{{ printf "jdbc:postgresql://%s:5432/%s" (include "financecare.postgresHost" .) .Values.postgresql.database | quote }}{{ else }}{{ .Values.config.SPRING_DATASOURCE_URL | quote }}{{ end }}
+            - name: SPRING_DATA_REDIS_HOST
+              value: {{ if .Values.redis.enabled }}{{ include "financecare.redisHost" . | quote }}{{ else }}{{ .Values.config.SPRING_DATA_REDIS_HOST | quote }}{{ end }}
+            {{- if .Values.demo.enabled }}
+            - name: DEMO_SEED_ENABLED
+              value: "true"
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ include "financecare.secretName" . }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          # Spring Boot exposes the liveness/readiness groups on the management port when it runs on Kubernetes.
+          startupProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: management }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 10
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
