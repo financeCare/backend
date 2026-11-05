@@ -39,7 +39,8 @@ class DebtReminderRabbitIntegrationTest {
 
     @Container
     static GenericContainer<?> rabbit = new GenericContainer<>(DockerImageName.parse("rabbitmq:3.13-alpine"))
-            .withExposedPorts(5672);
+            .withExposedPorts(5672)
+            .waitingFor(org.testcontainers.containers.wait.strategy.Wait.forLogMessage(".*Server startup complete.*", 1));
 
     static NotificationService notificationService = mock(NotificationService.class);
     static AnnotationConfigApplicationContext context;
