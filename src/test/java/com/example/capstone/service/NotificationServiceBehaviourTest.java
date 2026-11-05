@@ -65,6 +65,8 @@ class NotificationServiceBehaviourTest {
     private NotificationLogRepository notificationLogRepository;
     @Mock
     private DebtRepository debtRepository;
+    @Mock
+    private org.springframework.beans.factory.ObjectProvider<com.example.capstone.messaging.DebtReminderPublisher> reminderPublisher;
 
     @InjectMocks
     private NotificationService service;
@@ -412,6 +414,79 @@ class NotificationServiceBehaviourTest {
         service.sendDebtNotification(userId, UUID.randomUUID(), debt, 3, "Asia/Bangkok", now.minusSeconds(5));
 
         verifyNoInteractions(notificationLogRepository);
+    }
+
+    @Test
+    void scheduler_withAPublisher_queuesTheReminderInsteadOfSendingIt() {
+        LocalTime now = LocalTime.now(ZONE);
+        if (now.isBefore(LocalTime.of(0, 1))) {
+            return;
+        }
+        Debt debt = debtDueToday();
+        NotificationRule rule = NotificationRule.builder().ruleId(UUID.randomUUID()).userId(userId)
+                .refType(RefType.DEBT).refId(debt.getDebtId().toString()).build();
+        when(notificationRuleRepository.findAllByActive(true)).thenReturn(List.of(rule));
+        when(userSettingRepository.findById(userId)).thenReturn(Optional.of(UserSetting.builder().userId(userId)
+                .defaultNotifyTime(now.minusSeconds(5)).defaultRemindDaysBefore(3).build()));
+        when(debtRepository.findById(debt.getDebtId())).thenReturn(Optional.of(debt));
+        com.example.capstone.messaging.DebtReminderPublisher publisher =
+                org.mockito.Mockito.mock(com.example.capstone.messaging.DebtReminderPublisher.class);
+        when(reminderPublisher.getIfAvailable()).thenReturn(publisher);
+
+        service.runNotificationScheduler();
+
+        verify(publisher).publish(new com.example.capstone.messaging.DebtReminderMessage(
+                userId, rule.getRuleId(), debt.getDebtId(), 0));
+        verifyNoInteractions(notificationLogRepository, userDeviceRepository);
+    }
+
+    @Test
+    void deliverDebtReminder_ignoresTheSendWindow_butStillDeduplicates() {
+        Debt debt = debtDueToday();
+        UUID ruleId = UUID.randomUUID();
+        when(debtRepository.findById(debt.getDebtId())).thenReturn(Optional.of(debt));
+        when(userSettingRepository.findById(userId))
+                .thenReturn(Optional.of(UserSetting.builder().userId(userId).build()));
+        when(notificationLogRepository.existsByRuleIdAndScheduleKeyAndStatusAndSentAtBetween(
+                eq(ruleId), eq("DEBT:" + debt.getDebtId() + ":D-0"), eq(NotificationStatus.SENT), any(), any()))
+                .thenReturn(true);
+
+        service.deliverDebtReminder(userId, ruleId, debt.getDebtId(), 0);
+
+        verify(notificationLogRepository, never()).save(any());
+        verifyNoInteractions(userDeviceRepository);
+    }
+
+    @Test
+    void deliverDebtReminder_withoutDevices_logsOneFailure_evenLongAfterTheNotifyMinute() {
+        Debt debt = debtDueToday();
+        UUID ruleId = UUID.randomUUID();
+        when(debtRepository.findById(debt.getDebtId())).thenReturn(Optional.of(debt));
+        when(userSettingRepository.findById(userId))
+                .thenReturn(Optional.of(UserSetting.builder().userId(userId).build()));
+        when(userDeviceRepository.findAllByUserIdAndActiveTrue(userId)).thenReturn(List.of());
+
+        service.deliverDebtReminder(userId, ruleId, debt.getDebtId(), 0);
+
+        ArgumentCaptor<NotificationLog> logEntry = ArgumentCaptor.forClass(NotificationLog.class);
+        verify(notificationLogRepository).save(logEntry.capture());
+        assertEquals(NotificationStatus.FAILED, logEntry.getValue().getStatus());
+    }
+
+    @Test
+    void deliverDebtReminder_forAnInactiveDebtOrDisabledUser_doesNothing() {
+        Debt inactive = debtDueToday();
+        inactive.setActive(false);
+        when(debtRepository.findById(inactive.getDebtId())).thenReturn(Optional.of(inactive));
+        service.deliverDebtReminder(userId, UUID.randomUUID(), inactive.getDebtId(), 0);
+
+        Debt active = debtDueToday();
+        when(debtRepository.findById(active.getDebtId())).thenReturn(Optional.of(active));
+        when(userSettingRepository.findById(userId)).thenReturn(Optional.of(
+                UserSetting.builder().userId(userId).notificationsEnabled(false).build()));
+        service.deliverDebtReminder(userId, UUID.randomUUID(), active.getDebtId(), 0);
+
+        verifyNoInteractions(notificationLogRepository, userDeviceRepository);
     }
 
     @Test

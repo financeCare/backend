@@ -5,8 +5,6 @@ import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
-import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -61,11 +59,5 @@ public class SlipMessagingConfig {
     @Bean
     Binding slipOcrDeadLetterBinding(Queue slipOcrDeadLetterQueue, DirectExchange slipDeadLetterExchange) {
         return BindingBuilder.bind(slipOcrDeadLetterQueue).to(slipDeadLetterExchange).with(DEAD_LETTER_ROUTING_KEY);
-    }
-
-    /** JSON instead of Java serialization, so only the message record can ever be deserialized. */
-    @Bean
-    MessageConverter slipMessageConverter() {
-        return new Jackson2JsonMessageConverter();
     }
 }

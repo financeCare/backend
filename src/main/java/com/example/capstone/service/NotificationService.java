@@ -16,6 +16,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.example.capstone.messaging.DebtReminderMessage;
+import com.example.capstone.messaging.DebtReminderPublisher;
+import org.springframework.beans.factory.ObjectProvider;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,6 +44,7 @@ public class NotificationService {
     private final NotificationRuleRepository notificationRuleRepository;
     private final NotificationLogRepository notificationLogRepository;
     private final DebtRepository debtRepository;
+    private final ObjectProvider<DebtReminderPublisher> reminderPublisher;
 
     public static LocalDate dueDateOfThisMonth(int dueDay, ZoneId zoneId) {
         LocalDate today = LocalDate.now(zoneId);
@@ -306,6 +311,11 @@ public class NotificationService {
             for (int daysBefore : daysList) {
                 boolean sendNow = shouldSendNow(debt.getDueDay(), daysBefore, timeOfDay, timezone);
                 if (sendNow) {
+                    DebtReminderPublisher publisher = reminderPublisher.getIfAvailable();
+                    if (publisher != null) {
+                        publisher.publish(new DebtReminderMessage(userId, rule.getRuleId(), debt.getDebtId(), daysBefore));
+                        continue;
+                    }
                     sendDebtNotification(userId, rule.getRuleId(), debt, daysBefore, timezone, timeOfDay);
                 }
             }
@@ -344,7 +354,6 @@ public class NotificationService {
             LocalTime timeOfDay) {
         ZoneId zoneId = ZoneId.of((timezone == null || timezone.isBlank()) ? DEFAULT_TIMEZONE : timezone);
 
-        LocalDate today = LocalDate.now(zoneId);
         LocalTime nowTime = LocalTime.now(zoneId);
         LocalTime notifyTime = (timeOfDay != null) ? timeOfDay : LocalTime.of(9, 0);
 
@@ -352,6 +361,31 @@ public class NotificationService {
             return;
         }
 
+        deliverDebtReminder(userId, ruleId, debt, remindDaysBefore, zoneId);
+    }
+
+    /**
+     * Queue consumer entry point. Unlike the scheduler path it does not re-check the one-minute send window
+     * (the message may be consumed late or retried); the date check and the SENT-log de-duplication still apply,
+     * so redelivery never produces a second push.
+     */
+    @Transactional
+    public void deliverDebtReminder(UUID userId, UUID ruleId, UUID debtId, int remindDaysBefore) {
+        Debt debt = debtRepository.findById(debtId).orElse(null);
+        if (debt == null || !Boolean.TRUE.equals(debt.getActive())) {
+            return;
+        }
+        UserSetting setting = userSettingRepository.findById(userId).orElse(null);
+        if (setting == null || !Boolean.TRUE.equals(setting.getNotificationsEnabled())) {
+            return;
+        }
+        String timezone = setting.getTimezone();
+        ZoneId zoneId = ZoneId.of((timezone == null || timezone.isBlank()) ? DEFAULT_TIMEZONE : timezone);
+        deliverDebtReminder(userId, ruleId, debt, remindDaysBefore, zoneId);
+    }
+
+    private void deliverDebtReminder(UUID userId, UUID ruleId, Debt debt, int remindDaysBefore, ZoneId zoneId) {
+        LocalDate today = LocalDate.now(zoneId);
         LocalDate dueDate = getDueDateForThisMonth(debt.getDueDay(), zoneId);
         LocalDate notifyDate = dueDate.minusDays(remindDaysBefore);
 
