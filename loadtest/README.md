@@ -5,7 +5,7 @@ Local, reproducible load test of the Spring Boot API with and without the Redis 
 ## Setup
 
 - Machine: Windows laptop, backend (`./gradlew bootRun`), k6, and Docker all on the same box (so absolute numbers are conservative; compare runs with each other, not with production)
-- Postgres 16 and Redis 7.2 in Docker (`docker-compose.yml`, ports 55432 / 56379), isolated from the real DB
+- Postgres 16 and Redis 7.2 in Docker (`docker-compose.yml`, ports 55433 / 56379), isolated from the real DB
 - Data: the built-in demo user (`POST /auth/demo-login`, `DEMO_SEED_ENABLED=true`), one seeded user with sample debts and transactions
 - Load: 50 virtual users, 30 s, 0.1 s think time, Hikari pool 10 (default)
 - Cache OFF = Redis `maxmemory 1` + `noeviction`, so every read misses and every write fails (the service code already falls back to the database). No source change needed.
