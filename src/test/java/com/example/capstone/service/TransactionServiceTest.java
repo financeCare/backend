@@ -69,7 +69,7 @@ class TransactionServiceTest {
         budget.setLimitBudget(1000.0);
 
         when(userService.extractUserIdFromToken(token)).thenReturn(userId);
-        when(categoryRepository.findById(request.getCategoryId())).thenReturn(Optional.of(category));
+        when(categoryRepository.findByCategoryIdAndUserId(request.getCategoryId(), userId)).thenReturn(Optional.of(category));
         when(budgetRepository.findByUserIdAndBudgetId(userId, category.getBudgetId())).thenReturn(Optional.of(budget));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -89,7 +89,7 @@ class TransactionServiceTest {
         request.setCategoryId(1);
 
         when(userService.extractUserIdFromToken(token)).thenReturn(userId);
-        when(categoryRepository.findById(request.getCategoryId())).thenReturn(Optional.empty());
+        when(categoryRepository.findByCategoryIdAndUserId(request.getCategoryId(), userId)).thenReturn(Optional.empty());
 
         BusinessException exception = assertThrows(BusinessException.class, () -> {
             transactionService.createTransaction(token, request);
@@ -105,7 +105,7 @@ class TransactionServiceTest {
         Transaction transaction = new Transaction();
         transaction.setTransactionId(transactionId);
         transaction.setAmount(100.0);
-        
+
         Category category = new Category();
         category.setCategoryId(1);
         category.setBudgetId(UUID.randomUUID());
@@ -124,5 +124,20 @@ class TransactionServiceTest {
         assertEquals(400.0, budget.getAmount());
         verify(budgetRepository).save(budget);
         verify(transactionRepository).delete(transaction);
+    }
+
+    @Test
+    void testCreateTransaction_CategoryOfAnotherUserIsNotFound() {
+        TransactionRequest request = new TransactionRequest();
+        request.setCategoryId(99);
+        when(userService.extractUserIdFromToken(token)).thenReturn(userId);
+        // the category exists, but under another user: the owner-scoped lookup finds nothing
+        when(categoryRepository.findByCategoryIdAndUserId(99, userId)).thenReturn(Optional.empty());
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> transactionService.createTransaction(token, request));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
+        verify(categoryRepository, never()).findById(any());
+        verify(transactionRepository, never()).save(any());
     }
 }

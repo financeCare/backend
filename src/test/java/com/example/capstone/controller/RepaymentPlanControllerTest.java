@@ -38,6 +38,9 @@ class RepaymentPlanControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
+    private com.example.capstone.security.AdminAccess adminAccess;
+
+    @MockitoBean
     private RepaymentPlanService repaymentPlanService;
 
     @MockitoBean
@@ -66,7 +69,7 @@ class RepaymentPlanControllerTest {
         when(repaymentPlanService.createRepaymentStrategy(any(RepaymentStrategyDTO.class)))
                 .thenReturn(strategy);
 
-        mockMvc.perform(post("/repayment-plans/strategies")
+        mockMvc.perform(post("/repayment-plans/strategies").header("Authorization", "Bearer token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
@@ -85,7 +88,7 @@ class RepaymentPlanControllerTest {
         dto.setStrategyName("");          // ข้อมูลไม่ถูกต้อง
         dto.setDescription("Some description");
 
-        mockMvc.perform(post("/repayment-plans/strategies")
+        mockMvc.perform(post("/repayment-plans/strategies").header("Authorization", "Bearer token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
@@ -101,7 +104,7 @@ class RepaymentPlanControllerTest {
         dto.setStrategyName("SNOWBALL");
         dto.setDescription("");           // ข้อมูลไม่ถูกต้อง
 
-        mockMvc.perform(post("/repayment-plans/strategies")
+        mockMvc.perform(post("/repayment-plans/strategies").header("Authorization", "Bearer token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andDo(print())
@@ -168,7 +171,7 @@ class RepaymentPlanControllerTest {
         when(repaymentPlanService.deleteRepaymentStrategy(any(UUID.class)))
                 .thenReturn(expectedMsg);
 
-        mockMvc.perform(delete("/repayment-plans/strategies/" + strategyId))
+        mockMvc.perform(delete("/repayment-plans/strategies/" + strategyId).header("Authorization", "Bearer token"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().string(expectedMsg));
@@ -178,7 +181,7 @@ class RepaymentPlanControllerTest {
 
     @Test
     void testDeleteRepaymentStrategy_InvalidUUID() throws Exception {
-        mockMvc.perform(delete("/repayment-plans/strategies/not-a-uuid"))
+        mockMvc.perform(delete("/repayment-plans/strategies/not-a-uuid").header("Authorization", "Bearer token"))
                 .andDo(print())
                 .andExpect(status().isBadRequest());
 
@@ -297,5 +300,20 @@ class RepaymentPlanControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.monthlyBudget").value(0));
+    }
+
+    @Test
+    void sharedDataCanOnlyBeChangedByAnAdministrator() throws Exception {
+        org.mockito.Mockito.doThrow(new com.example.capstone.exception.BusinessException("Forbidden", org.springframework.http.HttpStatus.FORBIDDEN))
+                .when(adminAccess).requireAdmin(org.mockito.ArgumentMatchers.anyString());
+
+        mockMvc.perform(post("/repayment-plans/strategies").header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"strategyName\":\"SNOWBALL\",\"description\":\"Smallest first\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/repayment-plans/strategies/00000000-0000-0000-0000-000000000001").header("Authorization", "Bearer token"))
+                .andExpect(status().isForbidden());
+
+        org.mockito.Mockito.verifyNoInteractions(repaymentPlanService);
     }
 }

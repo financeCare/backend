@@ -4,6 +4,7 @@ import com.example.capstone.entity.Category;
 import com.example.capstone.entity.ReceiverMapping;
 import com.example.capstone.exception.BusinessException;
 import com.example.capstone.repository.CategoryRepository;
+import com.example.capstone.repository.DebtRepository;
 import com.example.capstone.repository.ReceiverMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ public class ReceiverMappingService {
 
     private final ReceiverMappingRepository receiverMappingRepository;
     private final CategoryRepository categoryRepository;
+    private final DebtRepository debtRepository;
     private final UserService userService;
 
     public List<ReceiverMapping> getMappingsByUser(String token) {
@@ -30,15 +32,18 @@ public class ReceiverMappingService {
     @Transactional
     public ReceiverMapping createOrUpdateMapping(String token, String receiverName, Integer categoryId, UUID debtId) {
         UUID userId = userService.extractUserIdFromToken(token);
-        
+
         Category category = null;
         if (categoryId != null) {
-            category = categoryRepository.findById(categoryId)
+            category = categoryRepository.findByCategoryIdAndUserId(categoryId, userId)
                     .orElseThrow(() -> new BusinessException("Category not found", HttpStatus.NOT_FOUND));
+        }
+        if (debtId != null && debtRepository.findByDebtIdAndUserId(debtId, userId).isEmpty()) {
+            throw new BusinessException("Debt not found", HttpStatus.NOT_FOUND);
         }
 
         Optional<ReceiverMapping> existing = receiverMappingRepository.findByUserIdAndReceiverName(userId, receiverName);
-        
+
         if (existing.isPresent()) {
             ReceiverMapping mapping = existing.get();
             mapping.setCategory(category);
@@ -59,12 +64,9 @@ public class ReceiverMappingService {
     public void deleteMapping(Long id, String token) {
         UUID userId = userService.extractUserIdFromToken(token);
         ReceiverMapping mapping = receiverMappingRepository.findById(id)
+                .filter(m -> m.getUserId().equals(userId))
                 .orElseThrow(() -> new BusinessException("Mapping not found", HttpStatus.NOT_FOUND));
-        
-        if (!mapping.getUserId().equals(userId)) {
-            throw new BusinessException("Unauthorized to delete this mapping", HttpStatus.FORBIDDEN);
-        }
-        
+
         receiverMappingRepository.delete(mapping);
     }
 
@@ -82,14 +84,14 @@ public class ReceiverMappingService {
         if (receiverName == null || receiverName.trim().isEmpty()) {
             return Optional.empty();
         }
-        
+
         String normalizedReceiver = receiverName.toLowerCase().trim();
         List<ReceiverMapping> allMappings = receiverMappingRepository.findByUserId(userId);
-        
+
         Optional<ReceiverMapping> exactMatch = allMappings.stream()
                 .filter(m -> m.getReceiverName().equalsIgnoreCase(receiverName.trim()))
                 .findFirst();
-        
+
         if (exactMatch.isPresent()) {
             return exactMatch;
         }

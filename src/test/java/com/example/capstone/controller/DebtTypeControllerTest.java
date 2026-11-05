@@ -36,6 +36,9 @@ class DebtTypeControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
+    private com.example.capstone.security.AdminAccess adminAccess;
+
+    @MockitoBean
     private DebtTypeService debtTypeService;
 
     @MockitoBean
@@ -70,7 +73,7 @@ class DebtTypeControllerTest {
 
         when(debtTypeService.addDebtType(any(DebtTypeRequest.class))).thenReturn("Success");
 
-        mockMvc.perform(post("/debt-types")
+        mockMvc.perform(post("/debt-types").header("Authorization", "Bearer token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(debtType)))
                 .andDo(print())
@@ -83,8 +86,23 @@ class DebtTypeControllerTest {
     void testDeleteDebtType() throws Exception {
         when(debtTypeService.deleteDebtType(anyInt())).thenReturn("Deleted");
 
-        mockMvc.perform(delete("/debt-types/1"))
+        mockMvc.perform(delete("/debt-types/1").header("Authorization", "Bearer token"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Deleted"));
+    }
+
+    @Test
+    void sharedDataCanOnlyBeChangedByAnAdministrator() throws Exception {
+        org.mockito.Mockito.doThrow(new com.example.capstone.exception.BusinessException("Forbidden", org.springframework.http.HttpStatus.FORBIDDEN))
+                .when(adminAccess).requireAdmin(org.mockito.ArgumentMatchers.anyString());
+
+        mockMvc.perform(post("/debt-types").header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"debtTypeName\":\"Card\",\"debtTypeDescription\":\"Credit card\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/debt-types/1").header("Authorization", "Bearer token"))
+                .andExpect(status().isForbidden());
+
+        org.mockito.Mockito.verifyNoInteractions(debtTypeService);
     }
 }
