@@ -26,9 +26,13 @@ public class RepaymentPlanController {
 
     private final RepaymentPlanService repaymentPlanService;
     private final UserService userService;
+    private final com.example.capstone.security.AdminAccess adminAccess;
 
     @PostMapping("/strategies")
-    public ResponseEntity<RepaymentStrategy> createRepaymentStrategy(@Valid @RequestBody RepaymentStrategyDTO repaymentStrategyDTO) {
+    public ResponseEntity<RepaymentStrategy> createRepaymentStrategy(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @Valid @RequestBody RepaymentStrategyDTO repaymentStrategyDTO) {
+        adminAccess.requireAdmin(authorizationHeader);
         return ResponseEntity.ok(repaymentPlanService.createRepaymentStrategy(repaymentStrategyDTO));
     }
 
@@ -40,7 +44,9 @@ public class RepaymentPlanController {
     }
 
     @DeleteMapping("/strategies/{id}")
-    public ResponseEntity<String> deleteRepaymentStrategy(@PathVariable(name = "id") String strategyId) {
+    public ResponseEntity<String> deleteRepaymentStrategy(@RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable(name = "id") String strategyId) {
+        adminAccess.requireAdmin(authorizationHeader);
         return ResponseEntity.ok(repaymentPlanService.deleteRepaymentStrategy(UUID.fromString(strategyId)));
     }
 

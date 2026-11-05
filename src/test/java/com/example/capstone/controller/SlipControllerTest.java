@@ -82,4 +82,39 @@ class SlipControllerTest {
 
         verify(slipService).getSlipsByUser(user);
     }
+
+    @Test
+    void testSlipImage_OwnerGetsTheImage() throws Exception {
+        java.util.UUID userId = java.util.UUID.randomUUID();
+        com.example.capstone.entity.Slip slip = new com.example.capstone.entity.Slip();
+        slip.setId(5L);
+        slip.setUserId(userId);
+        slip.setImagePath("2026/11/05/a.png");
+        org.mockito.Mockito.when(userService.extractUserIdFromToken(org.mockito.ArgumentMatchers.anyString())).thenReturn(userId);
+        org.mockito.Mockito.when(slipService.getSlipById(5L)).thenReturn(slip);
+        org.mockito.Mockito.when(slipService.getSlipFile("2026/11/05/a.png"))
+                .thenReturn(new java.io.ByteArrayInputStream(new byte[]{1, 2, 3}));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/slips/5/image")
+                        .header("Authorization", "Bearer token"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content().contentType("image/png"));
+    }
+
+    @Test
+    void testSlipImage_AnotherUsersSlipIsNotFoundAndTheFileIsNeverRead() throws Exception {
+        com.example.capstone.entity.Slip slip = new com.example.capstone.entity.Slip();
+        slip.setId(6L);
+        slip.setUserId(java.util.UUID.randomUUID());   // belongs to user A
+        slip.setImagePath("2026/11/05/secret.png");
+        org.mockito.Mockito.when(userService.extractUserIdFromToken(org.mockito.ArgumentMatchers.anyString()))
+                .thenReturn(java.util.UUID.randomUUID());   // the caller is user B
+        org.mockito.Mockito.when(slipService.getSlipById(6L)).thenReturn(slip);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/slips/6/image")
+                        .header("Authorization", "Bearer token"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isNotFound());
+
+        org.mockito.Mockito.verify(slipService, org.mockito.Mockito.never()).getSlipFile(org.mockito.ArgumentMatchers.anyString());
+    }
 }

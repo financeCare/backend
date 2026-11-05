@@ -97,7 +97,7 @@ public class TransactionService {
 
     public Transaction createTransaction(UUID userId, TransactionRequest transactionRequest) {
         Category category = categoryRepository
-                .findById(transactionRequest.getCategoryId())
+                .findByCategoryIdAndUserId(transactionRequest.getCategoryId(), userId)
                 .orElseThrow(() -> new BusinessException(
                         CATEGORY_NOT_FOUND_MSG,
                         HttpStatus.NOT_FOUND));

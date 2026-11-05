@@ -98,8 +98,15 @@ public class SlipController {
     }
 
     @GetMapping("/{id}/image")
-    public ResponseEntity<Resource> getSlipImage(@PathVariable("id") Long id) {
+    public ResponseEntity<Resource> getSlipImage(@RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable("id") Long id) {
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
+        UUID userId = userService.extractUserIdFromToken(token);
         Slip slip = slipService.getSlipById(id);
+        if (!userId.equals(slip.getUserId())) {
+            // same answer as for a missing slip, so ids of other users' slips cannot be probed
+            throw new BusinessException("Slip not found", HttpStatus.NOT_FOUND);
+        }
 
         try {
             InputStream inputStream = slipService.getSlipFile(slip.getImagePath());

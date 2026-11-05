@@ -1,6 +1,7 @@
 package com.example.capstone.service;
 
 import com.example.capstone.entity.Category;
+import com.example.capstone.exception.BusinessException;
 import com.example.capstone.entity.ReceiverMapping;
 import com.example.capstone.repository.CategoryRepository;
 import com.example.capstone.repository.ReceiverMappingRepository;
@@ -10,6 +11,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.http.HttpStatus;
 
 import java.util.Arrays;
 import java.util.List;
@@ -29,6 +32,8 @@ class ReceiverMappingServiceTest {
     private CategoryRepository categoryRepository;
     @Mock
     private UserService userService;
+    @Mock
+    private com.example.capstone.repository.DebtRepository debtRepository;
 
     @InjectMocks
     private ReceiverMappingService receiverMappingService;
@@ -65,7 +70,7 @@ class ReceiverMappingServiceTest {
         category.setCategoryId(categoryId);
 
         when(userService.extractUserIdFromToken(token)).thenReturn(userId);
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(category));
+        when(categoryRepository.findByCategoryIdAndUserId(categoryId, userId)).thenReturn(Optional.of(category));
         when(receiverMappingRepository.findByUserIdAndReceiverName(userId, receiverName)).thenReturn(Optional.empty());
         when(receiverMappingRepository.save(any(ReceiverMapping.class))).thenAnswer(i -> i.getArguments()[0]);
 
@@ -91,7 +96,7 @@ class ReceiverMappingServiceTest {
                 .build();
 
         when(userService.extractUserIdFromToken(token)).thenReturn(userId);
-        when(categoryRepository.findById(categoryId)).thenReturn(Optional.of(newCategory));
+        when(categoryRepository.findByCategoryIdAndUserId(categoryId, userId)).thenReturn(Optional.of(newCategory));
         when(receiverMappingRepository.findByUserIdAndReceiverName(userId, receiverName)).thenReturn(Optional.of(existingMapping));
         when(receiverMappingRepository.save(any(ReceiverMapping.class))).thenAnswer(i -> i.getArguments()[0]);
 
@@ -118,7 +123,7 @@ class ReceiverMappingServiceTest {
     }
 
     @Test
-    void testDeleteMapping_Unauthorized() {
+    void testDeleteMapping_OtherUsersMappingIsNotFound() {
         Long mappingId = 1L;
         UUID otherUserId = UUID.randomUUID();
         ReceiverMapping mapping = ReceiverMapping.builder()
@@ -133,7 +138,8 @@ class ReceiverMappingServiceTest {
             receiverMappingService.deleteMapping(mappingId, token);
         });
 
-        assertEquals("Unauthorized to delete this mapping", exception.getMessage());
+        // another user's mapping looks exactly like a missing one
+        assertEquals("Mapping not found", exception.getMessage());
         verify(receiverMappingRepository, never()).delete(any());
     }
 
@@ -159,6 +165,7 @@ class ReceiverMappingServiceTest {
         UUID debtId = UUID.randomUUID();
 
         when(userService.extractUserIdFromToken(token)).thenReturn(userId);
+        when(debtRepository.findByDebtIdAndUserId(debtId, userId)).thenReturn(Optional.of(new com.example.capstone.entity.Debt()));
         when(receiverMappingRepository.findByUserIdAndReceiverName(userId, receiverName)).thenReturn(Optional.empty());
         when(receiverMappingRepository.save(any(ReceiverMapping.class))).thenAnswer(i -> i.getArguments()[0]);
 
@@ -167,5 +174,30 @@ class ReceiverMappingServiceTest {
         assertNotNull(result);
         assertEquals(debtId, result.getDebtId());
         assertNull(result.getCategory());
+    }
+
+    @Test
+    void testCreateMapping_CategoryOfAnotherUserIsRejected() {
+        when(userService.extractUserIdFromToken(token)).thenReturn(userId);
+        when(categoryRepository.findByCategoryIdAndUserId(7, userId)).thenReturn(Optional.empty());
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> receiverMappingService.createOrUpdateMapping(token, "Shop", 7, null));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
+        verify(receiverMappingRepository, never()).save(any());
+    }
+
+    @Test
+    void testCreateMapping_DebtOfAnotherUserIsRejected() {
+        UUID foreignDebt = UUID.randomUUID();
+        when(userService.extractUserIdFromToken(token)).thenReturn(userId);
+        when(debtRepository.findByDebtIdAndUserId(foreignDebt, userId)).thenReturn(Optional.empty());
+
+        BusinessException ex = assertThrows(BusinessException.class,
+                () -> receiverMappingService.createOrUpdateMapping(token, "Shop", null, foreignDebt));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
+        verify(receiverMappingRepository, never()).save(any());
     }
 }

@@ -34,6 +34,9 @@ class RepaymentTypeControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
+    private com.example.capstone.security.AdminAccess adminAccess;
+
+    @MockitoBean
     private RepaymentTypeService repaymentTypeService;
 
     @MockitoBean
@@ -66,7 +69,7 @@ class RepaymentTypeControllerTest {
 
         when(repaymentTypeService.addRepaymentType(any(RepaymentTypeRequest.class))).thenReturn("Success");
 
-        mockMvc.perform(post("/repayment-types")
+        mockMvc.perform(post("/repayment-types").header("Authorization", "Bearer token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(type)))
                 .andExpect(status().isCreated())
@@ -77,8 +80,23 @@ class RepaymentTypeControllerTest {
     void testDeleteRepaymentType() throws Exception {
         when(repaymentTypeService.deleteRepaymentType(anyInt())).thenReturn("Deleted");
 
-        mockMvc.perform(delete("/repayment-types/1"))
+        mockMvc.perform(delete("/repayment-types/1").header("Authorization", "Bearer token"))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Deleted"));
+    }
+
+    @Test
+    void sharedDataCanOnlyBeChangedByAnAdministrator() throws Exception {
+        org.mockito.Mockito.doThrow(new com.example.capstone.exception.BusinessException("Forbidden", org.springframework.http.HttpStatus.FORBIDDEN))
+                .when(adminAccess).requireAdmin(org.mockito.ArgumentMatchers.anyString());
+
+        mockMvc.perform(post("/repayment-types").header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"repaymentTypeName\":\"EMI\",\"repaymentTypeDescription\":\"Monthly\"}"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(delete("/repayment-types/1").header("Authorization", "Bearer token"))
+                .andExpect(status().isForbidden());
+
+        org.mockito.Mockito.verifyNoInteractions(repaymentTypeService);
     }
 }
