@@ -1,0 +1,85 @@
+# Postgres and Redis for the LOCAL cluster only (no persistence, throwaway credentials).
+# In a real environment use managed services and point the backend env vars at them.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: financecare
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: financecare
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres }
+  template:
+    metadata:
+      labels: { app: postgres }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          env:
+            - { name: POSTGRES_DB, value: financeCare_DB }
+            - { name: POSTGRES_USER, value: root }
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: backend-secrets, key: DB_PASSWORD }
+          ports:
+            - containerPort: 5432
+          readinessProbe:
+            exec: { command: [pg_isready, -U, root, -d, financeCare_DB] }
+            periodSeconds: 3
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: financecare
+spec:
+  selector: { app: postgres }
+  ports:
+    - port: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: financecare
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: redis }
+  template:
+    metadata:
+      labels: { app: redis }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7.2
+          ports:
+            - containerPort: 6379
+          readinessProbe:
+            exec: { command: [redis-cli, ping] }
+            periodSeconds: 3
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: financecare
+spec:
+  selector: { app: redis }
+  ports:
+    - port: 6379
