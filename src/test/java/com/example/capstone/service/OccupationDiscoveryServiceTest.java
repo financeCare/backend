@@ -30,6 +30,9 @@ class OccupationDiscoveryServiceTest {
     @Mock
     private ObjectMapper objectMapper;
 
+    @Mock
+    private com.example.capstone.observability.CacheMetrics cacheMetrics;
+
     @InjectMocks
     private OccupationDiscoveryService occupationDiscoveryService;
 
@@ -37,7 +40,7 @@ class OccupationDiscoveryServiceTest {
     void testGetRecommendedOccupations_CacheHit() throws Exception {
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get("occupations:recommended")).thenReturn("[{\"title\":\"Rider\"}]");
-        
+
         OccupationResponse[] responseArray = new OccupationResponse[]{
                 OccupationResponse.builder().title("Rider").build()
         };

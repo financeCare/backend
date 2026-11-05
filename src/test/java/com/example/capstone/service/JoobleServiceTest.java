@@ -35,6 +35,9 @@ class JoobleServiceTest {
     @Mock
     private ValueOperations<String, String> valueOperations;
 
+    @Mock
+    private com.example.capstone.observability.CacheMetrics cacheMetrics;
+
     @InjectMocks
     private JoobleService joobleService;
 
@@ -42,7 +45,7 @@ class JoobleServiceTest {
     void setUp() {
         ReflectionTestUtils.setField(joobleService, "apiKey", "test-api-key");
         ReflectionTestUtils.setField(joobleService, "joobleUrl", "https://jooble.org/api/");
-        
+
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     }
 
@@ -81,16 +84,16 @@ class JoobleServiceTest {
         request.setExtraIncomeNeeded(5000.0);
 
         when(valueOperations.get(anyString())).thenReturn(null);
-        
+
         // Mock API Response
         // Since JoobleApiResponse is private static inner class, we might need a workaround or use Reflection
         // But for testing purposes, we can assume callJoobleApi works if we can mock its result
         // However, callJoobleApi is private. We can test it through getSuggestedJobs.
-        
+
         // Let's mock a successful API call response
         // Note: JoobleService.JoobleJob and JoobleApiResponse are private, so we can't easily mock them here.
         // We'll rely on the fallback or mock the restTemplate call if we can access the classes.
-        
+
         // Alternative: Test that it falls back to mock data if API fails
         when(restTemplate.postForObject(anyString(), any(), any())).thenReturn(null);
 
@@ -107,7 +110,7 @@ class JoobleServiceTest {
         // Arrange
         JobSuggestionRequest request = new JobSuggestionRequest();
         request.setKeywords("developer");
-        
+
         when(valueOperations.get(anyString())).thenThrow(new RuntimeException("Redis connection failed"));
 
         // Act

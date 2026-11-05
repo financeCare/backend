@@ -14,6 +14,11 @@ services:
       SPRING_REDIS_HOST: redis
       SPRING_REDIS_PORT: 6379
       APP_OCR_URL: http://easyocr-service:7860/slip/verify
+      # async slip OCR pipeline (see docs/async-slip-pipeline.md); the synchronous /slips/upload keeps working without it
+      SLIP_ASYNC_ENABLED: "true"
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: financecare
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?set RABBITMQ_PASSWORD in the environment or an .env file}
       APP_MINIO_URL: http://minio-service:9000
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       MAIL_USERNAME: ${MAIL_USERNAME:?set MAIL_USERNAME in .env}
@@ -28,12 +33,26 @@ services:
       - redis
       - easyocr
       - minio
+      - rabbitmq
 
   redis:
     image: redis:7.2
     container_name: redis
     # ลบ ports: - "6379:6379" ออกไปเลย
     # เพราะ spring-app คุยผ่านชื่อ "redis" ใน finance-net ได้อยู่แล้ว
+    networks:
+      - finance-net
+    restart: always
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: financecare
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?set RABBITMQ_PASSWORD in the environment or an .env file}
+    # no published ports: the app reaches it as "rabbitmq" on finance-net
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - finance-net
     restart: always
@@ -73,5 +92,6 @@ networks:
     external: true
 
 volumes:
+  rabbitmq_data:
   easyocr_data:
   minio_data:

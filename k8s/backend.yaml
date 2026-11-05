@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: financecare
+  labels:
+    app: backend
+spec:
+  replicas: 1                       # the HPA takes over from here
+  selector:
+    matchLabels:
+      app: backend
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      initContainers:
+        # without this the app starts before Postgres accepts connections, exits, and Kubernetes restarts it
+        - name: wait-for-postgres
+          image: postgres:16
+          command: ["sh", "-c", "until pg_isready -h postgres -p 5432 -U root; do echo waiting for postgres; sleep 2; done"]
+      containers:
+        - name: backend
+          image: financecare-backend:k8s-local   # replace with ghcr.io/<owner>/backend:<sha> outside the local cluster
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: management
+              containerPort: 9081
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/financeCare_DB
+            - name: SPRING_DATASOURCE_USERNAME
+              value: root
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
+            - name: JAVA_TOOL_OPTIONS
+              value: -XX:MaxRAMPercentage=70
+            - name: DEMO_SEED_ENABLED     # local load testing only (POST /auth/demo-login); never in production
+              value: "true"
+          envFrom:
+            - secretRef:
+                name: backend-secrets     # DB_PASSWORD, JWT_SECRET, JOOBLE_API_KEY, MAIL_*, MINIO_SECRET_KEY
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 768Mi               # no CPU limit: throttling would distort the autoscaling numbers
+          # Spring Boot exposes the liveness/readiness groups automatically when it runs on Kubernetes.
+          startupProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 5
+            failureThreshold: 36          # up to 3 minutes to start
+          readinessProbe:
+            httpGet: { path: /actuator/health/readiness, port: management }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /actuator/health/liveness, port: management }
+            periodSeconds: 10
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: financecare
+spec:
+  type: NodePort                          # kind maps nodePort 30080 to the host (see kind-config.yaml)
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+      nodePort: 30080
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend
+  namespace: financecare
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: backend
+  minReplicas: 1
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60          # percent of the 250m request
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 60      # default is 5 minutes; shorter so the demo shows the scale-in
