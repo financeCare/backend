@@ -12,6 +12,11 @@ export JWT_SECRET=bG9hZHRlc3Qtb25seS1zZWNyZXQta2V5LTAxMjM0NTY3ODlhYmNkZWYwMTIzND
 export JOOBLE_API_KEY=loadtest
 export MAIL_USERNAME=loadtest@example.com
 export MAIL_PASSWORD=loadtest
-export MINIO_SECRET_KEY=loadtest
+export MINIO_SECRET_KEY=loadtest-minio-pw
+export APP_MINIO_URL=http://127.0.0.1:59000
+# async slip pipeline: RabbitMQ from docker-compose.yml, OCR answered by mock_ocr.py
+export SLIP_ASYNC_ENABLED=true
+export RABBITMQ_PORT=55672
+export APP_OCR_URL=http://127.0.0.1:17860/slip/verify
 export SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE="${POOL:-10}"
 cd "$(dirname "$0")/.." && ./gradlew bootRun --no-daemon

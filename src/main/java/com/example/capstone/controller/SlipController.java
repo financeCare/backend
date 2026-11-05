@@ -52,6 +52,40 @@ public class SlipController {
         }
     }
 
+    /**
+     * Queues the slips for asynchronous OCR and returns immediately (202). Poll
+     * {@code GET /slips/{id}/status} (or {@code GET /slips}) for "queued" / "processed" / "failed".
+     */
+    @PostMapping("/upload-async")
+    public ResponseEntity<List<Map<String, Object>>> uploadSlipsAsync(@RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam("files") List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            throw new BusinessException("No files uploaded", HttpStatus.BAD_REQUEST);
+        }
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
+        UUID userId = userService.extractUserIdFromToken(token);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException("User not found", HttpStatus.NOT_FOUND));
+
+        List<Map<String, Object>> accepted = slipService.enqueueSlips(files, user).stream()
+                .map(slip -> Map.<String, Object>of("id", slip.getId(), "status", slip.getStatus()))
+                .toList();
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(accepted);
+    }
+
+    @GetMapping("/{id}/status")
+    public ResponseEntity<Map<String, Object>> getSlipStatus(@RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable("id") Long id) {
+        String token = authorizationHeader.replace(BEARER_PREFIX, "");
+        UUID userId = userService.extractUserIdFromToken(token);
+        Slip slip = slipService.getSlipById(id);
+        if (!userId.equals(slip.getUserId())) {
+            // same answer as for a missing slip, so ids of other users' slips cannot be probed
+            throw new BusinessException("Slip not found", HttpStatus.NOT_FOUND);
+        }
+        return ResponseEntity.ok(Map.of("id", slip.getId(), "status", slip.getStatus()));
+    }
+
     @GetMapping
     public ResponseEntity<List<Slip>> getMySlips(@RequestHeader("Authorization") String authorizationHeader) {
         String token = authorizationHeader.replace(BEARER_PREFIX, "");
