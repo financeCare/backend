@@ -35,6 +35,9 @@ class RepaymentServiceTest {
     @Mock
     private DebtStatementRepository debtStatementRepository;
 
+    @Mock
+    private PlanCacheEvictor planCacheEvictor;
+
     @InjectMocks
     private RepaymentService repaymentService;
 
@@ -68,6 +71,8 @@ class RepaymentServiceTest {
         verify(debtTransactionRepository, atLeastOnce()).save(any());
         verify(debtRepository).save(debt);
         assertEquals(new BigDecimal("4000"), debt.getPrincipalOutstanding());
+        // the cached monthly status / strategies summary of this user are stale after a payment
+        verify(planCacheEvictor).evictUserCache(userId);
     }
 
     @Test

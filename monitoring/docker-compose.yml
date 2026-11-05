@@ -10,6 +10,14 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"   # needed on Linux; Docker Desktop already provides it
+  jaeger:
+    image: jaegertracing/all-in-one:1.62.0
+    container_name: fc-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"   # UI
+      - "4318:4318"     # OTLP over HTTP (what the backend sends to)
   grafana:
     image: grafana/grafana:11.3.1
     container_name: fc-grafana

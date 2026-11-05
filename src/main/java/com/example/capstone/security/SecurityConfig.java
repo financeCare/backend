@@ -41,7 +41,7 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/webjars/**",
                                 // served only on the separate management port (management.server.port), not on the API port
-                                "/actuator/health",
+                                "/actuator/health/**",   // includes the Kubernetes liveness/readiness probes
                                 "/actuator/prometheus"
                         ).permitAll()
                         .anyRequest().authenticated()

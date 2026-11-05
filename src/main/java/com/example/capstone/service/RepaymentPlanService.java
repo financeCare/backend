@@ -35,8 +35,8 @@ public class RepaymentPlanService {
     private static final String STRATEGY_NOT_FOUND_CODE = "STRATEGY_NOT_FOUND";
     private static final String UNKNOWN_STRATEGY_TYPE_MSG = "Unknown strategy type";
     private static final String UNKNOWN_STRATEGY_TYPE_CODE = "UNKNOWN_STRATEGY_TYPE";
-    private static final String STRATEGIES_CACHE_PREFIX = "plans:strategies:";
-    private static final String MONTHLY_STATUS_CACHE_PREFIX = "plans:monthly-status:";
+    private static final String STRATEGIES_CACHE_PREFIX = PlanCacheEvictor.STRATEGIES_CACHE_PREFIX;
+    private static final String MONTHLY_STATUS_CACHE_PREFIX = PlanCacheEvictor.MONTHLY_STATUS_CACHE_PREFIX;
     private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Bangkok");
 
     private final RepaymentPlanRepository repaymentPlanRepository;
@@ -50,6 +50,7 @@ public class RepaymentPlanService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final CacheMetrics cacheMetrics;
+    private final PlanCacheEvictor planCacheEvictor;
 
     public RepaymentStrategy createRepaymentStrategy(RepaymentStrategyDTO repaymentStrategyDTO) {
         RepaymentStrategy strategy = new RepaymentStrategy();
@@ -79,15 +80,15 @@ public class RepaymentPlanService {
         cacheMetrics.miss("plan_strategies");
 
         List<Debt> debts = debtRepository.findByActiveAndUserId(true, userId);
-        
+
         BigDecimal actualMinSum = debts.stream()
                 .map(d -> d.getMinPayment() != null ? d.getMinPayment() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
+
         BigDecimal safeMinSum = debts.stream()
                 .map(this::calculateSafeMinPayment)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        
+
         RepaymentStrategyDtoResponse response = new RepaymentStrategyDtoResponse(actualMinSum.doubleValue(), safeMinSum.doubleValue(), repaymentStrategyRepository.findAll());
         try {
             String jsonData = objectMapper.writeValueAsString(response);
@@ -189,7 +190,7 @@ public class RepaymentPlanService {
         // Safe min = Interest + 1% of Principal to ensure principal decreases
         BigDecimal onePercentPrincipal = principal.multiply(BigDecimal.valueOf(0.01)).setScale(2, RoundingMode.HALF_UP);
         BigDecimal safeMin = monthlyInterest.add(onePercentPrincipal);
-        
+
         // If 1% principal is too small, ensure at least 1 unit payment
         if (safeMin.compareTo(monthlyInterest) <= 0) {
             safeMin = monthlyInterest.add(BigDecimal.ONE);
@@ -261,7 +262,7 @@ public class RepaymentPlanService {
         debtSim.setInterestType(entity.getInterestCalculationType());
         debtSim.setMinPayment(entity.getMinPayment() != null ? entity.getMinPayment() : BigDecimal.ZERO);
         debtSim.setActive(entity.getActive());
-        
+
         // Calculate outstanding amounts directly to avoid circular dependency with DebtService
         debtSim.setInterestOutstanding(outstanding.getOrDefault(DebtTxnType.INTEREST_CHARGE, BigDecimal.ZERO));
         debtSim.setLateFeeOutstanding(outstanding.getOrDefault(DebtTxnType.LATE_FEE_CHARGE, BigDecimal.ZERO));
@@ -274,7 +275,7 @@ public class RepaymentPlanService {
             debtSim.setStartDate(localStartDate);
             debtSim.setCurrentDate(localStartDate);
         }
-        
+
         if (entity.getEndDate() != null) {
             LocalDate localEndDate = entity.getEndDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
             debtSim.setEndDate(localEndDate);
@@ -285,24 +286,24 @@ public class RepaymentPlanService {
         debtSim.setGracePeriodDays(entity.getGracePeriodDays());
         debtSim.setPenaltyTriggerDays(entity.getPenaltyTriggerDays());
         debtSim.setPriority(entity.getPriority() != null ? entity.getPriority() : 999);
-        
+
         debtSim.setPenaltyAnnualRate(normalizeAnnualRate(entity.getPenaltyAnnualRate(), InterestInterval.YEARLY));
         debtSim.setDefaulted(entity.getDefaulted());
         debtSim.setInformal(Boolean.TRUE.equals(entity.getIsInformal()));
-        
+
         return debtSim;
     }
 
     private BigDecimal normalizeAnnualRate(BigDecimal rate, InterestInterval interval) {
         if (rate == null) return BigDecimal.ZERO;
-        
+
         BigDecimal normalizedRate = rate;
         if (normalizedRate.compareTo(BigDecimal.ONE) > 0) {
             normalizedRate = normalizedRate.divide(BigDecimal.valueOf(100), 10, RoundingMode.HALF_UP);
         }
-        
+
         if (interval == null) interval = InterestInterval.YEARLY;
-        
+
         return switch (interval) {
             case DAILY -> normalizedRate.multiply(BigDecimal.valueOf(365));
             case MONTHLY -> normalizedRate.multiply(BigDecimal.valueOf(12));
@@ -318,10 +319,10 @@ public class RepaymentPlanService {
     public List<Map<String, Object>> getPrioritySuggestions(String token, UUID strategyId) {
         UUID userId = userService.extractUserIdFromToken(token);
         List<Debt> debts = debtRepository.findByActiveAndUserId(true, userId);
-        
+
         RepaymentStrategy strategyEntity = repaymentStrategyRepository.findById(strategyId)
                 .orElseThrow(() -> new BusinessException(STRATEGY_NOT_FOUND_MSG, STRATEGY_NOT_FOUND_CODE, HttpStatus.NOT_FOUND));
-        
+
         StrategyType type;
         try {
             type = StrategyType.fromString(strategyEntity.getStrategyName());
@@ -391,8 +392,8 @@ public class RepaymentPlanService {
                 .map(this::calculateSafeMinPayment)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        boolean isBudgetInsufficient = plan != null && plan.getMonthlyBudget() != null 
-                && plan.getMonthlyBudget().compareTo(BigDecimal.ZERO) > 0 
+        boolean isBudgetInsufficient = plan != null && plan.getMonthlyBudget() != null
+                && plan.getMonthlyBudget().compareTo(BigDecimal.ZERO) > 0
                 && plan.getMonthlyBudget().compareTo(requiredMinPayment) < 0;
 
         BigDecimal remainingAmount = totalAmount.subtract(paidAmount);
@@ -430,11 +431,6 @@ public class RepaymentPlanService {
     }
 
     public void evictUserCache(UUID userId) {
-        try {
-            redisTemplate.delete(STRATEGIES_CACHE_PREFIX + userId);
-            redisTemplate.delete(MONTHLY_STATUS_CACHE_PREFIX + userId);
-        } catch (Exception e) {
-            // Fallback
-        }
+        planCacheEvictor.evictUserCache(userId);
     }
 }
