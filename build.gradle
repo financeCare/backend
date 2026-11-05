@@ -159,7 +159,7 @@ spotless {
 }
 
 // Coverage ratchet on the unfiltered numbers: raise these when coverage goes up, never lower them.
-// Target: 80% for the service package (it was 49.9% when the gate was added).
+// Reached: service package 81.9%, overall 71.7% (they were 49.9% / 51.3% when the gate was added).
 tasks.register('jacocoFullCoverageVerification', JacocoCoverageVerification) {
     dependsOn test
     executionData(test)
@@ -169,7 +169,7 @@ tasks.register('jacocoFullCoverageVerification', JacocoCoverageVerification) {
             limit {
                 counter = 'LINE'
                 value = 'COVEREDRATIO'
-                minimum = 0.50
+                minimum = 0.70
             }
         }
         rule {
@@ -178,7 +178,7 @@ tasks.register('jacocoFullCoverageVerification', JacocoCoverageVerification) {
             limit {
                 counter = 'LINE'
                 value = 'COVEREDRATIO'
-                minimum = 0.48
+                minimum = 0.80
             }
         }
     }

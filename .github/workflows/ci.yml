@@ -54,6 +54,16 @@ jobs:
                   if c.get("type") in ("LINE", "BRANCH"):
                       cov, miss = int(c.get("covered")), int(c.get("missed"))
                       print(f"- {c.get('type').title()} coverage: {100 * cov / (cov + miss):.1f}% ({cov}/{cov + miss})")
+          if os.path.exists(path):
+              print("")
+              print("| Package | Line coverage |")
+              print("|---|---|")
+              for pkg in sorted(root.findall("package"), key=lambda p: p.get("name")):
+                  for c in pkg.findall("counter"):
+                      if c.get("type") == "LINE":
+                          cov, miss = int(c.get("covered")), int(c.get("missed"))
+                          if cov + miss:
+                              print(f"| {pkg.get('name').replace('com/example/capstone/', '') or '(root)'} | {100 * cov / (cov + miss):.1f}% ({cov}/{cov + miss}) |")
           tests = fails = 0
           for f in glob.glob("build/test-results/test/*.xml"):
               attrs = ET.parse(f).getroot().attrib
