@@ -131,6 +131,8 @@ public class TransactionService {
                 .findByTransactionIdAndUserId(transactionId, userId)
                 .orElseThrow(() -> new BusinessException(TRANSACTION_NOT_FOUND_MSG,
                         HttpStatus.NOT_FOUND));
+        Double previousAmount = existingTransaction.getAmount();
+        Category previousCategory = existingTransaction.getCategory();
         existingTransaction.setAmount(transactionRequest.getAmount());
         Category category = categoryRepository
                 .findByCategoryIdAndUserId(transactionRequest.getCategoryId(), userId)
@@ -141,8 +143,18 @@ public class TransactionService {
                 .findByUserIdAndBudgetId(userId, category.getBudgetId())
                 .orElseThrow(() -> new BusinessException(BUDGET_NOT_FOUND_MSG,
                         HttpStatus.NOT_FOUND));
-        double newAmount = budget.getAmount() + transactionRequest.getAmount();
-        budget.setAmount(newAmount);
+        // The old amount has to leave the budget it was counted in, otherwise every edit adds the amount again.
+        Budget previousBudget = (previousCategory != null && previousAmount != null)
+                ? budgetRepository.findByUserIdAndBudgetId(userId, previousCategory.getBudgetId()).orElse(null)
+                : null;
+        if (previousBudget != null && !previousBudget.getBudgetId().equals(budget.getBudgetId())) {
+            previousBudget.setAmount(previousBudget.getAmount() - previousAmount);
+            budgetRepository.save(previousBudget);
+            budget.setAmount(budget.getAmount() + transactionRequest.getAmount());
+        } else {
+            double removed = previousBudget != null ? previousAmount : 0.0;
+            budget.setAmount(budget.getAmount() - removed + transactionRequest.getAmount());
+        }
         budgetRepository.save(budget);
         existingTransaction.setTransactionDate(transactionRequest.getTransactionDate());
         existingTransaction.setDescription(transactionRequest.getDescription());
