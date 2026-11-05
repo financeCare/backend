@@ -18,7 +18,6 @@ import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -265,11 +264,7 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() ->
                         new UsernameNotFoundException(USER_NOT_FOUND_PREFIX + email + NOT_FOUND_SUFFIX)
                 );
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(jwtUtil.getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        Claims claims = jwtUtil.parseClaims(token);
         if (!Boolean.TRUE.equals(user.getEmailConfirm())) {
             throw new BusinessException("Email not verified", "EMAIL_NOT_VERIFIED", HttpStatus.FORBIDDEN);
         }

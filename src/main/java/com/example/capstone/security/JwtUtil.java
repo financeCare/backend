@@ -1,13 +1,13 @@
 package com.example.capstone.security;
 
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.util.Date;
 
 @Component
@@ -19,54 +19,50 @@ public class JwtUtil {
     @Value("${jwt.refresh-expiration}")
     private long refreshExpirationMs;
 
-    public Key getSigningKey() {
+    public SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
     }
 
     public String generateAccessToken(String email) {
         return Jwts.builder()
-                .setSubject(email)
+                .subject(email)
                 .claim("type", "access")
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(getSigningKey(), Jwts.SIG.HS256)
                 .compact();
     }
 
     public String generateRefreshToken(String email) {
         return Jwts.builder()
-                .setSubject(email)
+                .subject(email)
                 .claim("type", "refresh")
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + refreshExpirationMs))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + refreshExpirationMs))
+                .signWith(getSigningKey(), Jwts.SIG.HS256)
                 .compact();
     }
 
-    public String extractEmail(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+    /** Verifies the signature and the expiry and returns the claims; throws for anything invalid. */
+    public Claims parseClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
+    public String extractEmail(String token) {
+        return parseClaims(token).getSubject();
     }
 
     public Date extractExpiration(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getExpiration();
+        return parseClaims(token).getExpiration();
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
-                    .build()
-                    .parseClaimsJws(token);
+            parseClaims(token);
             return true;
         } catch (Exception e) {
             return false;
