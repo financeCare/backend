@@ -4,11 +4,30 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      jjwt:
+        patterns: ["io.jsonwebtoken:*"]      # the three jjwt artifacts must move together
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # springdoc 3.x is built for Spring Boot 4 (the PR failed with NoClassDefFoundError on Boot 3.5 classes)
+      - dependency-name: "org.springdoc:*"
+        update-types: ["version-update:semver-major"]
+      # Spring Boot 4 / Spring Framework 7 is a deliberate migration, not a routine bump
+      - dependency-name: "org.springframework.boot"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # the build uses a Java 21 toolchain (LTS); change the Java version on purpose, in build.gradle and Dockerfile together
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
