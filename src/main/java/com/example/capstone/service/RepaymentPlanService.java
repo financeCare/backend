@@ -35,8 +35,8 @@ public class RepaymentPlanService {
     private static final String STRATEGY_NOT_FOUND_CODE = "STRATEGY_NOT_FOUND";
     private static final String UNKNOWN_STRATEGY_TYPE_MSG = "Unknown strategy type";
     private static final String UNKNOWN_STRATEGY_TYPE_CODE = "UNKNOWN_STRATEGY_TYPE";
-    private static final String STRATEGIES_CACHE_PREFIX = "plans:strategies:";
-    private static final String MONTHLY_STATUS_CACHE_PREFIX = "plans:monthly-status:";
+    private static final String STRATEGIES_CACHE_PREFIX = PlanCacheEvictor.STRATEGIES_CACHE_PREFIX;
+    private static final String MONTHLY_STATUS_CACHE_PREFIX = PlanCacheEvictor.MONTHLY_STATUS_CACHE_PREFIX;
     private static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Bangkok");
 
     private final RepaymentPlanRepository repaymentPlanRepository;
@@ -50,6 +50,7 @@ public class RepaymentPlanService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final CacheMetrics cacheMetrics;
+    private final PlanCacheEvictor planCacheEvictor;
 
     public RepaymentStrategy createRepaymentStrategy(RepaymentStrategyDTO repaymentStrategyDTO) {
         RepaymentStrategy strategy = new RepaymentStrategy();
@@ -430,11 +431,6 @@ public class RepaymentPlanService {
     }
 
     public void evictUserCache(UUID userId) {
-        try {
-            redisTemplate.delete(STRATEGIES_CACHE_PREFIX + userId);
-            redisTemplate.delete(MONTHLY_STATUS_CACHE_PREFIX + userId);
-        } catch (Exception e) {
-            // Fallback
-        }
+        planCacheEvictor.evictUserCache(userId);
     }
 }

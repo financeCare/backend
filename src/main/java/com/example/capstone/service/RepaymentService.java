@@ -30,6 +30,7 @@ public class RepaymentService {
         private final UserService userService;
         private final DebtRepository debtRepository;
         private final DebtTransactionRepository debtTransactionRepository;
+        private final PlanCacheEvictor planCacheEvictor;
 
         private void createTxn(
                         Debt debt,
@@ -127,6 +128,9 @@ public class RepaymentService {
                 LocalDate date = (paymentDate != null) ? paymentDate : LocalDate.now(DEFAULT_ZONE);
 
                 createTxn(debt, DebtTxnType.PAYMENT, amount, date, null, slipId);
+                // monthly status (paid this month) and the strategies summary (safe minimum depends on the
+                // outstanding principal) are cached per user, so they are stale after a payment
+                planCacheEvictor.evictUserCache(debt.getUserId());
 
                 BigDecimal remaining = amount;
 

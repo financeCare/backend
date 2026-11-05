@@ -29,6 +29,9 @@ class RepaymentBugReproductionTest {
     @Mock
     private DebtTransactionRepository debtTransactionRepository;
 
+    @Mock
+    private PlanCacheEvictor planCacheEvictor;
+
     @InjectMocks
     private RepaymentService repaymentService;
 

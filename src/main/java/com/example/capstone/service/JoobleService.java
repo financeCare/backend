@@ -17,6 +17,8 @@ import org.springframework.web.client.RestTemplate;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
+import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 
 @Service
@@ -36,7 +38,14 @@ public class JoobleService {
     private final CacheMetrics cacheMetrics;
 
     private static final String REDIS_KEY_PREFIX = "jooble:jobs:";
-    private static final long CACHE_TTL_HOURS = 6;
+    private static final String LOCK_KEY_PREFIX = "lock:";
+    private static final Duration CACHE_TTL = Duration.ofHours(6);
+    /** Searches without results are cached briefly so the same empty search does not hit the API every time. */
+    private static final Duration EMPTY_RESULT_TTL = Duration.ofMinutes(10);
+    /** Upper bound for the loader lock; it is released explicitly, this only covers a crashed loader. */
+    private static final Duration LOCK_TTL = Duration.ofSeconds(20);
+    private static final int WAIT_ATTEMPTS = 20;
+    private static final long WAIT_MILLIS = 250;
 
     public List<JobSuggestionResponse> getSuggestedJobs(JobSuggestionRequest request) {
         String location = request.getLocation();
@@ -54,22 +63,70 @@ public class JoobleService {
         }
         cacheMetrics.miss("jooble_jobs");
 
+        // Cache stampede protection: when a popular key expires, only one request calls the API; the others wait
+        // for its result. If the loader is slow or fails, waiters fall back to calling the API themselves.
+        String lockKey = LOCK_KEY_PREFIX + cacheKey;
+        boolean loader = tryAcquireLock(lockKey);
+        if (!loader) {
+            Optional<List<JobSuggestionResponse>> loaded = waitForLoader(cacheKey);
+            if (loaded.isPresent()) {
+                return loaded.get();
+            }
+        }
+
         try {
             log.info("Calling Jooble API...");
             List<JobSuggestionResponse> jobs = callJoobleApi(searchKeywords, location, request);
-            
+
             if (jobs.isEmpty()) {
                 log.warn("Jooble returned empty results for key: {}", cacheKey);
-                return Collections.emptyList(); 
             }
-
             cacheResults(cacheKey, jobs);
             return jobs;
 
         } catch (Exception e) {
+            // API errors are not cached: the next request should try again
             log.error("Jooble API Error: {}", e.getMessage());
             return Collections.emptyList();
+        } finally {
+            if (loader) {
+                releaseLock(lockKey);
+            }
         }
+    }
+
+    /** True when this request should load the data. Without Redis there is nothing to coordinate, so it loads. */
+    private boolean tryAcquireLock(String lockKey) {
+        try {
+            Boolean acquired = redisTemplate.opsForValue().setIfAbsent(lockKey, "1", LOCK_TTL);
+            return acquired == null || acquired;
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private void releaseLock(String lockKey) {
+        try {
+            redisTemplate.delete(lockKey);
+        } catch (Exception e) {
+            log.warn("Could not release lock {}: {}", lockKey, e.getMessage());
+        }
+    }
+
+    private Optional<List<JobSuggestionResponse>> waitForLoader(String cacheKey) {
+        for (int i = 0; i < WAIT_ATTEMPTS; i++) {
+            try {
+                Thread.sleep(WAIT_MILLIS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return Optional.empty();
+            }
+            Optional<List<JobSuggestionResponse>> cached = getFromCache(cacheKey);
+            if (cached.isPresent()) {
+                return cached;
+            }
+        }
+        return Optional.empty();
     }
 
     private Optional<List<JobSuggestionResponse>> getFromCache(String cacheKey) {
@@ -89,11 +146,20 @@ public class JoobleService {
     private void cacheResults(String cacheKey, List<JobSuggestionResponse> jobs) {
         try {
             String jsonData = objectMapper.writeValueAsString(jobs);
-            redisTemplate.opsForValue().set(cacheKey, jsonData, CACHE_TTL_HOURS, TimeUnit.HOURS);
+            redisTemplate.opsForValue().set(cacheKey, jsonData, ttlFor(jobs));
             log.info("Result cached in Redis.");
         } catch (Exception e) {
             log.warn("Failed to cache results to Redis: {}", e.getMessage());
         }
+    }
+
+    /** 6 h +/- 10% so keys written together do not all expire in the same second; empty results are short-lived. */
+    private Duration ttlFor(List<JobSuggestionResponse> jobs) {
+        if (jobs.isEmpty()) {
+            return EMPTY_RESULT_TTL;
+        }
+        double jitter = 0.9 + ThreadLocalRandom.current().nextDouble() * 0.2;
+        return Duration.ofMillis((long) (CACHE_TTL.toMillis() * jitter));
     }
 
     private String buildSearchKeywords(JobSuggestionRequest request) {
