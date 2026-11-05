@@ -7,16 +7,22 @@ import com.example.capstone.entity.DebtTransaction;
 import com.example.capstone.enums.DebtTxnType;
 import com.example.capstone.enums.InterestInterval;
 import com.example.capstone.exception.BusinessException;
+import com.example.capstone.messaging.PaymentEvent;
+import com.example.capstone.messaging.PaymentEventPublisher;
 import com.example.capstone.repository.DebtRepository;
 import com.example.capstone.repository.DebtTransactionRepository;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
@@ -31,6 +37,7 @@ public class RepaymentService {
         private final DebtRepository debtRepository;
         private final DebtTransactionRepository debtTransactionRepository;
         private final PlanCacheEvictor planCacheEvictor;
+        private final ObjectProvider<PaymentEventPublisher> paymentEventPublisher;
 
         private void createTxn(
                         Debt debt,
@@ -172,6 +179,28 @@ public class RepaymentService {
                 }
 
                 debtRepository.save(debt);
+                publishPaymentEvent(debt, amount, date, slipId);
+        }
+
+        /** Appends the payment to the event log (if enabled) once the database transaction has committed. */
+        private void publishPaymentEvent(Debt debt, BigDecimal amount, LocalDate date, Long slipId) {
+                PaymentEventPublisher publisher = paymentEventPublisher == null ? null
+                                : paymentEventPublisher.getIfAvailable();
+                if (publisher == null) {
+                        return;
+                }
+                PaymentEvent event = new PaymentEvent(UUID.randomUUID(), debt.getDebtId(), debt.getUserId(), amount,
+                                date, slipId, Instant.now());
+                if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                                @Override
+                                public void afterCommit() {
+                                        publisher.publish(event);
+                                }
+                        });
+                } else {
+                        publisher.publish(event);
+                }
         }
 
         @Scheduled(cron = "0 0 1 1 * ?")

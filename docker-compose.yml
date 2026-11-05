@@ -57,6 +57,30 @@ services:
       - finance-net
     restart: always
 
+  # Optional payment event log (docs/kafka-payment-events.md). Start with: docker compose --profile kafka up -d
+  # and set KAFKA_EVENTS_ENABLED=true KAFKA_BOOTSTRAP_SERVERS=kafka:9092 on the app. Single node, KRaft (no ZooKeeper).
+  kafka:
+    image: apache/kafka:3.8.0
+    profiles: ["kafka"]
+    container_name: kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG_RETENTION_HOURS: 168
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - finance-net
+    restart: unless-stopped
+
   easyocr:
     build:
       context: ../../ocr/easyOcr
@@ -93,5 +117,6 @@ networks:
 
 volumes:
   rabbitmq_data:
+  kafka_data:
   easyocr_data:
   minio_data:
