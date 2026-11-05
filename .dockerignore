@@ -1,0 +1,12 @@
+build/
+.gradle/
+.git/
+.github/
+.idea/
+loadtest/
+monitoring/
+docs/
+*.log
+hs_err_pid*
+replay_pid*
+bin/

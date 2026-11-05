@@ -238,8 +238,8 @@ public class RepaymentService {
                                 lastMonthYear,
                                 lastMonthValue);
 
-                if (!penaltyAlreadyAccrued && 
-                    processDate.isAfter(startMonth) && 
+                if (!penaltyAlreadyAccrued &&
+                    processDate.isAfter(startMonth) &&
                     debt.getPrincipalOutstanding().compareTo(BigDecimal.ZERO) > 0) {
                         BigDecimal penaltyRate = debt.getPenaltyAnnualRate();
                         if (penaltyRate != null && penaltyRate.compareTo(BigDecimal.ZERO) > 0) {

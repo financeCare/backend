@@ -315,7 +315,7 @@ public class SlipService {
                     .appendPattern("yyyy")
                     .appendPattern(" HH:mm")
                     .toFormatter(new Locale("th", "TH"));
-            
+
             return LocalDateTime.parse(thaiDateStr, formatter);
         } catch (Exception e) {
             log.warn("Thai date parsing failed for '{}': {}", thaiDateStr, e.getMessage());

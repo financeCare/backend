@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
@@ -55,7 +54,7 @@ public class JoobleService {
 
         String searchKeywords = buildSearchKeywords(request);
         String cacheKey = REDIS_KEY_PREFIX + searchKeywords.replace(" ", "-") + ":" + location;
-        
+
         Optional<List<JobSuggestionResponse>> cached = getFromCache(cacheKey);
         if (cached.isPresent()) {
             cacheMetrics.hit("jooble_jobs");
@@ -166,7 +165,7 @@ public class JoobleService {
         if (request.getKeywords() != null && !request.getKeywords().isEmpty()) {
             return request.getKeywords();
         }
-        
+
         if (request.getSkills() != null && !request.getSkills().isEmpty()) {
             return String.join(" ", request.getSkills());
         }

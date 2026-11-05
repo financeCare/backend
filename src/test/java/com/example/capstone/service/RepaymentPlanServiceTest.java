@@ -91,9 +91,9 @@ class RepaymentPlanServiceTest {
         debt.setPrincipalOutstanding(new BigDecimal("10000"));
         debt.setInterestRate(new BigDecimal("12.5")); // Monthly int = 104.16...
         debt.setInterestCalculationType(InterestCalculationType.THIRTY_360);
-        
+
         BigDecimal result = repaymentPlanService.calculateSafeMinPayment(debt);
-        
+
         // Int = 10000 * 12.5% / 12 = 10000 * 0.010416... = 104.166...
         // 1% Prin = 10000 * 0.01 = 100
         // SafeMin = 204.166...
@@ -142,7 +142,7 @@ class RepaymentPlanServiceTest {
     @Test
     void testGetTotalMinPayment_SafeCalculation() {
         when(userService.extractUserIdFromToken(token)).thenReturn(userId);
-        
+
         Debt debt1 = new Debt();
         debt1.setPrincipalAmount(new BigDecimal("1000000"));
         debt1.setPrincipalOutstanding(new BigDecimal("1000000"));
@@ -150,17 +150,17 @@ class RepaymentPlanServiceTest {
         debt1.setInterestCalculationType(InterestCalculationType.THIRTY_360);
         debt1.setMinPayment(new BigDecimal("5000")); // User set only 5000
         debt1.setActive(true);
-        
+
         when(debtRepository.findByActiveAndUserId(true, userId)).thenReturn(List.of(debt1));
-        
+
         BigDecimal result = repaymentPlanService.getTotalMinPayment(token);
-        
+
         // Expected Logic:
         // Interest = 1,000,000 * (12/100/12) = 10,000
         // 1% Principal = 1,000,000 * 0.01 = 10,000
         // SafeMin = 10,000 + 10,000 = 20,000
         // Result = max(5000, 20000) = 20000
-        
+
         // the service rounds up to whole units (scale 0), so compare by value, not by scale
         assertEquals(0, new BigDecimal("20000").compareTo(result));
     }

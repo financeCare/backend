@@ -40,7 +40,7 @@ class OccupationDiscoveryServiceTest {
     void testGetRecommendedOccupations_CacheHit() throws Exception {
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get("occupations:recommended")).thenReturn("[{\"title\":\"Rider\"}]");
-        
+
         OccupationResponse[] responseArray = new OccupationResponse[]{
                 OccupationResponse.builder().title("Rider").build()
         };
