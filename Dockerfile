@@ -1,5 +1,5 @@
 # Stage 1: build the jar (tests run in CI, not here)
-FROM eclipse-temurin:21-jdk AS build
+FROM eclipse-temurin:25-jdk AS build
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ RUN ./gradlew bootJar -x test --no-daemon \
 
 # Stage 2: run it on a JRE (not a JDK), as an unprivileged user, with the Spring Boot layers split so a code change
 # only replaces the small "application" layer
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre-alpine
 
 RUN addgroup -S app && adduser -S app -G app
 WORKDIR /app
