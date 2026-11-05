@@ -41,5 +41,33 @@ k6 (`loadtest/k6/api.js`, 80 virtual users, 210 s) against `http://localhost:180
   decision, pod start and readiness, scale-in. What was not: a real throughput gain, which needs separate nodes.
 - The first ~80 s ran on one pod while the others were still starting, so latency in that window is high.
 - Demo mode, throwaway credentials and an in-cluster database without persistence: local use only.
-- Not covered: Ingress/TLS, PodDisruptionBudget, Helm chart, MinIO/RabbitMQ/OCR in the cluster (the backend starts
+- Not covered: PodDisruptionBudget, TLS certificates, MinIO/RabbitMQ/OCR in the cluster (the backend starts
   without them; slip upload is unavailable in this setup).
+
+## Helm chart
+
+`helm/financecare/` packages the same objects (Deployment, Service, HPA, optional throwaway Postgres/Redis) with values:
+
+```bash
+# local kind cluster (after ./k8s/local-up.sh created the cluster and loaded the image, or kind create cluster --config k8s/kind-config.yaml)
+helm install fc k8s/helm/financecare -f k8s/helm/financecare/values-local.yaml -n financecare --create-namespace --wait
+helm upgrade fc k8s/helm/financecare -f k8s/helm/financecare/values-local.yaml -n financecare --set autoscaling.minReplicas=2
+helm uninstall fc -n financecare
+
+# a real cluster: managed Postgres/Redis, credentials from a Secret you manage, an Ingress
+helm install fc k8s/helm/financecare -n financecare \
+  --set image.tag=<commit sha> --set existingSecret=financecare-secrets \
+  --set config.SPRING_DATASOURCE_URL=jdbc:postgresql://<host>:5432/<db> --set config.SPRING_DATA_REDIS_HOST=<redis host> \
+  --set ingress.enabled=true --set ingress.host=api.example.com
+```
+
+Defaults are safe: no demo mode, no in-cluster databases, no Ingress, no secrets in `values.yaml`. `helm template` / `install`
+stop with a clear message when the credentials, the database or the Redis host are missing; the management port (health,
+metrics) is in the pod but not in the Service or the Ingress. Install `values-local.yaml` only locally: it enables demo
+mode and contains throwaway credentials.
+
+Verified on a kind cluster: `helm lint` (local, prod-like), `helm install --wait` (pods ready, no restarts thanks to the
+Postgres init container, `POST /api/auth/demo-login` answered 200 through the NodePort), `helm upgrade` (revision 2, rolling
+update to 2 replicas, still answering), `helm uninstall`, cluster deleted. Not verified: a real Ingress controller, an
+external Postgres/Redis, the HPA with live metrics in this run (metrics-server was not installed for it), `helm lint` does not
+evaluate the `fail` guards (use `helm template`).
