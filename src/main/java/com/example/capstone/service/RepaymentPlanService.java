@@ -282,13 +282,14 @@ public class RepaymentPlanService {
         }
 
         debtSim.setOriginalPrincipal(entity.getPrincipalAmount());
-        debtSim.setDueDay(entity.getDueDay());
-        debtSim.setGracePeriodDays(entity.getGracePeriodDays());
-        debtSim.setPenaltyTriggerDays(entity.getPenaltyTriggerDays());
+        // rows created before these columns existed hold NULL; unboxing them used to fail the whole simulation
+        debtSim.setDueDay(entity.getDueDay() != null ? entity.getDueDay() : 1);
+        debtSim.setGracePeriodDays(entity.getGracePeriodDays() != null ? entity.getGracePeriodDays() : 0);
+        debtSim.setPenaltyTriggerDays(entity.getPenaltyTriggerDays() != null ? entity.getPenaltyTriggerDays() : 0);
         debtSim.setPriority(entity.getPriority() != null ? entity.getPriority() : 999);
 
         debtSim.setPenaltyAnnualRate(normalizeAnnualRate(entity.getPenaltyAnnualRate(), InterestInterval.YEARLY));
-        debtSim.setDefaulted(entity.getDefaulted());
+        debtSim.setDefaulted(Boolean.TRUE.equals(entity.getDefaulted()));
         debtSim.setInformal(Boolean.TRUE.equals(entity.getIsInformal()));
 
         return debtSim;
