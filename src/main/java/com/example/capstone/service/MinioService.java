@@ -59,7 +59,7 @@ public class MinioService {
                     PutObjectArgs.builder()
                             .bucket(BUCKET_NAME)
                             .object(fullPath)
-                            .stream(inputStream, file.getSize(), -1)
+                            .stream(inputStream, file.getSize(), -1L)
                             .contentType(file.getContentType())
                             .build()
             );

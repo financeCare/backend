@@ -16,6 +16,9 @@ updates:
       # Spring Boot 4 / Spring Framework 7 is a deliberate migration, not a routine bump
       - dependency-name: "org.springframework.boot"
         update-types: ["version-update:semver-major"]
+      # Kotlin is only pulled in transitively (by the MinIO / OkHttp client). The stdlib and reflect artifacts must
+      # stay on one version, and a 1.9 -> 2.x jump failed the image build; let the client library decide.
+      - dependency-name: "org.jetbrains.kotlin:*"
   - package-ecosystem: github-actions
     directory: /
     schedule:
