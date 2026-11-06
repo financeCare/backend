@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class MinioStorageIntegrationTest {
 
     @Container
-    static GenericContainer<?> minio = new GenericContainer<>(DockerImageName.parse("minio/minio:latest"))
+    static GenericContainer<?> minio = new GenericContainer<>(DockerImageName.parse("quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z"))
             .withEnv("MINIO_ROOT_USER", "test-user")
             .withEnv("MINIO_ROOT_PASSWORD", "test-password-123")
             .withCommand("server", "/data")
